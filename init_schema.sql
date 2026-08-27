@@ -975,24 +975,28 @@ ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO users (name, email, password, created_at, updated_at)
 VALUES
+('SuperAdmin', 'superadmin@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), NOW()),
+('Admin PPK', 'admin_ppk@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), NOW()),
+('Admin PPK', 'admin@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), NOW()),
 ('Wakil PPK', 'wakil_ppk@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), NOW()),
 ('PPK', 'ppk@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), NOW()),
 ('Pengawas', 'pengawas@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), NOW()),
-('Admin PPK', 'admin@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), NOW()),
 ('Kontraktor', 'kontraktor@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), NOW()),
 ('Hari Wijayanto', 'wakildemo@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), NOW()),
 ('Kontraktor persentasi', 'hello@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), NOW())
-ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW();
+ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, updated_at = NOW();
 
 -- Assign Roles
 INSERT INTO model_has_roles (role_id, model_type, model_id)
 SELECT r.id, 'App\\Models\\User', u.id
 FROM users u
 JOIN roles r ON (
+    (u.email = 'superadmin@gmail.com' AND r.name = 'SuperAdmin') OR
+    (u.email = 'admin_ppk@gmail.com' AND r.name = 'Admin_ppk') OR
+    (u.email = 'admin@gmail.com' AND r.name = 'Admin_ppk') OR
     (u.email = 'wakil_ppk@gmail.com' AND r.name = 'Wakil PPK') OR
     (u.email = 'ppk@gmail.com' AND r.name = 'PPK') OR
     (u.email = 'pengawas@gmail.com' AND r.name = 'Pengawas') OR
-    (u.email = 'admin@gmail.com' AND r.name = 'Admin_ppk') OR
     (u.email = 'kontraktor@gmail.com' AND r.name = 'Kontraktor') OR
     (u.email = 'wakildemo@gmail.com' AND r.name = 'Wakil PPK') OR
     (u.email = 'hello@gmail.com' AND r.name = 'Kontraktor')
