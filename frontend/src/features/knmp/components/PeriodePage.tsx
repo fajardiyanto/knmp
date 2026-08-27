@@ -13,6 +13,7 @@ import {
   Home,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 
 interface PeriodeItem {
@@ -26,6 +27,7 @@ interface PeriodeItem {
 
 export const PeriodePage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   // Filters
   const [search, setSearch] = useState("");
@@ -77,9 +79,18 @@ export const PeriodePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["periodes-list"] });
       setIsModalOpen(false);
       setEditingItem(null);
+      showAlert({
+        title: "Berhasil Disimpan",
+        message: "Data periode berhasil disimpan.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menyimpan periode: " + err.message);
+      showAlert({
+        title: "Gagal Menyimpan",
+        message: err.message || "Gagal menyimpan data periode.",
+        type: "error",
+      });
     },
   });
 
@@ -89,9 +100,18 @@ export const PeriodePage: React.FC = () => {
       apiFetch(`/api/v1/periodes/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["periodes-list"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data periode berhasil dihapus.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menghapus periode: " + err.message);
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus data periode.",
+        type: "error",
+      });
     },
   });
 
@@ -261,9 +281,13 @@ export const PeriodePage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm(`Yakin ingin menghapus periode ${item.year}?`)) {
-                                deleteMutation.mutate(item.id);
-                              }
+                              showConfirm({
+                                title: "Hapus Periode",
+                                message: `Apakah Anda yakin ingin menghapus periode tahun ${item.year}?`,
+                                confirmText: "Hapus",
+                                isDestructive: true,
+                                onConfirm: () => deleteMutation.mutate(item.id),
+                              });
                             }}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title="Hapus"

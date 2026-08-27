@@ -5,6 +5,7 @@ import { Button } from "../../../components/ui/Button";
 import { useLaporanMutations } from "../hooks/useLaporan";
 import { usePelaksanaanList } from "../../pelaksanaan/hooks/usePelaksanaan";
 import { useJenisBangunans } from "../../knmp/hooks/useKnmp";
+import { useAlert } from "../../../context/AlertContext";
 
 interface CreateLaporanModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface BuildingDetailInput {
 }
 
 export const CreateLaporanModal: React.FC<CreateLaporanModalProps> = ({ isOpen, onClose }) => {
+  const { showAlert } = useAlert();
   const { createMobile } = useLaporanMutations();
   const { data: pelaksanaans } = usePelaksanaanList();
   const { data: jenisBangunans } = useJenisBangunans();
@@ -79,7 +81,11 @@ export const CreateLaporanModal: React.FC<CreateLaporanModalProps> = ({ isOpen, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pelaksanaanId) {
-      alert("Pilih proyek pelaksanaan");
+      showAlert({
+        title: "Pilih Proyek Pelaksanaan",
+        message: "Silakan pilih proyek pelaksanaan terlebih dahulu sebelum menyimpan laporan.",
+        type: "warning",
+      });
       return;
     }
 

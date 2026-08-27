@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 
 interface KnmpItem {
   id: number;
@@ -36,6 +37,7 @@ interface KnmpItem {
 
 export const KnmpPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   const [search, setSearch] = useState("");
   const [selectedRegional, setSelectedRegional] = useState("");
@@ -124,6 +126,18 @@ export const KnmpPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knmps"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-widgets"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data lokasi KNMP berhasil dihapus.",
+        type: "success",
+      });
+    },
+    onError: (err: any) => {
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus data KNMP.",
+        type: "error",
+      });
     },
   });
 
@@ -146,6 +160,18 @@ export const KnmpPage: React.FC = () => {
       setIsModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ["knmps"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-widgets"] });
+      showAlert({
+        title: "Berhasil Disimpan",
+        message: "Data lokasi KNMP berhasil disimpan.",
+        type: "success",
+      });
+    },
+    onError: (err: any) => {
+      showAlert({
+        title: "Gagal Menyimpan",
+        message: err.message || "Gagal menyimpan data KNMP.",
+        type: "error",
+      });
     },
   });
 
@@ -399,9 +425,13 @@ export const KnmpPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            if (window.confirm(`Yakin ingin menghapus ${item.name}?`)) {
-                              deleteMutation.mutate(item.id);
-                            }
+                            showConfirm({
+                              title: "Hapus Lokasi KNMP",
+                              message: `Apakah Anda yakin ingin menghapus lokasi "${item.name}"?`,
+                              confirmText: "Hapus",
+                              isDestructive: true,
+                              onConfirm: () => deleteMutation.mutate(item.id),
+                            });
                           }}
                           className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                           title="Hapus"

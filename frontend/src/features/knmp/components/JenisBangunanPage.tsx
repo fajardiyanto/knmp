@@ -13,6 +13,7 @@ import {
   Home,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 
 interface JenisBangunanItem {
   id: number;
@@ -25,6 +26,7 @@ interface JenisBangunanItem {
 
 export const JenisBangunanPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   // Filters
   const [search, setSearch] = useState("");
@@ -78,9 +80,18 @@ export const JenisBangunanPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["jenis-bangunan-list"] });
       setIsModalOpen(false);
       setEditingItem(null);
+      showAlert({
+        title: "Berhasil Disimpan",
+        message: "Data jenis bangunan berhasil disimpan.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menyimpan jenis bangunan: " + err.message);
+      showAlert({
+        title: "Gagal Menyimpan",
+        message: err.message || "Gagal menyimpan data jenis bangunan.",
+        type: "error",
+      });
     },
   });
 
@@ -90,9 +101,18 @@ export const JenisBangunanPage: React.FC = () => {
       apiFetch(`/api/v1/jenis-bangunan/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jenis-bangunan-list"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data jenis bangunan berhasil dihapus.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menghapus jenis bangunan: " + err.message);
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus data jenis bangunan.",
+        type: "error",
+      });
     },
   });
 
@@ -284,9 +304,13 @@ export const JenisBangunanPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm(`Yakin ingin menghapus jenis bangunan ${item.nama}?`)) {
-                                deleteMutation.mutate(item.id);
-                              }
+                              showConfirm({
+                                title: "Hapus Jenis Bangunan",
+                                message: `Apakah Anda yakin ingin menghapus jenis bangunan "${item.nama}"?`,
+                                confirmText: "Hapus",
+                                isDestructive: true,
+                                onConfirm: () => deleteMutation.mutate(item.id),
+                              });
                             }}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title="Hapus"

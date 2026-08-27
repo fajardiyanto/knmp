@@ -21,6 +21,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 
 interface LaporanItem {
@@ -77,6 +78,7 @@ interface UserOption {
 export const LaporanPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   // Filters
   const [search, setSearch] = useState("");
@@ -177,11 +179,21 @@ export const LaporanPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
+      queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
       setIsModalOpen(false);
       setEditingItem(null);
+      showAlert({
+        title: "Berhasil Disimpan",
+        message: "Data laporan berhasil disimpan.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menyimpan data laporan: " + err.message);
+      showAlert({
+        title: "Gagal Menyimpan",
+        message: err.message || "Gagal menyimpan data laporan.",
+        type: "error",
+      });
     },
   });
 
@@ -195,6 +207,11 @@ export const LaporanPage: React.FC = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
+      showAlert({
+        title: "Status Diperbarui",
+        message: "Status verifikasi laporan berhasil diperbarui.",
+        type: "success",
+      });
     },
   });
 
@@ -204,9 +221,18 @@ export const LaporanPage: React.FC = () => {
       apiFetch(`/api/v1/laporan/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data laporan berhasil dihapus.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menghapus laporan: " + err.message);
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus laporan.",
+        type: "error",
+      });
     },
   });
 
@@ -671,9 +697,13 @@ export const LaporanPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm(`Yakin ingin menghapus ${item.nama}?`)) {
-                                deleteMutation.mutate(item.id);
-                              }
+                              showConfirm({
+                                title: "Hapus Laporan",
+                                message: `Apakah Anda yakin ingin menghapus laporan "${item.nama}"?`,
+                                confirmText: "Hapus",
+                                isDestructive: true,
+                                onConfirm: () => deleteMutation.mutate(item.id),
+                              });
                             }}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title="Hapus"

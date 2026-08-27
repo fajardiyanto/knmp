@@ -176,6 +176,7 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 		chat.Get("/conversations/:id/messages", h.Chat.ListMessages)
 		chat.Post("/conversations/:id/messages", h.Chat.SendMessage)
 		chat.Post("/conversations/:id/read", h.Chat.MarkAsRead)
+		chat.Post("/upload", h.Chat.UploadAttachment)
 		chat.Get("/unread-count", h.Chat.GetUnreadCount)
 		chat.Post("/groups/:id/members", h.Chat.AddMember)
 		chat.Delete("/groups/:id/members/:userId", h.Chat.RemoveMember)

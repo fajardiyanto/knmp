@@ -221,7 +221,15 @@ func (s *chatService) GetMessages(convID, currentUserID int64, limit int, before
 
 func (s *chatService) SendMessage(convID, currentUserID int64, req domain.SendMessageRequest) (*domain.Message, error) {
 	if req.Content == "" {
-		return nil, errors.New("pesan tidak boleh kosong")
+		if req.AttachmentURL != nil && *req.AttachmentURL != "" {
+			if req.MessageType == "image" {
+				req.Content = "Mengirim foto"
+			} else {
+				req.Content = "Mengirim lampiran"
+			}
+		} else {
+			return nil, errors.New("pesan tidak boleh kosong")
+		}
 	}
 
 	// Verify membership

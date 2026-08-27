@@ -18,6 +18,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 
 interface PelaksanaanItem {
@@ -51,6 +52,7 @@ interface UserOption {
 export const PelaksanaanPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
@@ -123,9 +125,18 @@ export const PelaksanaanPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["pelaksanaan-list"] });
       setIsModalOpen(false);
       setEditingItem(null);
+      showAlert({
+        title: "Berhasil Disimpan",
+        message: "Data pelaksanaan konstruksi berhasil disimpan.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menyimpan data pelaksanaan: " + err.message);
+      showAlert({
+        title: "Gagal Menyimpan",
+        message: err.message || "Gagal menyimpan data pelaksanaan konstruksi.",
+        type: "error",
+      });
     },
   });
 
@@ -135,9 +146,18 @@ export const PelaksanaanPage: React.FC = () => {
       apiFetch(`/api/v1/pelaksanaan/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pelaksanaan-list"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data pelaksanaan konstruksi berhasil dihapus.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menghapus data pelaksanaan: " + err.message);
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus data pelaksanaan.",
+        type: "error",
+      });
     },
   });
 
@@ -505,9 +525,13 @@ export const PelaksanaanPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm(`Yakin ingin menghapus ${item.nama}?`)) {
-                                deleteMutation.mutate(item.id);
-                              }
+                              showConfirm({
+                                title: "Hapus Data Pelaksanaan",
+                                message: `Apakah Anda yakin ingin menghapus ${item.nama}?`,
+                                confirmText: "Hapus",
+                                isDestructive: true,
+                                onConfirm: () => deleteMutation.mutate(item.id),
+                              });
                             }}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title="Hapus"

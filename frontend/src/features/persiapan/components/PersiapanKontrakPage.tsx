@@ -20,6 +20,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 
 interface PersiapanItem {
@@ -54,6 +55,7 @@ interface UserOption {
 export const PersiapanKontrakPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
@@ -173,6 +175,18 @@ export const PersiapanKontrakPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["persiapan-kontrak"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-widgets"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data persiapan kontrak berhasil dihapus.",
+        type: "success",
+      });
+    },
+    onError: (err: any) => {
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus data persiapan kontrak.",
+        type: "error",
+      });
     },
   });
 
@@ -226,8 +240,17 @@ export const PersiapanKontrakPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["persiapan-kontrak"] });
       setUploadCategory(null);
       setUploadFile(null);
+      showAlert({
+        title: "Berhasil Diunggah",
+        message: "Dokumen kontrak berhasil diunggah.",
+        type: "success",
+      });
     } catch (err: any) {
-      alert("Gagal mengunggah dokumen: " + err.message);
+      showAlert({
+        title: "Gagal Mengunggah",
+        message: err.message || "Gagal mengunggah dokumen kontrak.",
+        type: "error",
+      });
     } finally {
       setIsUploading(false);
     }
@@ -472,9 +495,13 @@ export const PersiapanKontrakPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            if (window.confirm(`Yakin ingin menghapus ${item.nama}?`)) {
-                              deleteMutation.mutate(item.id);
-                            }
+                            showConfirm({
+                              title: "Hapus Persiapan Kontrak",
+                              message: `Apakah Anda yakin ingin menghapus ${item.nama}?`,
+                              confirmText: "Hapus",
+                              isDestructive: true,
+                              onConfirm: () => deleteMutation.mutate(item.id),
+                            });
                           }}
                           className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                           title="Hapus"

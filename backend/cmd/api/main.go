@@ -90,7 +90,7 @@ func main() {
 		Issue:       handler.NewIssueHandler(issueSvc),
 		Pembayaran:  handler.NewPembayaranHandler(pembayaranSvc),
 		Document:    handler.NewDocumentHandler(docSvc),
-		Chat:        handler.NewChatHandler(chatSvc, cfg.JWTSecret),
+		Chat:        handler.NewChatHandler(chatSvc, cfg.JWTSecret, storageEngine),
 	}
 
 	// 6. Build App & Listen

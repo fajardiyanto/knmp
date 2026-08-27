@@ -15,6 +15,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 
 interface AbsensiItem {
   id: number;
@@ -42,6 +43,7 @@ interface PelaksanaanOption {
 export const AbsensiPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   // Filters
   const [search, setSearch] = useState("");
@@ -115,9 +117,18 @@ export const AbsensiPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["absensi-list"] });
       setIsModalOpen(false);
       setEditingItem(null);
+      showAlert({
+        title: "Berhasil Disimpan",
+        message: "Data absensi tenaga kerja berhasil disimpan.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menyimpan data absensi: " + err.message);
+      showAlert({
+        title: "Gagal Menyimpan",
+        message: err.message || "Gagal menyimpan data absensi.",
+        type: "error",
+      });
     },
   });
 
@@ -140,9 +151,18 @@ export const AbsensiPage: React.FC = () => {
       setIsVerifModalOpen(false);
       setVerifTarget(null);
       setVerifNote("");
+      showAlert({
+        title: "Verifikasi Diproses",
+        message: "Data verifikasi absensi berhasil disimpan.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal memproses verifikasi: " + err.message);
+      showAlert({
+        title: "Gagal Memproses Verifikasi",
+        message: err.message || "Gagal memproses verifikasi.",
+        type: "error",
+      });
     },
   });
 
@@ -152,9 +172,18 @@ export const AbsensiPage: React.FC = () => {
       apiFetch(`/api/v1/absensi/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["absensi-list"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data absensi berhasil dihapus.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menghapus absensi: " + err.message);
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus data absensi.",
+        type: "error",
+      });
     },
   });
 
@@ -434,9 +463,13 @@ export const AbsensiPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm("Yakin ingin menghapus data absensi ini?")) {
-                                deleteMutation.mutate(item.id);
-                              }
+                              showConfirm({
+                                title: "Hapus Absensi",
+                                message: "Apakah Anda yakin ingin menghapus data absensi ini?",
+                                confirmText: "Hapus",
+                                isDestructive: true,
+                                onConfirm: () => deleteMutation.mutate(item.id),
+                              });
                             }}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title="Hapus"

@@ -14,6 +14,7 @@ import {
   FileCheck,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 
 interface IssueDetail {
@@ -56,6 +57,7 @@ export const UploadDokumenIssuePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   const [customDocs, setCustomDocs] = useState<RequiredDocDef[]>([]);
   const [isAddCustomOpen, setIsAddCustomOpen] = useState(false);
@@ -91,9 +93,18 @@ export const UploadDokumenIssuePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["issue-detail", id] });
       queryClient.invalidateQueries({ queryKey: ["issue-list"] });
       setUploadingCategory(null);
+      showAlert({
+        title: "Berhasil Diunggah",
+        message: "Berkas dokumen issue berhasil diunggah.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal mengunggah berkas: " + err.message);
+      showAlert({
+        title: "Gagal Mengunggah",
+        message: err.message || "Gagal mengunggah berkas.",
+        type: "error",
+      });
       setUploadingCategory(null);
     },
   });
@@ -159,8 +170,17 @@ export const UploadDokumenIssuePage: React.FC = () => {
 
         queryClient.invalidateQueries({ queryKey: ["issue-detail", id] });
         queryClient.invalidateQueries({ queryKey: ["issue-list"] });
+        showAlert({
+          title: "Berhasil Diunggah",
+          message: "Dokumen issue berhasil diunggah.",
+          type: "success",
+        });
       } catch (err: any) {
-        alert("Gagal mengunggah dokumen: " + err.message);
+        showAlert({
+          title: "Gagal Mengunggah",
+          message: err.message || "Gagal mengunggah dokumen.",
+          type: "error",
+        });
       } finally {
         setUploadingCategory(null);
       }
@@ -369,9 +389,13 @@ export const UploadDokumenIssuePage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      if (window.confirm("Hapus file dokumen ini?")) {
-                                        deleteDocMutation.mutate(doc.id);
-                                      }
+                                      showConfirm({
+                                        title: "Hapus Berkas Dokumen",
+                                        message: "Apakah Anda yakin ingin menghapus file dokumen issue ini?",
+                                        confirmText: "Hapus",
+                                        isDestructive: true,
+                                        onConfirm: () => deleteDocMutation.mutate(doc.id),
+                                      });
                                     }}
                                     className="p-1 text-rose-500 hover:text-rose-700"
                                     title="Hapus File"

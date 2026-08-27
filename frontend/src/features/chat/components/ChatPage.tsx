@@ -66,9 +66,18 @@ export const ChatPage: React.FC = () => {
     setActiveConvId(conv.id);
   };
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = (
+    content: string,
+    attachment?: { url: string; name: string; size?: number; type?: string }
+  ) => {
     if (!activeConvId) return;
-    sendMessage.mutate({ content });
+    sendMessage.mutate({
+      content: content || (attachment?.type === "image" ? "Mengirim foto" : "Mengirim lampiran"),
+      message_type: attachment?.type || "text",
+      attachment_url: attachment?.url,
+      attachment_name: attachment?.name,
+      attachment_size: attachment?.size,
+    });
   };
 
   const handleStartPersonalChat = (targetUserId: number) => {

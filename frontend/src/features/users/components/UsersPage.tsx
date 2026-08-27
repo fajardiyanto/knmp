@@ -12,6 +12,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 
 interface UserItem {
   id: number;
@@ -35,6 +36,7 @@ interface KnmpOption {
 
 export const UsersPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   // Filters
   const [search, setSearch] = useState("");
@@ -122,9 +124,18 @@ export const UsersPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["users-list"] });
       setIsModalOpen(false);
       setEditingItem(null);
+      showAlert({
+        title: "Berhasil Disimpan",
+        message: "Data pengguna berhasil diperbarui.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menyimpan user: " + err.message);
+      showAlert({
+        title: "Gagal Menyimpan",
+        message: err.message || "Gagal menyimpan data pengguna.",
+        type: "error",
+      });
     },
   });
 
@@ -134,9 +145,18 @@ export const UsersPage: React.FC = () => {
       apiFetch(`/api/v1/users/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-list"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data pengguna berhasil dihapus.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menghapus user: " + err.message);
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus data pengguna.",
+        type: "error",
+      });
     },
   });
 
@@ -348,9 +368,13 @@ export const UsersPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm(`Yakin ingin menghapus user ${item.name}?`)) {
-                                deleteMutation.mutate(item.id);
-                              }
+                              showConfirm({
+                                title: "Hapus Pengguna",
+                                message: `Apakah Anda yakin ingin menghapus user "${item.name}"? Tindakan ini tidak dapat dibatalkan.`,
+                                confirmText: "Hapus",
+                                isDestructive: true,
+                                onConfirm: () => deleteMutation.mutate(item.id),
+                              });
                             }}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title="Hapus"

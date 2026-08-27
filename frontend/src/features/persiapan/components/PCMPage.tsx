@@ -18,6 +18,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 
 interface PCMItem {
@@ -45,6 +46,7 @@ interface KontrakOption {
 export const PCMPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   const [search, setSearch] = useState("");
   const [selectedKontrakFilter, setSelectedKontrakFilter] = useState("");
@@ -97,9 +99,18 @@ export const PCMPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["pcm-list"] });
       setIsModalOpen(false);
       setEditingItem(null);
+      showAlert({
+        title: "Berhasil Disimpan",
+        message: "Data PCM berhasil disimpan.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menyimpan data PCM: " + err.message);
+      showAlert({
+        title: "Gagal Menyimpan",
+        message: err.message || "Gagal menyimpan data PCM.",
+        type: "error",
+      });
     },
   });
 
@@ -108,9 +119,18 @@ export const PCMPage: React.FC = () => {
     mutationFn: (id: number) => apiFetch(`/api/v1/pcm/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pcm-list"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data PCM berhasil dihapus.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menghapus data PCM: " + err.message);
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus data PCM.",
+        type: "error",
+      });
     },
   });
 
@@ -415,9 +435,13 @@ export const PCMPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm(`Yakin ingin menghapus ${item.nama}?`)) {
-                                deleteMutation.mutate(item.id);
-                              }
+                              showConfirm({
+                                title: "Hapus Data PCM",
+                                message: `Apakah Anda yakin ingin menghapus ${item.nama}?`,
+                                confirmText: "Hapus",
+                                isDestructive: true,
+                                onConfirm: () => deleteMutation.mutate(item.id),
+                              });
                             }}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title="Hapus"

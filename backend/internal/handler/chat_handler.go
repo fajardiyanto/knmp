@@ -11,18 +11,47 @@ import (
 	"knmp-v2-backend/internal/domain"
 	"knmp-v2-backend/internal/middleware"
 	"knmp-v2-backend/internal/service"
+	"knmp-v2-backend/pkg/storage"
 )
 
 type ChatHandler struct {
 	chatSvc   service.ChatService
 	jwtSecret string
+	storage   storage.Storage
 }
 
-func NewChatHandler(chatSvc service.ChatService, jwtSecret string) *ChatHandler {
+func NewChatHandler(chatSvc service.ChatService, jwtSecret string, storageEngine storage.Storage) *ChatHandler {
 	return &ChatHandler{
 		chatSvc:   chatSvc,
 		jwtSecret: jwtSecret,
+		storage:   storageEngine,
 	}
+}
+
+func (h *ChatHandler) UploadAttachment(c *fiber.Ctx) error {
+	file, err := c.FormFile("file")
+	if err != nil || file == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "File wajib diunggah"})
+	}
+
+	savedPath, fileName, fileType, err := h.storage.SaveUploadedFile(file, "chat")
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Gagal menyimpan file: " + err.Error()})
+	}
+
+	fileURL := h.storage.GetFileURL(savedPath)
+	fileSize := file.Size
+
+	return c.JSON(fiber.Map{
+		"message": "File berhasil diunggah",
+		"data": fiber.Map{
+			"file_name": fileName,
+			"file_path": savedPath,
+			"file_type": fileType,
+			"file_size": fileSize,
+			"file_url":  fileURL,
+		},
+	})
 }
 
 func (h *ChatHandler) ListConversations(c *fiber.Ctx) error {

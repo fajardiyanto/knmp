@@ -20,6 +20,7 @@ import {
   FileUp,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 import { formatRupiah } from "../../../lib/utils";
 
 interface PembayaranItem {
@@ -47,6 +48,7 @@ interface KontrakOption {
 export const TotalAnggaranPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   // Filters
   const [search, setSearch] = useState("");
@@ -111,9 +113,18 @@ export const TotalAnggaranPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["pembayaran-list"] });
       setIsModalOpen(false);
       setEditingItem(null);
+      showAlert({
+        title: "Berhasil Disimpan",
+        message: "Data total anggaran berhasil disimpan.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menyimpan data anggaran: " + err.message);
+      showAlert({
+        title: "Gagal Menyimpan",
+        message: err.message || "Gagal menyimpan data anggaran.",
+        type: "error",
+      });
     },
   });
 
@@ -123,9 +134,18 @@ export const TotalAnggaranPage: React.FC = () => {
       apiFetch(`/api/v1/pembayaran/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pembayaran-list"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data anggaran berhasil dihapus.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menghapus data pembayaran: " + err.message);
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus data pembayaran.",
+        type: "error",
+      });
     },
   });
 
@@ -487,9 +507,13 @@ export const TotalAnggaranPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm(`Yakin ingin menghapus ${item.name}?`)) {
-                                deleteMutation.mutate(item.id);
-                              }
+                              showConfirm({
+                                title: "Hapus Pembayaran Anggaran",
+                                message: `Apakah Anda yakin ingin menghapus data ${item.name}?`,
+                                confirmText: "Hapus",
+                                isDestructive: true,
+                                onConfirm: () => deleteMutation.mutate(item.id),
+                              });
                             }}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title="Hapus"

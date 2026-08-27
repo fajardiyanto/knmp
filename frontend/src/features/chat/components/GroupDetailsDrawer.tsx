@@ -17,6 +17,7 @@ import {
   useSearchUsers,
   useUpdateGroup,
 } from "../api";
+import { useAlert } from "../../../context/AlertContext";
 
 interface GroupDetailsDrawerProps {
   conversation: Conversation;
@@ -73,18 +74,29 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
     );
   };
 
+  const { showConfirm } = useAlert();
+
   const handleRemoveUser = (userId: number) => {
-    if (confirm("Apakah Anda yakin ingin mengeluarkan anggota ini?")) {
-      removeMember.mutate(userId);
-    }
+    showConfirm({
+      title: "Keluarkan Anggota",
+      message: "Apakah Anda yakin ingin mengeluarkan anggota ini dari grup?",
+      confirmText: "Keluarkan",
+      isDestructive: true,
+      onConfirm: () => removeMember.mutate(userId),
+    });
   };
 
   const handleLeaveGroup = () => {
-    if (confirm("Apakah Anda yakin ingin keluar dari grup ini?")) {
-      removeMember.mutate(currentUserId, {
-        onSuccess: () => onClose(),
-      });
-    }
+    showConfirm({
+      title: "Keluar dari Grup",
+      message: "Apakah Anda yakin ingin keluar dari grup ini?",
+      confirmText: "Keluar",
+      isDestructive: true,
+      onConfirm: () =>
+        removeMember.mutate(currentUserId, {
+          onSuccess: () => onClose(),
+        }),
+    });
   };
 
   return (

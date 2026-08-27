@@ -99,6 +99,31 @@ export const useSendMessage = (convId: number) => {
   });
 };
 
+export interface UploadAttachmentResponse {
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  file_url: string;
+}
+
+export const uploadChatAttachment = async (file: File): Promise<UploadAttachmentResponse> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await apiFetch<UploadAttachmentResponse>("/api/v1/chat/upload", {
+    method: "POST",
+    body: formData,
+  });
+  return res;
+};
+
+export const useUploadChatAttachment = () => {
+  return useMutation({
+    mutationFn: (file: File) => uploadChatAttachment(file),
+  });
+};
+
 export const useMarkAsRead = () => {
   const queryClient = useQueryClient();
   return useMutation({

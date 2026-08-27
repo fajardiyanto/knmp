@@ -20,6 +20,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 
 interface IssueItem {
   id: number;
@@ -49,6 +50,7 @@ interface KnmpOption {
 export const IssuePage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   // Filters
   const [search, setSearch] = useState("");
@@ -123,9 +125,18 @@ export const IssuePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["issue-list"] });
       setIsModalOpen(false);
       setEditingItem(null);
+      showAlert({
+        title: "Berhasil Disimpan",
+        message: "Data issue kendala proyek berhasil disimpan.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menyimpan issue: " + err.message);
+      showAlert({
+        title: "Gagal Menyimpan",
+        message: err.message || "Gagal menyimpan issue.",
+        type: "error",
+      });
     },
   });
 
@@ -147,9 +158,18 @@ export const IssuePage: React.FC = () => {
       setIsVerifModalOpen(false);
       setVerifTarget(null);
       setVerifNote("");
+      showAlert({
+        title: "Verifikasi Diproses",
+        message: "Status verifikasi issue berhasil disimpan.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal memproses verifikasi: " + err.message);
+      showAlert({
+        title: "Gagal Memproses Verifikasi",
+        message: err.message || "Gagal memproses verifikasi.",
+        type: "error",
+      });
     },
   });
 
@@ -159,9 +179,18 @@ export const IssuePage: React.FC = () => {
       apiFetch(`/api/v1/issue/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue-list"] });
+      showAlert({
+        title: "Berhasil Dihapus",
+        message: "Data issue berhasil dihapus.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal menghapus issue: " + err.message);
+      showAlert({
+        title: "Gagal Menghapus",
+        message: err.message || "Gagal menghapus issue.",
+        type: "error",
+      });
     },
   });
 
@@ -550,9 +579,13 @@ export const IssuePage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm("Yakin ingin menghapus issue ini?")) {
-                                deleteMutation.mutate(item.id);
-                              }
+                              showConfirm({
+                                title: "Hapus Issue",
+                                message: "Apakah Anda yakin ingin menghapus data issue kendala ini?",
+                                confirmText: "Hapus",
+                                isDestructive: true,
+                                onConfirm: () => deleteMutation.mutate(item.id),
+                              });
                             }}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title="Hapus"

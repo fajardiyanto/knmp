@@ -16,6 +16,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
+import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 
 interface LaporanDetail {
@@ -60,6 +61,7 @@ export const UploadDokumenLaporanPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = useAlert();
 
   const [customDocs, setCustomDocs] = useState<LaporanDocDef[]>([
     { no: 5, code: "foto_kegiatan_tambahan", name: "Foto kegiatan tambahan", badge: "Tambahan", isMulti: true, isCustom: true },
@@ -98,9 +100,18 @@ export const UploadDokumenLaporanPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["laporan-detail", id] });
       queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
       setUploadingCategory(null);
+      showAlert({
+        title: "Berhasil Diunggah",
+        message: "Berkas dokumen laporan berhasil diunggah.",
+        type: "success",
+      });
     },
     onError: (err: any) => {
-      alert("Gagal mengunggah berkas: " + err.message);
+      showAlert({
+        title: "Gagal Mengunggah",
+        message: err.message || "Gagal mengunggah berkas.",
+        type: "error",
+      });
       setUploadingCategory(null);
     },
   });
@@ -168,8 +179,17 @@ export const UploadDokumenLaporanPage: React.FC = () => {
 
         queryClient.invalidateQueries({ queryKey: ["laporan-detail", id] });
         queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
+        showAlert({
+          title: "Berhasil Diunggah",
+          message: "Dokumen laporan berhasil diunggah.",
+          type: "success",
+        });
       } catch (err: any) {
-        alert("Gagal mengunggah dokumen: " + err.message);
+        showAlert({
+          title: "Gagal Mengunggah",
+          message: err.message || "Gagal mengunggah dokumen.",
+          type: "error",
+        });
       } finally {
         setUploadingCategory(null);
       }
@@ -394,9 +414,13 @@ export const UploadDokumenLaporanPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (window.confirm("Hapus file ini?")) {
-                                    deleteDocMutation.mutate(doc.id);
-                                  }
+                                  showConfirm({
+                                    title: "Hapus Berkas",
+                                    message: "Apakah Anda yakin ingin menghapus file ini?",
+                                    confirmText: "Hapus",
+                                    isDestructive: true,
+                                    onConfirm: () => deleteDocMutation.mutate(doc.id),
+                                  });
                                 }}
                                 className="p-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors shadow-2xs"
                                 title="Hapus Berkas"
