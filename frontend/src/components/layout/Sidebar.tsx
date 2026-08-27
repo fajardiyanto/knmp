@@ -39,9 +39,10 @@ interface NavGroup {
 
 interface SidebarProps {
   isOpen?: boolean;
+  onToggle?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onToggle }) => {
   const { hasPermission, user, logout } = useAuth();
   const { data: unreadData } = useTotalUnreadCount();
   const unreadTotal = unreadData?.unread_count || 0;
@@ -127,73 +128,121 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   return (
     <aside
       className={cn(
-        "bg-white text-slate-700 min-h-screen flex flex-col justify-between border-r border-slate-200/90 shrink-0 sticky top-0 h-screen z-40 transition-all duration-300 ease-in-out overflow-y-auto select-none",
-        isOpen
-          ? "w-72 opacity-100 translate-x-0"
-          : "w-0 -translate-x-full opacity-0 border-r-0 overflow-hidden pointer-events-none"
+        "bg-white text-slate-700 min-h-screen flex flex-col justify-between border-r border-slate-200/90 shrink-0 sticky top-0 h-screen z-40 transition-all duration-300 ease-in-out select-none",
+        isOpen ? "w-64" : "w-[72px]"
       )}
     >
-      <div className="w-72">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Brand Logo Header aligned with Navbar h-16 */}
-        <div className="h-16 px-6 flex items-center gap-3.5 border-b border-slate-200/90 bg-white/95 backdrop-blur-xs sticky top-0 z-10">
-          <div className="relative group/logo cursor-pointer">
+        <div
+          className={cn(
+            "h-16 border-b border-slate-200/90 bg-white/95 backdrop-blur-xs flex items-center shrink-0 transition-all duration-300",
+            isOpen ? "px-5 gap-3" : "justify-center px-0"
+          )}
+        >
+          <div className="relative group/logo cursor-pointer shrink-0">
             <img
               src="/assets/img/simandor.png"
               alt="SIMANDOR"
-              className="w-10 h-auto object-contain shrink-0 transition-transform duration-300 group-hover/logo:scale-105"
+              className={cn(
+                "object-contain transition-all duration-300 group-hover/logo:scale-105",
+                isOpen ? "w-9 h-auto" : "w-8 h-auto"
+              )}
               onError={(e) => {
                 e.currentTarget.src = "/assets/img/kkp-logo.png";
               }}
             />
           </div>
-          <div>
-            <span className="font-semibold text-slate-900 text-base tracking-wider block leading-tight">
-              SIMANDOR
-            </span>
-            <p className="text-[10.5px] text-slate-400 font-medium tracking-tight">
-              SIMANDOR 360
-            </p>
-          </div>
+          {isOpen && (
+            <div className="overflow-hidden whitespace-nowrap">
+              <span className="font-bold text-slate-900 text-[14.5px] tracking-wide block leading-tight">
+                SIMANDOR
+              </span>
+              <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">
+                SIMANDOR 360
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Navigation Menus */}
-        <div className="p-4 space-y-4">
+        {/* Navigation Menus List */}
+        <div
+          className={cn(
+            "flex-1 overflow-y-auto overflow-x-hidden transition-all duration-300",
+            isOpen ? "p-3.5 space-y-4" : "py-3 px-2 space-y-2"
+          )}
+        >
           {groups.map((group, gIdx) => {
             const visibleItems = group.items.filter((item) => item.show);
             if (visibleItems.length === 0) return null;
 
             return (
               <div key={gIdx} className="space-y-1">
-                {group.title && (
-                  <div className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-wider text-slate-400 uppercase">
-                    {group.title}
-                  </div>
+                {/* Group Title or Separator */}
+                {isOpen ? (
+                  group.title && (
+                    <div className="px-3 pt-2 pb-1 text-[10.5px] font-bold tracking-wider text-slate-400 uppercase">
+                      {group.title}
+                    </div>
+                  )
+                ) : (
+                  gIdx > 0 && <div className="my-2.5 mx-auto w-6 border-t border-slate-200/80" />
                 )}
+
+                {/* Group Items */}
                 {visibleItems.map((item) => (
                   <NavLink
                     key={item.name + item.href}
                     to={item.href}
                     className={({ isActive }) =>
                       cn(
-                        "relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13.5px] font-medium transition-all duration-200 ease-out group overflow-hidden",
+                        "relative flex items-center rounded-xl text-[13.5px] font-medium transition-all duration-200 ease-out group",
+                        isOpen
+                          ? "gap-3 px-3 py-2.5"
+                          : "justify-center w-11 h-11 mx-auto",
                         isActive
-                          ? "bg-[#eef4ff] text-[#3366ff] font-medium shadow-2xs before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#3366ff] before:rounded-r-full"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50/80 hover:translate-x-1"
+                          ? "bg-[#eef4ff] text-[#3366ff] font-semibold shadow-2xs before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#3366ff] before:rounded-r-full"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                       )
                     }
                   >
                     <item.icon
                       className={cn(
-                        "w-[18px] h-[18px] shrink-0 transition-all duration-200 group-hover:scale-110 group-hover:text-[#3366ff]"
+                        "shrink-0 transition-all duration-200 group-hover:scale-110",
+                        isOpen ? "w-[18px] h-[18px]" : "w-5 h-5",
+                        "group-hover:text-[#3366ff]"
                       )}
                     />
-                    <span className="truncate flex-1 font-normal group-hover:font-medium transition-all duration-150">
-                      {item.name}
-                    </span>
-                    {typeof item.badge === "number" && item.badge > 0 && (
-                      <span className="px-2 py-0.5 text-[11px] font-medium bg-blue-600 text-white rounded-full shrink-0 shadow-xs animate-pulse">
-                        {item.badge}
-                      </span>
+
+                    {isOpen ? (
+                      <>
+                        <span className="truncate flex-1 font-normal group-hover:font-medium transition-all duration-150">
+                          {item.name}
+                        </span>
+                        {typeof item.badge === "number" && item.badge > 0 && (
+                          <span className="px-2 py-0.5 text-[11px] font-medium bg-blue-600 text-white rounded-full shrink-0 shadow-xs animate-pulse">
+                            {item.badge}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {/* Dot indicator for badges in collapsed mode */}
+                        {typeof item.badge === "number" && item.badge > 0 && (
+                          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white" />
+                        )}
+
+                        {/* Floating Tooltip in collapsed mode */}
+                        <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2">
+                          <span>{item.name}</span>
+                          {typeof item.badge === "number" && item.badge > 0 && (
+                            <span className="px-1.5 py-0.2 text-[10px] bg-blue-500 rounded-full font-bold">
+                              {item.badge}
+                            </span>
+                          )}
+                          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
+                        </div>
+                      </>
                     )}
                   </NavLink>
                 ))}
@@ -203,16 +252,48 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
         </div>
       </div>
 
-      {/* Footer / Logout */}
-      <div className="p-4 border-t border-slate-100 w-72">
+      {/* Footer / Logout & Collapse Toggle */}
+      <div
+        className={cn(
+          "border-t border-slate-100 bg-slate-50/50 shrink-0 transition-all duration-300",
+          isOpen ? "p-3 space-y-2" : "p-2 space-y-2 flex flex-col items-center"
+        )}
+      >
         <button
           type="button"
           onClick={logout}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13.5px] font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 hover:translate-x-1 transition-all duration-200 group cursor-pointer"
+          className={cn(
+            "flex items-center rounded-xl text-[13.5px] font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200 group cursor-pointer relative",
+            isOpen ? "w-full gap-3 px-3 py-2.5" : "justify-center w-11 h-11"
+          )}
+          title={!isOpen ? "Logout" : undefined}
         >
           <LogOut className="w-[18px] h-[18px] shrink-0 text-slate-500 group-hover:text-red-600 group-hover:scale-110 transition-all duration-200" />
-          <span className="font-normal group-hover:font-medium">Logout</span>
+          {isOpen ? (
+            <span className="font-normal group-hover:font-medium">Logout</span>
+          ) : (
+            <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+              Logout
+              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
+            </div>
+          )}
         </button>
+
+        {onToggle && (
+          <button
+            type="button"
+            onClick={onToggle}
+            className={cn(
+              "flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer",
+              isOpen ? "w-full py-1.5 text-xs gap-1.5" : "w-11 h-8"
+            )}
+            title={isOpen ? "Tutup Sidebar" : "Buka Sidebar"}
+          >
+            <span className="text-[11px] font-bold tracking-widest text-slate-400">
+              {isOpen ? "◀ ◯ ▶" : "▶"}
+            </span>
+          </button>
+        )}
       </div>
     </aside>
   );

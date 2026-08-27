@@ -9,7 +9,10 @@ export const AppLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f4f6fa] flex font-sans">
       {/* 1. Sidebar */}
-      <Sidebar isOpen={isSidebarOpen} />
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen((prev) => !prev)}
+      />
 
       {/* 2. Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
