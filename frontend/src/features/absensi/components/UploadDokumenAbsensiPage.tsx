@@ -247,68 +247,68 @@ export const UploadDokumenAbsensiPage: React.FC = () => {
         </div>
 
         {/* Right 4 Summary Metric Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 w-full">
           {/* Belum Upload */}
-          <div className="bg-[#fef2f2] border border-[#fee2e2] rounded-2xl px-5 py-3.5 flex items-center gap-3.5 min-w-[175px]">
-            <div className="w-11 h-11 rounded-full bg-[#ef4444] text-white flex items-center justify-center shrink-0">
+          <div className="bg-[#fef2f2] border border-[#fee2e2] rounded-2xl p-3.5 sm:px-4 sm:py-3.5 flex items-center gap-3 min-w-0 w-full shadow-2xs">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#ef4444] text-white flex items-center justify-center shrink-0">
               <UploadCloud className="w-5 h-5" />
             </div>
-            <div>
-              <div className="text-[11px] font-bold text-[#ef4444] tracking-wider uppercase">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10.5px] sm:text-[11px] font-bold text-[#ef4444] tracking-wider uppercase truncate">
                 BELUM UPLOAD
               </div>
-              <div className="text-2xl font-normal text-slate-900 leading-tight my-0.5">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight my-0.5">
                 {belumUploadCount}
               </div>
-              <div className="text-xs font-semibold text-[#ef4444]">Pending</div>
+              <div className="text-xs font-semibold text-[#ef4444] truncate">Pending</div>
             </div>
           </div>
 
           {/* Upload */}
-          <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-2xl px-5 py-3.5 flex items-center gap-3.5 min-w-[175px]">
-            <div className="w-11 h-11 rounded-full bg-[#22c55e] text-white flex items-center justify-center shrink-0">
+          <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-2xl p-3.5 sm:px-4 sm:py-3.5 flex items-center gap-3 min-w-0 w-full shadow-2xs">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#22c55e] text-white flex items-center justify-center shrink-0">
               <FileCheck className="w-5 h-5" />
             </div>
-            <div>
-              <div className="text-[11px] font-bold text-[#16a34a] tracking-wider uppercase">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10.5px] sm:text-[11px] font-bold text-[#16a34a] tracking-wider uppercase truncate">
                 UPLOAD
               </div>
-              <div className="text-2xl font-normal text-slate-900 leading-tight my-0.5">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight my-0.5">
                 {uploadedCount}
               </div>
-              <div className="text-xs font-semibold text-[#16a34a]">{totalRequired} Required</div>
+              <div className="text-xs font-semibold text-[#16a34a] truncate">{totalRequired} Required</div>
             </div>
           </div>
 
           {/* Terverifikasi */}
-          <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-2xl px-5 py-3.5 flex items-center gap-3.5 min-w-[175px]">
-            <div className="w-11 h-11 rounded-full bg-[#0ea5e9] text-white flex items-center justify-center shrink-0">
+          <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-2xl p-3.5 sm:px-4 sm:py-3.5 flex items-center gap-3 min-w-0 w-full shadow-2xs">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#0ea5e9] text-white flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </div>
-            <div>
-              <div className="text-[11px] font-bold text-[#0284c7] tracking-wider uppercase">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10.5px] sm:text-[11px] font-bold text-[#0284c7] tracking-wider uppercase truncate">
                 TERVERIFIKASI
               </div>
-              <div className="text-2xl font-normal text-slate-900 leading-tight my-0.5">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight my-0.5">
                 {verifiedCount}
               </div>
-              <div className="text-xs font-semibold text-[#0284c7]">{verifiedPct}%</div>
+              <div className="text-xs font-semibold text-[#0284c7] truncate">{verifiedPct}%</div>
             </div>
           </div>
 
           {/* Belum Verif */}
-          <div className="bg-[#fefce8] border border-[#fef9c3] rounded-2xl px-5 py-3.5 flex items-center gap-3.5 min-w-[175px]">
-            <div className="w-11 h-11 rounded-full bg-[#eab308] text-white flex items-center justify-center shrink-0">
+          <div className="bg-[#fefce8] border border-[#fef9c3] rounded-2xl p-3.5 sm:px-4 sm:py-3.5 flex items-center gap-3 min-w-0 w-full shadow-2xs">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#eab308] text-white flex items-center justify-center shrink-0">
               <Clock className="w-5 h-5" />
             </div>
-            <div>
-              <div className="text-[11px] font-bold text-[#ca8a04] tracking-wider uppercase">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10.5px] sm:text-[11px] font-bold text-[#ca8a04] tracking-wider uppercase truncate">
                 BELUM VERIF.
               </div>
-              <div className="text-2xl font-normal text-slate-900 leading-tight my-0.5">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight my-0.5">
                 {belumVerifCount}
               </div>
-              <div className="text-xs font-semibold text-[#ca8a04]">{belumVerifPct}%</div>
+              <div className="text-xs font-semibold text-[#ca8a04] truncate">{belumVerifPct}%</div>
             </div>
           </div>
         </div>
