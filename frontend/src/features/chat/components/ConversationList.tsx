@@ -6,6 +6,7 @@ import {
   MessageSquarePlus,
   User,
   Users2,
+  PanelLeftClose,
 } from "lucide-react";
 import { Conversation } from "../types";
 
@@ -15,6 +16,7 @@ interface ConversationListProps {
   onSelect: (conv: Conversation) => void;
   onOpenNewChat: () => void;
   onOpenNewGroup: () => void;
+  onCollapseList?: () => void;
   isLoading?: boolean;
 }
 
@@ -24,6 +26,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   onSelect,
   onOpenNewChat,
   onOpenNewGroup,
+  onCollapseList,
   isLoading,
 }) => {
   const [search, setSearch] = useState("");
@@ -84,6 +87,16 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           >
             <Users className="w-4 h-4" />
           </button>
+          {onCollapseList && (
+            <button
+              type="button"
+              onClick={onCollapseList}
+              className="hidden md:flex p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-slate-200/80 dark:border-slate-700 shadow-2xs cursor-pointer"
+              title="Sembunyikan Daftar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 

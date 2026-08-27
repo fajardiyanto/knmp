@@ -1,31 +1,48 @@
 import React from "react";
-import { User, Users2, Info, ArrowLeft, Shield } from "lucide-react";
+import { User, Users2, Info, ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Conversation } from "../types";
 
 interface ChatHeaderProps {
   conversation: Conversation;
   onToggleDetails?: () => void;
   onBackMobile?: () => void;
+  onToggleList?: () => void;
   isDetailsOpen?: boolean;
+  isListCollapsed?: boolean;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
   conversation,
   onToggleDetails,
   onBackMobile,
+  onToggleList,
   isDetailsOpen,
+  isListCollapsed,
 }) => {
   const isGroup = conversation.type === "group";
 
   return (
-    <div className="h-16 px-5 border-b border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between shrink-0 shadow-2xs transition-colors duration-200">
-      <div className="flex items-center gap-3.5 min-w-0">
+    <div className="h-16 px-4 sm:px-5 border-b border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between shrink-0 shadow-2xs transition-colors duration-200">
+      <div className="flex items-center gap-3 min-w-0">
+        {/* Toggle List Button (Desktop & Mobile) */}
+        {onToggleList && (
+          <button
+            type="button"
+            onClick={onToggleList}
+            className="hidden md:flex p-2 -ml-1 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            title={isListCollapsed ? "Tampilkan Daftar Percakapan" : "Sembunyikan Daftar Percakapan"}
+          >
+            {isListCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+          </button>
+        )}
+
         {/* Mobile Back Button */}
         {onBackMobile && (
           <button
             type="button"
             onClick={onBackMobile}
             className="md:hidden p-2 -ml-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            title="Kembali ke Daftar"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>

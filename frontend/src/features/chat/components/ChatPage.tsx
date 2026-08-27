@@ -28,6 +28,7 @@ export const ChatPage: React.FC = () => {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [isNewGroupOpen, setIsNewGroupOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isListCollapsed, setIsListCollapsed] = useState(false);
 
   // Queries & Mutations
   const { data: convsData, isLoading: isLoadingConvs } = useConversations();
@@ -64,6 +65,7 @@ export const ChatPage: React.FC = () => {
 
   const handleSelectConversation = (conv: Conversation) => {
     setActiveConvId(conv.id);
+    markAsRead.mutate(conv.id);
   };
 
   const handleSendMessage = (
@@ -120,7 +122,9 @@ export const ChatPage: React.FC = () => {
         <div
           className={`${
             activeConvId ? "hidden md:flex" : "flex"
-          } w-full md:w-auto h-full`}
+          } ${
+            isListCollapsed ? "md:!hidden" : ""
+          } w-full md:w-auto h-full transition-all`}
         >
           <ConversationList
             conversations={conversations}
@@ -128,6 +132,7 @@ export const ChatPage: React.FC = () => {
             onSelect={handleSelectConversation}
             onOpenNewChat={() => setIsNewChatOpen(true)}
             onOpenNewGroup={() => setIsNewGroupOpen(true)}
+            onCollapseList={() => setIsListCollapsed(true)}
             isLoading={isLoadingConvs}
           />
         </div>
@@ -145,6 +150,8 @@ export const ChatPage: React.FC = () => {
                 conversation={activeConversation}
                 onToggleDetails={() => setIsDetailsOpen(!isDetailsOpen)}
                 onBackMobile={() => setActiveConvId(undefined)}
+                onToggleList={() => setIsListCollapsed(!isListCollapsed)}
+                isListCollapsed={isListCollapsed}
                 isDetailsOpen={isDetailsOpen}
               />
 
@@ -171,10 +178,19 @@ export const ChatPage: React.FC = () => {
               <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1">
                 Pilih atau Mulai Percakapan
               </h3>
-              <p className="text-[13.5px] text-slate-400 dark:text-slate-400 max-w-sm font-normal">
+              <p className="text-[13.5px] text-slate-400 dark:text-slate-400 max-w-sm font-normal mb-4">
                 Pilih percakapan dari daftar di sebelah kiri atau buat pesan baru
                 untuk berkoordinasi langsung dengan rekan kerja Anda.
               </p>
+              {isListCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => setIsListCollapsed(false)}
+                  className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                  Buka Daftar Percakapan
+                </button>
+              )}
             </div>
           )}
         </div>
