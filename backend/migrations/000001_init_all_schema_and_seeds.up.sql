@@ -1070,4 +1070,82 @@ ALTER TABLE verifications ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL;
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL;
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL;
 
+-- ==============================================================================
+-- PERMISSIONS & ROLE PERMISSION MAPPINGS SEED
+-- ==============================================================================
+INSERT INTO permissions (name, guard_name, created_at, updated_at)
+VALUES
+('knmp_read', 'api', NOW(), NOW()),
+('knmp_create', 'api', NOW(), NOW()),
+('knmp_update', 'api', NOW(), NOW()),
+('knmp_delete', 'api', NOW(), NOW()),
+('kontrak_read', 'api', NOW(), NOW()),
+('kontrak_create', 'api', NOW(), NOW()),
+('kontrak_update', 'api', NOW(), NOW()),
+('kontrak_delete', 'api', NOW(), NOW()),
+('lapangan_read', 'api', NOW(), NOW()),
+('lapangan_create', 'api', NOW(), NOW()),
+('lapangan_update', 'api', NOW(), NOW()),
+('lapangan_delete', 'api', NOW(), NOW()),
+('pelaksanaan_read', 'api', NOW(), NOW()),
+('pelaksanaan_create', 'api', NOW(), NOW()),
+('pelaksanaan_update', 'api', NOW(), NOW()),
+('pelaksanaan_delete', 'api', NOW(), NOW()),
+('laporan_read', 'api', NOW(), NOW()),
+('laporan_create', 'api', NOW(), NOW()),
+('laporan_update', 'api', NOW(), NOW()),
+('laporan_delete', 'api', NOW(), NOW()),
+('laporan_verify', 'api', NOW(), NOW()),
+('absensi_read', 'api', NOW(), NOW()),
+('absensi_create', 'api', NOW(), NOW()),
+('absensi_update', 'api', NOW(), NOW()),
+('absensi_delete', 'api', NOW(), NOW()),
+('absensi_verify', 'api', NOW(), NOW()),
+('issue_read', 'api', NOW(), NOW()),
+('issue_create', 'api', NOW(), NOW()),
+('issue_update', 'api', NOW(), NOW()),
+('issue_delete', 'api', NOW(), NOW()),
+('issue_verify', 'api', NOW(), NOW()),
+('pembayaran_read', 'api', NOW(), NOW()),
+('pembayaran_create', 'api', NOW(), NOW()),
+('pembayaran_update', 'api', NOW(), NOW()),
+('pembayaran_delete', 'api', NOW(), NOW()),
+('user_read', 'api', NOW(), NOW()),
+('user_create', 'api', NOW(), NOW()),
+('user_update', 'api', NOW(), NOW()),
+('user_delete', 'api', NOW(), NOW()),
+('periode_read', 'api', NOW(), NOW()),
+('periode_create', 'api', NOW(), NOW()),
+('periode_update', 'api', NOW(), NOW()),
+('periode_delete', 'api', NOW(), NOW()),
+('jenis_bangunan_read', 'api', NOW(), NOW()),
+('jenis_bangunan_create', 'api', NOW(), NOW()),
+('jenis_bangunan_update', 'api', NOW(), NOW()),
+('jenis_bangunan_delete', 'api', NOW(), NOW()),
+('document_read', 'api', NOW(), NOW()),
+('document_create', 'api', NOW(), NOW()),
+('document_verify', 'api', NOW(), NOW()),
+('document_delete', 'api', NOW(), NOW())
+ON CONFLICT (name) DO NOTHING;
+
+-- Grant all permissions to SuperAdmin, Admin_ppk, admin roles
+INSERT INTO role_has_permissions (permission_id, role_id)
+SELECT p.id, r.id
+FROM permissions p
+CROSS JOIN roles r
+WHERE r.name IN ('SuperAdmin', 'Admin_ppk', 'admin_ppk', 'superadmin')
+ON CONFLICT (permission_id, role_id) DO NOTHING;
+
+-- Grant permissions for other roles
+INSERT INTO role_has_permissions (permission_id, role_id)
+SELECT p.id, r.id
+FROM permissions p
+CROSS JOIN roles r
+WHERE (r.name = 'Pengawas' AND p.name IN ('knmp_read', 'kontrak_read', 'lapangan_read', 'pelaksanaan_read', 'laporan_read', 'laporan_verify', 'absensi_read', 'absensi_verify', 'issue_read', 'issue_verify', 'document_read', 'document_verify'))
+   OR (r.name = 'Wakil PPK' AND p.name IN ('knmp_read', 'kontrak_read', 'lapangan_read', 'pelaksanaan_read', 'laporan_read', 'laporan_verify', 'absensi_read', 'absensi_verify', 'issue_read', 'issue_verify', 'pembayaran_read', 'document_read', 'document_verify'))
+   OR (r.name = 'PPK' AND p.name IN ('knmp_read', 'kontrak_read', 'lapangan_read', 'pelaksanaan_read', 'laporan_read', 'laporan_verify', 'absensi_read', 'absensi_verify', 'issue_read', 'issue_verify', 'pembayaran_read', 'document_read', 'document_verify'))
+   OR (r.name = 'Kontraktor' AND p.name IN ('knmp_read', 'kontrak_read', 'kontrak_create', 'kontrak_update', 'lapangan_read', 'lapangan_create', 'lapangan_update', 'pelaksanaan_read', 'pelaksanaan_create', 'pelaksanaan_update', 'laporan_read', 'laporan_create', 'laporan_update', 'absensi_read', 'absensi_create', 'issue_read', 'issue_create', 'pembayaran_read', 'document_read', 'document_create'))
+ON CONFLICT (permission_id, role_id) DO NOTHING;
+
+
 

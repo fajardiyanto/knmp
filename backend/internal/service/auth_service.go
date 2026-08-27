@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -52,6 +53,33 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	roles, _ := s.userRepo.GetUserRoles(ctx, user.ID)
 	permissions, _ := s.userRepo.GetUserPermissions(ctx, user.ID)
 	knmpIDs, _ := s.userRepo.GetUserKnmpIDs(ctx, user.ID)
+
+	isSuperOrAdmin := false
+	for _, r := range roles {
+		lower := strings.ToLower(r)
+		if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin" {
+			isSuperOrAdmin = true
+			break
+		}
+	}
+	if isSuperOrAdmin {
+		permissions = append(permissions,
+			"knmp_read", "knmp_create", "knmp_update", "knmp_delete",
+			"kontrak_read", "kontrak_create", "kontrak_update", "kontrak_delete",
+			"lapangan_read", "lapangan_create", "lapangan_update", "lapangan_delete",
+			"pelaksanaan_read", "pelaksanaan_create", "pelaksanaan_update", "pelaksanaan_delete",
+			"laporan_read", "laporan_create", "laporan_update", "laporan_delete", "laporan_verify",
+			"absensi_read", "absensi_create", "absensi_update", "absensi_delete", "absensi_verify",
+			"issue_read", "issue_create", "issue_update", "issue_delete", "issue_verify",
+			"pembayaran_read", "pembayaran_create", "pembayaran_update", "pembayaran_delete",
+			"user_read", "user_create", "user_update", "user_delete",
+			"periode_read", "periode_create", "periode_update", "periode_delete",
+			"jenis_bangunan_read", "jenis_bangunan_create", "jenis_bangunan_update", "jenis_bangunan_delete",
+			"document_read", "document_create", "document_verify", "document_delete",
+			"*",
+		)
+	}
+
 	user.Roles = roles
 	user.Permissions = permissions
 	user.KnmpIDs = knmpIDs
@@ -87,6 +115,33 @@ func (s *AuthService) GetUserProfile(ctx context.Context, userID int64) (*domain
 	roles, _ := s.userRepo.GetUserRoles(ctx, user.ID)
 	permissions, _ := s.userRepo.GetUserPermissions(ctx, user.ID)
 	knmpIDs, _ := s.userRepo.GetUserKnmpIDs(ctx, user.ID)
+
+	isSuperOrAdmin := false
+	for _, r := range roles {
+		lower := strings.ToLower(r)
+		if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin" {
+			isSuperOrAdmin = true
+			break
+		}
+	}
+	if isSuperOrAdmin {
+		permissions = append(permissions,
+			"knmp_read", "knmp_create", "knmp_update", "knmp_delete",
+			"kontrak_read", "kontrak_create", "kontrak_update", "kontrak_delete",
+			"lapangan_read", "lapangan_create", "lapangan_update", "lapangan_delete",
+			"pelaksanaan_read", "pelaksanaan_create", "pelaksanaan_update", "pelaksanaan_delete",
+			"laporan_read", "laporan_create", "laporan_update", "laporan_delete", "laporan_verify",
+			"absensi_read", "absensi_create", "absensi_update", "absensi_delete", "absensi_verify",
+			"issue_read", "issue_create", "issue_update", "issue_delete", "issue_verify",
+			"pembayaran_read", "pembayaran_create", "pembayaran_update", "pembayaran_delete",
+			"user_read", "user_create", "user_update", "user_delete",
+			"periode_read", "periode_create", "periode_update", "periode_delete",
+			"jenis_bangunan_read", "jenis_bangunan_create", "jenis_bangunan_update", "jenis_bangunan_delete",
+			"document_read", "document_create", "document_verify", "document_delete",
+			"*",
+		)
+	}
+
 	user.Roles = roles
 	user.Permissions = permissions
 	user.KnmpIDs = knmpIDs

@@ -100,17 +100,13 @@ func WSAuthMiddleware(jwtSecret string) fiber.Handler {
 
 func RequirePermission(requiredPerms ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userPerms, ok := c.Locals(CtxUserPermsKey).([]string)
-		if !ok {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "Akses ditolak: Izin tidak ditemukan",
-			})
-		}
+		userPerms, _ := c.Locals(CtxUserPermsKey).([]string)
 
-		// Superadmin bypass
+		// Superadmin & Admin bypass (case-insensitive)
 		userRoles, _ := c.Locals(CtxUserRolesKey).([]string)
 		for _, r := range userRoles {
-			if r == "superadmin" {
+			lower := strings.ToLower(strings.TrimSpace(r))
+			if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin" {
 				return c.Next()
 			}
 		}
@@ -119,10 +115,11 @@ func RequirePermission(requiredPerms ...string) fiber.Handler {
 		permMap := make(map[string]bool)
 		for _, p := range userPerms {
 			permMap[p] = true
+			permMap[strings.ToLower(p)] = true
 		}
 
 		for _, req := range requiredPerms {
-			if permMap[req] {
+			if permMap[req] || permMap[strings.ToLower(req)] || permMap["*"] {
 				return c.Next()
 			}
 		}
@@ -143,11 +140,12 @@ func RequireRole(requiredRoles ...string) fiber.Handler {
 		}
 
 		for _, ur := range userRoles {
-			if ur == "superadmin" {
+			lower := strings.ToLower(strings.TrimSpace(ur))
+			if lower == "superadmin" || lower == "super admin" {
 				return c.Next()
 			}
 			for _, rr := range requiredRoles {
-				if ur == rr {
+				if strings.EqualFold(ur, rr) {
 					return c.Next()
 				}
 			}
