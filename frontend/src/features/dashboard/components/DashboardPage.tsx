@@ -25,6 +25,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../../../lib/api-client";
 import { Card } from "../../../components/ui/Card";
 import { formatCurrency } from "../../../lib/utils";
+import { useTheme } from "../../../context/ThemeContext";
 
 Chart.register(...registerables);
 
@@ -66,6 +67,9 @@ interface WidgetData {
 }
 
 export const DashboardPage: React.FC = () => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
@@ -262,20 +266,18 @@ export const DashboardPage: React.FC = () => {
             </div>
           `;
 
-          L.marker([lat, lng], { icon })
-            .addTo(map)
-            .bindPopup(popupContent, {
-              maxWidth: 320,
-            });
+          const marker = L.marker([lat, lng], { icon }).bindPopup(popupContent, {
+            maxWidth: 280,
+            className: "custom-leaflet-popup",
+          });
+
+          marker.addTo(map);
         }
       });
 
       if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 8 });
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 8 });
       }
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 200);
     }
   }, [mapPoints, activeFilter]);
 
@@ -289,6 +291,10 @@ export const DashboardPage: React.FC = () => {
 
     const ctx = lineChartRef.current.getContext("2d");
     if (!ctx) return;
+
+    const gridColor = isDark ? "#1e293b" : "#f1f5f9";
+    const tickColor = isDark ? "#94a3b8" : "#64748b";
+    const legendColor = isDark ? "#cbd5e1" : "#475569";
 
     lineChartInstance.current = new Chart(ctx, {
       type: "line",
@@ -337,7 +343,7 @@ export const DashboardPage: React.FC = () => {
                 family: "Inter, sans-serif",
                 weight: "normal",
               },
-              color: "#475569",
+              color: legendColor,
             },
           },
           tooltip: {
@@ -350,16 +356,16 @@ export const DashboardPage: React.FC = () => {
           x: {
             grid: { display: false },
             ticks: {
-              color: "#94a3b8",
+              color: tickColor,
               font: { size: 11, family: "Inter, sans-serif" },
             },
           },
           y: {
             min: 0,
             max: 100,
-            grid: { color: "#f1f5f9" },
+            grid: { color: gridColor },
             ticks: {
-              color: "#94a3b8",
+              color: tickColor,
               stepSize: 20,
               font: { size: 11, family: "Inter, sans-serif" },
               callback: (value) => `${value}%`,
@@ -372,7 +378,7 @@ export const DashboardPage: React.FC = () => {
     return () => {
       lineChartInstance.current?.destroy();
     };
-  }, []);
+  }, [isDark]);
 
   // 3. Initialize Chart.js Donut Chart
   useEffect(() => {
@@ -394,6 +400,7 @@ export const DashboardPage: React.FC = () => {
     ];
 
     const allZero = dataValues.every((v) => v === 0);
+    const borderColor = isDark ? "#0f172a" : "#ffffff";
 
     donutChartInstance.current = new Chart(ctx, {
       type: "doughnut",
@@ -406,7 +413,7 @@ export const DashboardPage: React.FC = () => {
               ? ["#10b981"]
               : ["#10b981", "#f59e0b", "#f43f5e", "#3b82f6", "#94a3b8"],
             borderWidth: 3,
-            borderColor: "#ffffff",
+            borderColor: borderColor,
             hoverOffset: 4,
           },
         ],
@@ -427,72 +434,72 @@ export const DashboardPage: React.FC = () => {
     return () => {
       donutChartInstance.current?.destroy();
     };
-  }, [onTrack, perluPerhatian, kritis, pemeliharaan, belumMulai]);
+  }, [onTrack, perluPerhatian, kritis, pemeliharaan, belumMulai, isDark]);
 
   const statCards = [
     {
       title: "Total Lokasi",
       value: `${totalKnmps} Lokasi`,
       badge: "Tersedia",
-      badgeClass: "bg-blue-50 text-blue-600 border border-blue-200",
+      badgeClass: "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60",
       icon: MapPin,
-      iconBg: "bg-blue-50 text-blue-600",
+      iconBg: "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400",
     },
     {
       title: "On Track",
       value: `${onTrack} Lokasi`,
       badge: "Tersedia",
-      badgeClass: "bg-emerald-50 text-emerald-600 border border-emerald-200",
+      badgeClass: "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60",
       icon: CheckCircle2,
-      iconBg: "bg-emerald-50 text-emerald-600",
+      iconBg: "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400",
     },
     {
       title: "Perlu Perhatian",
       value: `${perluPerhatian} Lokasi`,
       badge: "Perhatian",
-      badgeClass: "bg-amber-50 text-amber-600 border border-amber-200",
+      badgeClass: "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60",
       icon: AlertTriangle,
-      iconBg: "bg-amber-50 text-amber-600",
+      iconBg: "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400",
     },
     {
       title: "Kritis",
       value: `${kritis} Lokasi`,
       badge: "Kritis",
-      badgeClass: "bg-rose-50 text-rose-600 border border-rose-200",
+      badgeClass: "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60",
       icon: Clock,
-      iconBg: "bg-rose-50 text-rose-600",
+      iconBg: "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400",
     },
     {
       title: "Total Pelaksanaan",
       value: `${totalPelaksanaan} Lokasi`,
       badge: "Tersedia",
-      badgeClass: "bg-purple-50 text-purple-600 border border-purple-200",
+      badgeClass: "bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60",
       icon: Layers,
-      iconBg: "bg-purple-50 text-purple-600",
+      iconBg: "bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400",
     },
     {
       title: "Jumlah Tenaga Kerja",
       value: `${totalWorkers.toLocaleString("id-ID")} Pekerja`,
       badge: "Tersedia",
-      badgeClass: "bg-blue-50 text-blue-600 border border-blue-200",
+      badgeClass: "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60",
       icon: Users,
-      iconBg: "bg-blue-50 text-blue-600",
+      iconBg: "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400",
     },
     {
       title: "Tenaga Kerja Hari Ini",
       value: `${todayWorkers.toLocaleString("id-ID")} Pekerja`,
       badge: "Tersedia",
-      badgeClass: "bg-emerald-50 text-emerald-600 border border-emerald-200",
+      badgeClass: "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60",
       icon: UserCheck,
-      iconBg: "bg-emerald-50 text-emerald-600",
+      iconBg: "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400",
     },
     {
       title: "Total Issue",
       value: totalIssues.toString(),
       badge: "Tersedia",
-      badgeClass: "bg-rose-50 text-rose-600 border border-rose-200",
+      badgeClass: "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60",
       icon: AlertOctagon,
-      iconBg: "bg-rose-50 text-rose-600",
+      iconBg: "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400",
     },
   ];
 
@@ -509,12 +516,12 @@ export const DashboardPage: React.FC = () => {
   const maxApproval = Math.max(approval.total_docs, 1);
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-6 w-full transition-colors duration-200">
 
       {/* 1. Top Section: Full-Width GIS Satellite Map */}
-      <Card className="p-0 overflow-hidden border border-slate-200/90 rounded-2xl shadow-xs">
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-white border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <h3 className="text-base sm:text-lg font-medium text-slate-800 tracking-wide">
+      <Card className="p-0 overflow-hidden border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs bg-white dark:bg-slate-900">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 tracking-wide">
             Peta Sebaran Lokasi KNMP
           </h3>
 
@@ -522,17 +529,17 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveFilter("all")}
-              className="px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium bg-[#3b82f6] text-white rounded-xl hover:bg-[#2563eb] transition-all shadow-xs shrink-0 whitespace-nowrap cursor-pointer"
+              className="px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold bg-[#3b82f6] text-white rounded-xl hover:bg-[#2563eb] transition-all shadow-xs shrink-0 whitespace-nowrap cursor-pointer"
             >
               Bantuan
             </button>
             <button
               type="button"
               onClick={() => setActiveFilter(activeFilter === ">75%" ? "all" : ">75%")}
-              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium border rounded-xl flex items-center gap-1.5 sm:gap-2 transition-colors shadow-2xs shrink-0 whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-semibold border rounded-xl flex items-center gap-1.5 sm:gap-2 transition-colors shadow-2xs shrink-0 whitespace-nowrap cursor-pointer ${
                 activeFilter === ">75%"
-                  ? "bg-emerald-50 border-emerald-400 text-emerald-700 ring-2 ring-emerald-200"
-                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                  ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-200 dark:ring-emerald-800/40"
+                  : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750"
               }`}
             >
               <svg width="13" height="16" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
@@ -543,10 +550,10 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveFilter(activeFilter === "<75%" ? "all" : "<75%")}
-              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium border rounded-xl flex items-center gap-1.5 sm:gap-2 transition-colors shadow-2xs shrink-0 whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-semibold border rounded-xl flex items-center gap-1.5 sm:gap-2 transition-colors shadow-2xs shrink-0 whitespace-nowrap cursor-pointer ${
                 activeFilter === "<75%"
-                  ? "bg-amber-50 border-amber-400 text-amber-700 ring-2 ring-amber-200"
-                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                  ? "bg-amber-50 dark:bg-amber-950/60 border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-300 ring-2 ring-amber-200 dark:ring-amber-800/40"
+                  : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750"
               }`}
             >
               <svg width="13" height="16" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
@@ -557,10 +564,10 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveFilter(activeFilter === "<50%" ? "all" : "<50%")}
-              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium border rounded-xl flex items-center gap-1.5 sm:gap-2 transition-colors shadow-2xs shrink-0 whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-semibold border rounded-xl flex items-center gap-1.5 sm:gap-2 transition-colors shadow-2xs shrink-0 whitespace-nowrap cursor-pointer ${
                 activeFilter === "<50%"
-                  ? "bg-rose-50 border-rose-400 text-rose-700 ring-2 ring-rose-200"
-                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                  ? "bg-rose-50 dark:bg-rose-950/60 border-rose-400 dark:border-rose-600 text-rose-700 dark:text-rose-300 ring-2 ring-rose-200 dark:ring-rose-800/40"
+                  : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750"
               }`}
             >
               <svg width="13" height="16" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
@@ -579,11 +586,11 @@ export const DashboardPage: React.FC = () => {
         {statCards.map((card, idx) => (
           <div
             key={idx}
-            className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-sm transition-shadow"
+            className="bg-white dark:bg-slate-900 p-5 lg:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center justify-between hover:shadow-sm transition-all"
           >
             <div className="space-y-2">
-              <span className="text-sm font-normal text-slate-500">{card.title}</span>
-              <h4 className="text-2xl font-normal text-slate-800 leading-none">{card.value}</h4>
+              <span className="text-sm font-normal text-slate-500 dark:text-slate-400">{card.title}</span>
+              <h4 className="text-2xl font-normal text-slate-800 dark:text-slate-100 leading-none">{card.value}</h4>
               <div>
                 <span className={`inline-block px-3 py-0.5 rounded-full text-xs font-normal ${card.badgeClass}`}>
                   {card.badge}
@@ -601,8 +608,8 @@ export const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Left: Dual Line Chart (Col 8) */}
-        <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
-          <h3 className="text-lg font-medium text-slate-800 mb-2">Chart Progres Fisik & Keuangan</h3>
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Chart Progres Fisik & Keuangan</h3>
 
           <div className="h-[300px] w-full relative">
             <canvas ref={lineChartRef} />
@@ -610,16 +617,16 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Right: Status Lokasi Donut Chart (Col 4) */}
-        <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
-          <h3 className="text-lg font-medium text-slate-800">Status Lokasi</h3>
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Status Lokasi</h3>
 
           <div className="flex flex-col sm:flex-row items-center justify-around gap-6 py-4">
             <div className="relative w-44 h-44 flex items-center justify-center shrink-0">
               <canvas ref={donutChartRef} />
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                <span className="text-xs text-slate-400 uppercase font-medium tracking-wider">Total</span>
-                <span className="text-3xl font-normal text-slate-800 leading-tight">{totalKnmps}</span>
-                <span className="text-xs text-slate-500 font-normal">Lokasi</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500 uppercase font-semibold tracking-wider">Total</span>
+                <span className="text-3xl font-bold text-slate-800 dark:text-slate-100 leading-tight">{totalKnmps}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Lokasi</span>
               </div>
             </div>
 
@@ -627,52 +634,52 @@ export const DashboardPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-emerald-500 shrink-0" />
-                  <span className="text-slate-600 font-normal">On Track</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-normal">On Track</span>
                 </div>
-                <span className="font-medium text-slate-800">
-                  {onTrack} <span className="font-normal text-slate-400">({totalKnmps > 0 ? ((onTrack / totalKnmps) * 100).toFixed(1) : 0}%)</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  {onTrack} <span className="font-normal text-slate-400 dark:text-slate-500">({totalKnmps > 0 ? ((onTrack / totalKnmps) * 100).toFixed(1) : 0}%)</span>
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-amber-500 shrink-0" />
-                  <span className="text-slate-600 font-normal">Perlu Perhatian</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-normal">Perlu Perhatian</span>
                 </div>
-                <span className="font-medium text-slate-800">
-                  {perluPerhatian} <span className="font-normal text-slate-400">({totalKnmps > 0 ? ((perluPerhatian / totalKnmps) * 100).toFixed(1) : 0}%)</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  {perluPerhatian} <span className="font-normal text-slate-400 dark:text-slate-500">({totalKnmps > 0 ? ((perluPerhatian / totalKnmps) * 100).toFixed(1) : 0}%)</span>
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-rose-500 shrink-0" />
-                  <span className="text-slate-600 font-normal">Kritis</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-normal">Kritis</span>
                 </div>
-                <span className="font-medium text-slate-800">
-                  {kritis} <span className="font-normal text-slate-400">({totalKnmps > 0 ? ((kritis / totalKnmps) * 100).toFixed(1) : 0}%)</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  {kritis} <span className="font-normal text-slate-400 dark:text-slate-500">({totalKnmps > 0 ? ((kritis / totalKnmps) * 100).toFixed(1) : 0}%)</span>
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-blue-500 shrink-0" />
-                  <span className="text-slate-600 font-normal">Pemeliharaan</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-normal">Pemeliharaan</span>
                 </div>
-                <span className="font-medium text-slate-800">
-                  {pemeliharaan} <span className="font-normal text-slate-400">({totalKnmps > 0 ? ((pemeliharaan / totalKnmps) * 100).toFixed(1) : 0}%)</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  {pemeliharaan} <span className="font-normal text-slate-400 dark:text-slate-500">({totalKnmps > 0 ? ((pemeliharaan / totalKnmps) * 100).toFixed(1) : 0}%)</span>
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-slate-400 shrink-0" />
-                  <span className="text-slate-600 font-normal">Belum Mulai</span>
+                  <span className="w-3 h-3 rounded-full bg-slate-400 dark:bg-slate-600 shrink-0" />
+                  <span className="text-slate-600 dark:text-slate-300 font-normal">Belum Mulai</span>
                 </div>
-                <span className="font-medium text-slate-800">
-                  {belumMulai} <span className="font-normal text-slate-400">({totalKnmps > 0 ? ((belumMulai / totalKnmps) * 100).toFixed(1) : 0}%)</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  {belumMulai} <span className="font-normal text-slate-400 dark:text-slate-500">({totalKnmps > 0 ? ((belumMulai / totalKnmps) * 100).toFixed(1) : 0}%)</span>
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="pt-2 text-center text-xs text-slate-400 font-medium border-t border-slate-100">
+          <div className="pt-2 text-center text-xs text-slate-400 dark:text-slate-500 font-medium border-t border-slate-100 dark:border-slate-800">
             Distribusi Realisasi Status KNMP
           </div>
         </div>
@@ -683,35 +690,35 @@ export const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
 
         {/* Card 1: Serapan Keuangan */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
-          <h3 className="text-lg font-medium text-slate-800">Serapan Keuangan</h3>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4 transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Serapan Keuangan</h3>
 
           <div className="space-y-4 pt-1">
             <div className="flex justify-between text-sm font-normal">
-              <span className="text-slate-500">Pagu Anggaran</span>
-              <span className="font-medium text-slate-800">{formatCurrency(finance.pagu)}</span>
+              <span className="text-slate-500 dark:text-slate-400">Pagu Anggaran</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(finance.pagu)}</span>
             </div>
             <div className="flex justify-between text-sm font-normal">
-              <span className="text-slate-500">Realisasi</span>
-              <span className="font-medium text-slate-800">{formatCurrency(finance.realisasi)}</span>
+              <span className="text-slate-500 dark:text-slate-400">Realisasi</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(finance.realisasi)}</span>
             </div>
 
             <div className="pt-2">
               <div className="flex justify-between text-sm mb-1.5 font-normal">
-                <span className="text-slate-700">Persentase</span>
-                <span className="text-blue-600 font-mono text-sm">{finance.percentage.toFixed(1)}%</span>
+                <span className="text-slate-700 dark:text-slate-300">Persentase</span>
+                <span className="text-blue-600 dark:text-blue-400 font-mono font-semibold text-sm">{finance.percentage.toFixed(1)}%</span>
               </div>
-              <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div className="h-full bg-[#0d6efd] rounded-full transition-all" style={{ width: `${Math.min(finance.percentage, 100)}%` }} />
               </div>
             </div>
 
             <div>
               <div className="flex justify-between text-sm mb-1.5 font-normal">
-                <span className="text-slate-700">Sisa Anggaran</span>
-                <span className="text-rose-600 font-mono text-sm">{finance.remaining_percentage.toFixed(1)}%</span>
+                <span className="text-slate-700 dark:text-slate-300">Sisa Anggaran</span>
+                <span className="text-rose-600 dark:text-rose-400 font-mono font-semibold text-sm">{finance.remaining_percentage.toFixed(1)}%</span>
               </div>
-              <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div className="h-full bg-rose-500 rounded-full transition-all" style={{ width: `${Math.min(finance.remaining_percentage, 100)}%` }} />
               </div>
             </div>
@@ -719,103 +726,103 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Card 2: Deviasi Proyek */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-3.5">
-          <h3 className="text-lg font-medium text-slate-800">Deviasi Proyek</h3>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3.5 transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Deviasi Proyek</h3>
 
           {/* Yellow Box */}
-          <div className="p-4 bg-amber-50/80 border border-amber-200/70 rounded-xl flex items-center justify-between">
+          <div className="p-4 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-900/60 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 shadow-xs">
+              <div className="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-300 shadow-xs">
                 <Building className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xs text-slate-500 font-normal">Project</span>
-                <h4 className="text-xl font-medium text-slate-800 leading-tight">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Project</span>
+                <h4 className="text-xl font-bold text-slate-800 dark:text-slate-100 leading-tight">
                   {widgetData?.deviation_10 || 0}
                 </h4>
-                <p className="text-xs text-slate-400 font-normal">Deviasi &gt; 10%</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-normal">Deviasi &gt; 10%</p>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
               -10.00%
             </span>
           </div>
 
           {/* Red Box */}
-          <div className="p-4 bg-rose-50/80 border border-rose-200/70 rounded-xl flex items-center justify-between">
+          <div className="p-4 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/70 dark:border-rose-900/60 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shadow-xs">
+              <div className="w-11 h-11 rounded-xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center text-rose-600 dark:text-rose-300 shadow-xs">
                 <Building className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xs text-slate-500 font-normal">Project</span>
-                <h4 className="text-xl font-medium text-slate-800 leading-tight">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Project</span>
+                <h4 className="text-xl font-bold text-slate-800 dark:text-slate-100 leading-tight">
                   {widgetData?.deviation_20 || 0}
                 </h4>
-                <p className="text-xs text-slate-400 font-normal">Deviasi &gt; 20%</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-normal">Deviasi &gt; 20%</p>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-800 border border-rose-300">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border border-rose-300 dark:border-rose-700">
               -20.00%
             </span>
           </div>
         </div>
 
         {/* Card 3: Verifikasi Program Approval */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
-          <h3 className="text-lg font-medium text-slate-800">Verifikasi Program Approval</h3>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4 transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Verifikasi Program Approval</h3>
 
           <div className="space-y-3 pt-1">
             {/* Pengawas */}
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-9 bg-slate-100 rounded-xl overflow-hidden flex items-center">
+              <div className="flex-1 h-9 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden flex items-center">
                 <div
-                  className="h-full bg-[#7367F0] text-white text-xs font-normal px-3.5 flex items-center transition-all"
+                  className="h-full bg-[#7367F0] text-white text-xs font-semibold px-3.5 flex items-center transition-all"
                   style={{ width: `${Math.max((approval.pengawas / maxApproval) * 100, 20)}%` }}
                 >
                   Pengawas
                 </div>
               </div>
-              <span className="font-medium text-sm text-slate-700 w-8 text-right">{approval.pengawas}</span>
+              <span className="font-semibold text-sm text-slate-700 dark:text-slate-200 w-8 text-right">{approval.pengawas}</span>
             </div>
 
             {/* Tim Validasi */}
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-9 bg-slate-100 rounded-xl overflow-hidden flex items-center">
+              <div className="flex-1 h-9 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden flex items-center">
                 <div
-                  className="h-full bg-[#28C76F] text-white text-xs font-normal px-3.5 flex items-center transition-all"
+                  className="h-full bg-[#28C76F] text-white text-xs font-semibold px-3.5 flex items-center transition-all"
                   style={{ width: `${Math.max((approval.tim_validasi / maxApproval) * 100, 20)}%` }}
                 >
                   Tim Validasi
                 </div>
               </div>
-              <span className="font-medium text-sm text-slate-700 w-8 text-right">{approval.tim_validasi}</span>
+              <span className="font-semibold text-sm text-slate-700 dark:text-slate-200 w-8 text-right">{approval.tim_validasi}</span>
             </div>
 
             {/* PPK */}
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-9 bg-slate-100 rounded-xl overflow-hidden flex items-center">
+              <div className="flex-1 h-9 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden flex items-center">
                 <div
-                  className="h-full bg-[#FF9F43] text-white text-xs font-normal px-3.5 flex items-center transition-all"
+                  className="h-full bg-[#FF9F43] text-white text-xs font-semibold px-3.5 flex items-center transition-all"
                   style={{ width: `${Math.max((approval.ppk / maxApproval) * 100, 20)}%` }}
                 >
                   PPK
                 </div>
               </div>
-              <span className="font-medium text-sm text-slate-700 w-8 text-right">{approval.ppk}</span>
+              <span className="font-semibold text-sm text-slate-700 dark:text-slate-200 w-8 text-right">{approval.ppk}</span>
             </div>
 
             {/* Total Upload */}
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-9 bg-slate-100 rounded-xl overflow-hidden flex items-center">
+              <div className="flex-1 h-9 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden flex items-center">
                 <div
-                  className="h-full bg-[#00CFE8] text-white text-xs font-normal px-3.5 flex items-center transition-all"
+                  className="h-full bg-[#00CFE8] text-white text-xs font-semibold px-3.5 flex items-center transition-all"
                   style={{ width: "100%" }}
                 >
                   Total Upload
                 </div>
               </div>
-              <span className="font-medium text-sm text-slate-700 w-8 text-right">{approval.total_docs}</span>
+              <span className="font-semibold text-sm text-slate-700 dark:text-slate-200 w-8 text-right">{approval.total_docs}</span>
             </div>
           </div>
         </div>
@@ -823,8 +830,8 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* 5. Tahapan Proyeksi KNMP */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-5">
-        <h3 className="text-lg font-medium text-slate-800">Tahapan Proyeksi KNMP</h3>
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-5 transition-colors duration-200">
+        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Tahapan Proyeksi KNMP</h3>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
           {stageList.map((stage) => {
@@ -832,17 +839,17 @@ export const DashboardPage: React.FC = () => {
             return (
               <div
                 key={stage.num}
-                className="p-4 bg-slate-50/80 border border-slate-100 rounded-2xl flex flex-col items-center text-center space-y-3.5 hover:bg-slate-100 transition-colors"
+                className="p-4 bg-slate-50/80 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 rounded-2xl flex flex-col items-center text-center space-y-3.5 hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors"
               >
-                <span className="text-sm font-medium text-slate-700 truncate w-full">
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate w-full">
                   {stage.num}. {stage.name}
                 </span>
-                <div className={`w-18 h-18 rounded-full ${stage.bg} ${stage.color} flex items-center justify-center shadow-xs transition-transform hover:scale-105`}>
+                <div className={`w-18 h-18 rounded-full ${stage.bg} dark:bg-slate-700/80 ${stage.color} flex items-center justify-center shadow-xs transition-transform hover:scale-105`}>
                   <stage.icon className="w-10 h-10" strokeWidth={2} />
                 </div>
                 <div>
-                  <h4 className="text-2xl font-normal text-slate-800 leading-tight">{stage.count}</h4>
-                  <p className="text-xs text-slate-500 font-normal">{pct}%</p>
+                  <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-tight">{stage.count}</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-normal">{pct}%</p>
                 </div>
               </div>
             );
@@ -850,7 +857,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         <div className="pt-3 text-center">
-          <p className="text-base font-medium text-slate-700">Total Lokasi {totalKnmps}</p>
+          <p className="text-base font-semibold text-slate-700 dark:text-slate-300">Total Lokasi {totalKnmps}</p>
         </div>
       </div>
 

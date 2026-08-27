@@ -179,7 +179,7 @@ export const KnmpPage: React.FC = () => {
     <div className="space-y-7 w-full font-sans">
       
       {/* 1. Top Action Row: Search & Cascading Dropdown Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs transition-colors duration-200">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap items-center gap-3 flex-1">
           {/* Search Input */}
           <div className="relative w-full sm:min-w-[180px] lg:max-w-[220px]">
@@ -191,7 +191,7 @@ export const KnmpPage: React.FC = () => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-9 pr-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#0d6efd]/20 focus:border-[#0d6efd] outline-none transition-all placeholder:text-slate-400"
+              className="w-full pl-9 pr-3.5 py-2.5 text-[13.5px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#0d6efd]/20 focus:border-[#0d6efd] outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-800 dark:text-slate-100"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
           </div>
@@ -200,7 +200,7 @@ export const KnmpPage: React.FC = () => {
           <select
             value={selectedRegional}
             onChange={(e) => setSelectedRegional(e.target.value)}
-            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[130px]"
+            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-700 dark:text-slate-200 sm:min-w-[130px]"
           >
             <option value="">Regional</option>
             <option value="Sumatera">Sumatera</option>
@@ -213,7 +213,7 @@ export const KnmpPage: React.FC = () => {
           <select
             value={selectedProvinsi}
             onChange={(e) => setSelectedProvinsi(e.target.value)}
-            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[140px]"
+            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-700 dark:text-slate-200 sm:min-w-[140px]"
           >
             <option value="">Provinsi</option>
             <option value="SUMATERA UTARA">SUMATERA UTARA</option>
@@ -229,7 +229,7 @@ export const KnmpPage: React.FC = () => {
           <select
             value={selectedKabupaten}
             onChange={(e) => setSelectedKabupaten(e.target.value)}
-            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[150px]"
+            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-700 dark:text-slate-200 sm:min-w-[150px]"
           >
             <option value="">Kabupaten / Kota</option>
             <option value="KABUPATEN DELI SERDANG">KAB. DELI SERDANG</option>
@@ -244,7 +244,7 @@ export const KnmpPage: React.FC = () => {
           <select
             value={selectedKecamatan}
             onChange={(e) => setSelectedKecamatan(e.target.value)}
-            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[130px]"
+            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-700 dark:text-slate-200 sm:min-w-[130px]"
           >
             <option value="">Kecamatan</option>
           </select>
@@ -253,7 +253,7 @@ export const KnmpPage: React.FC = () => {
           <select
             value={selectedKelurahan}
             onChange={(e) => setSelectedKelurahan(e.target.value)}
-            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[140px]"
+            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-700 dark:text-slate-200 sm:min-w-[140px]"
           >
             <option value="">Kelurahan / Desa</option>
           </select>
@@ -264,14 +264,14 @@ export const KnmpPage: React.FC = () => {
           <button
             type="button"
             onClick={handleReset}
-            className="flex-1 sm:flex-none px-3.5 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            className="flex-1 sm:flex-none px-3.5 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-98"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Reset</span>
           </button>
           <button
             type="button"
-            className="flex-1 sm:flex-none px-3.5 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            className="flex-1 sm:flex-none px-3.5 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-98"
           >
             <Upload className="w-4 h-4" />
             <span>Import</span>
@@ -279,7 +279,7 @@ export const KnmpPage: React.FC = () => {
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="w-full sm:w-auto px-4 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-98"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah KNMP</span>
@@ -291,45 +291,45 @@ export const KnmpPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         
         {/* On Track */}
-        <div className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 lg:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center justify-between transition-colors duration-200">
           <div className="space-y-1.5">
-            <span className="text-sm font-medium text-slate-500">On Track</span>
-            <h4 className="text-2xl lg:text-3xl font-extrabold text-slate-900 leading-tight">{onTrackCount} Lokasi</h4>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">On Track</span>
+            <h4 className="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-slate-100 leading-tight">{onTrackCount} Lokasi</h4>
           </div>
-          <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+          <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-7 h-7" />
           </div>
         </div>
 
         {/* Perlu Perhatian */}
-        <div className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 lg:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center justify-between transition-colors duration-200">
           <div className="space-y-1.5">
-            <span className="text-sm font-medium text-slate-500">Perlu Perhatian</span>
-            <h4 className="text-2xl lg:text-3xl font-extrabold text-slate-900 leading-tight">{perluPerhatianCount} Lokasi</h4>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Perlu Perhatian</span>
+            <h4 className="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-slate-100 leading-tight">{perluPerhatianCount} Lokasi</h4>
           </div>
-          <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+          <div className="w-14 h-14 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-7 h-7" />
           </div>
         </div>
 
         {/* Kritis */}
-        <div className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 lg:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center justify-between transition-colors duration-200">
           <div className="space-y-1.5">
-            <span className="text-sm font-medium text-slate-500">Kritis</span>
-            <h4 className="text-2xl lg:text-3xl font-extrabold text-slate-900 leading-tight">{kritisCount} Lokasi</h4>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Kritis</span>
+            <h4 className="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-slate-100 leading-tight">{kritisCount} Lokasi</h4>
           </div>
-          <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+          <div className="w-14 h-14 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
             <AlertOctagon className="w-7 h-7" />
           </div>
         </div>
 
         {/* Pemeliharaan */}
-        <div className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 lg:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center justify-between transition-colors duration-200">
           <div className="space-y-1.5">
-            <span className="text-sm font-medium text-slate-500">Pemeliharaan</span>
-            <h4 className="text-2xl lg:text-3xl font-extrabold text-slate-900 leading-tight">{pemeliharaanCount} Lokasi</h4>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Pemeliharaan</span>
+            <h4 className="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-slate-100 leading-tight">{pemeliharaanCount} Lokasi</h4>
           </div>
-          <div className="w-14 h-14 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+          <div className="w-14 h-14 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
             <Wrench className="w-7 h-7" />
           </div>
         </div>
@@ -337,18 +337,18 @@ export const KnmpPage: React.FC = () => {
       </div>
 
       {/* 3. Per Page Selector & Data Table Card */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden transition-colors duration-200">
         
         {/* Top Controls */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
+        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 font-medium">
             <select
               value={perPage}
               onChange={(e) => {
                 setPerPage(Number(e.target.value));
                 setPage(1);
               }}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold text-slate-700"
+              className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-sm font-bold text-slate-700 dark:text-slate-200"
             >
               <option value="10">10</option>
               <option value="25">25</option>
@@ -360,8 +360,8 @@ export const KnmpPage: React.FC = () => {
 
         {/* Table View */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-50/80 border-b border-slate-200/90 text-xs font-bold text-slate-500 uppercase tracking-wider">
+          <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/90 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               <tr>
                 <th className="py-4 px-4 text-center w-14">No</th>
                 <th className="py-4 px-5">Nama KNMP</th>
@@ -377,26 +377,26 @@ export const KnmpPage: React.FC = () => {
                 <th className="py-4 px-5 text-center w-28">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {isLoading ? (
                 <tr>
-                  <td colSpan={12} className="py-12 text-center text-sm text-slate-400">
+                  <td colSpan={12} className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">
                     Memuat data KNMP...
                   </td>
                 </tr>
               ) : currentData.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="py-12 text-center text-sm text-slate-400">
+                  <td colSpan={12} className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">
                     Tidak ada data KNMP ditemukan
                   </td>
                 </tr>
               ) : (
                 currentData.map((item, idx) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-4 px-4 text-center font-normal text-slate-500 text-[14px]">
+                  <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
+                    <td className="py-4 px-4 text-center font-normal text-slate-500 dark:text-slate-400 text-[14px]">
                       {startIndex + idx + 1}
                     </td>
-                    <td className="py-4 px-5 font-normal text-slate-800 text-[14.5px]">
+                    <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-100 text-[14.5px]">
                       {item.name}
                     </td>
                     <td className="py-4 px-5 text-[13.5px]">{item.regional_name || "Sumatera"}</td>
@@ -405,10 +405,10 @@ export const KnmpPage: React.FC = () => {
                     <td className="py-4 px-5 text-[13.5px] capitalize">{item.jenis_knmp || "Penyangga"}</td>
                     <td className="py-4 px-4 text-[13.5px]">{item.district_name || "-"}</td>
                     <td className="py-4 px-4 text-[13.5px]">{item.sub_district_name || "-"}</td>
-                    <td className="py-4 px-4 font-mono text-xs text-slate-600">{item.lat || "-"}</td>
-                    <td className="py-4 px-4 font-mono text-xs text-slate-600">{item.long || "-"}</td>
+                    <td className="py-4 px-4 font-mono text-xs text-slate-600 dark:text-slate-400">{item.lat || "-"}</td>
+                    <td className="py-4 px-4 font-mono text-xs text-slate-600 dark:text-slate-400">{item.long || "-"}</td>
                     <td className="py-4 px-4 text-center">
-                      <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                         On Track
                       </span>
                     </td>
@@ -417,7 +417,7 @@ export const KnmpPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(item)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-[#0d6efd] hover:bg-blue-50 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-[#0d6efd] dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                           title="Edit"
                         >
                           <Edit className="w-4 h-4" />
@@ -433,7 +433,7 @@ export const KnmpPage: React.FC = () => {
                               onConfirm: () => deleteMutation.mutate(item.id),
                             });
                           }}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                           title="Hapus"
                         >
                           <Trash2 className="w-4 h-4" />
