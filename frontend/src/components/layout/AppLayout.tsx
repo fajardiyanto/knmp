@@ -8,6 +8,21 @@ export const AppLayout: React.FC = () => {
     return typeof window !== "undefined" ? window.innerWidth >= 1024 : true;
   });
 
+  React.useEffect(() => {
+    let lastWidth = window.innerWidth;
+    const handleResize = () => {
+      const currentWidth = window.innerWidth;
+      if (lastWidth >= 1024 && currentWidth < 1024) {
+        setIsSidebarOpen(false);
+      } else if (lastWidth < 1024 && currentWidth >= 1024) {
+        setIsSidebarOpen(true);
+      }
+      lastWidth = currentWidth;
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div className="h-screen h-[100dvh] w-full bg-[#f4f6fa] flex font-sans overflow-hidden">
       {/* 1. Sidebar (Fixed permanently) */}

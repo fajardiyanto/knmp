@@ -159,18 +159,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
-      {/* 2. Sidebar Element: 100% Fixed height, never scrolls with page */}
+      {/* 2. Sidebar Element: 100% Fixed height, completely hidden on mobile when closed */}
       <aside
         className={cn(
           "bg-white text-slate-700 flex flex-col justify-between border-r border-slate-200/90 shrink-0 select-none",
           "h-screen h-[100dvh] max-h-screen",
-          // Mobile & iPad (< lg): Fixed off-canvas drawer
-          "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out",
-          // Desktop (>= lg): Stays fixed in layout height
-          "lg:static lg:z-30 lg:translate-x-0 transition-[width,transform]",
+          // Mobile (< lg): Hidden completely when closed. Full drawer when open.
           isOpen
-            ? "translate-x-0 w-64 shadow-2xl lg:shadow-none"
-            : "-translate-x-full lg:translate-x-0 lg:w-[72px]"
+            ? "fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] shadow-2xl flex translate-x-0 lg:static lg:z-30 lg:shadow-none lg:w-64"
+            : "hidden lg:flex lg:static lg:z-30 lg:w-[72px] lg:translate-x-0",
+          "transition-[width,transform] duration-300 ease-in-out"
         )}
       >
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
