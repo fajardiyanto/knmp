@@ -113,7 +113,7 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-8.5rem)] flex flex-col w-full font-sans transition-colors duration-200">
+    <div className="h-full flex flex-col w-full font-sans transition-colors duration-200">
       {/* Main Chat Workspace Card */}
       <div className="flex-1 flex overflow-hidden bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800 rounded-2xl">
         {/* 1. Left Panel: Conversations List */}

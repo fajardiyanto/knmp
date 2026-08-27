@@ -114,7 +114,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   };
 
   return (
-    <div className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-t border-slate-200/90 dark:border-slate-800 transition-colors duration-200">
+    <div className="p-2.5 sm:p-3 bg-white dark:bg-slate-900 border-t border-slate-200/90 dark:border-slate-800 transition-colors duration-200">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
