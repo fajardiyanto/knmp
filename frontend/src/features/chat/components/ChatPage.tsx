@@ -118,13 +118,11 @@ export const ChatPage: React.FC = () => {
     <div className="h-full flex flex-col w-full font-sans transition-colors duration-200">
       {/* Main Chat Workspace Card */}
       <div className="flex-1 flex overflow-hidden bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800 rounded-2xl">
-        {/* 1. Left Panel: Conversations List */}
+        {/* 1. Left Panel: Conversations List (Collapsible Mini Avatar Rail) */}
         <div
           className={`${
             activeConvId ? "hidden md:flex" : "flex"
-          } ${
-            isListCollapsed ? "md:!hidden" : ""
-          } w-full md:w-auto h-full transition-all`}
+          } h-full transition-all duration-300 ease-in-out shrink-0`}
         >
           <ConversationList
             conversations={conversations}
@@ -132,7 +130,8 @@ export const ChatPage: React.FC = () => {
             onSelect={handleSelectConversation}
             onOpenNewChat={() => setIsNewChatOpen(true)}
             onOpenNewGroup={() => setIsNewGroupOpen(true)}
-            onCollapseList={() => setIsListCollapsed(true)}
+            isCollapsed={isListCollapsed}
+            onToggleCollapse={() => setIsListCollapsed(!isListCollapsed)}
             isLoading={isLoadingConvs}
           />
         </div>
