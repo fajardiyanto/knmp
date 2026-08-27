@@ -36,8 +36,22 @@ export const useChatSocket = (activeConversationId?: number) => {
 
           switch (wsEvent.type) {
             case "new_message":
+            case "message_deleted":
               if (wsEvent.conversation_id) {
                 queryClient.invalidateQueries({
+                  queryKey: ["chat-messages", wsEvent.conversation_id],
+                });
+              }
+              queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+              queryClient.invalidateQueries({ queryKey: ["chat-total-unread"] });
+              break;
+
+            case "conversation_deleted":
+              if (wsEvent.conversation_id) {
+                queryClient.removeQueries({
+                  queryKey: ["chat-conversation", wsEvent.conversation_id],
+                });
+                queryClient.removeQueries({
                   queryKey: ["chat-messages", wsEvent.conversation_id],
                 });
               }

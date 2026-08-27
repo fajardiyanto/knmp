@@ -24,6 +24,7 @@ interface GroupDetailsDrawerProps {
   currentUserId: number;
   isOpen: boolean;
   onClose: () => void;
+  onDeleteConversation?: () => void;
 }
 
 export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
@@ -31,6 +32,7 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
   currentUserId,
   isOpen,
   onClose,
+  onDeleteConversation,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(conversation.name || "");
@@ -328,10 +330,24 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
             <button
               type="button"
               onClick={handleLeaveGroup}
-              className="w-full py-2.5 px-4 rounded-xl text-[13px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/60 dark:border-red-900/60 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl text-[13px] font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/60 flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span>Keluar dari Grup</span>
+            </button>
+          </div>
+        )}
+
+        {/* Delete Conversation Action */}
+        {onDeleteConversation && (
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={onDeleteConversation}
+              className="w-full py-2.5 px-4 rounded-xl text-[13px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/60 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{isGroup ? "Hapus Grup Percakapan" : "Hapus Percakapan"}</span>
             </button>
           </div>
         )}

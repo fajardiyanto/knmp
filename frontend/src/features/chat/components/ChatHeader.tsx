@@ -1,5 +1,5 @@
 import React from "react";
-import { User, Users2, Info, ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { User, Users2, Info, ArrowLeft, PanelLeftClose, PanelLeftOpen, Trash2 } from "lucide-react";
 import { Conversation } from "../types";
 
 interface ChatHeaderProps {
@@ -7,6 +7,7 @@ interface ChatHeaderProps {
   onToggleDetails?: () => void;
   onBackMobile?: () => void;
   onToggleList?: () => void;
+  onDeleteConversation?: () => void;
   isDetailsOpen?: boolean;
   isListCollapsed?: boolean;
 }
@@ -16,6 +17,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onToggleDetails,
   onBackMobile,
   onToggleList,
+  onDeleteConversation,
   isDetailsOpen,
   isListCollapsed,
 }) => {
@@ -93,16 +95,27 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       </div>
 
       {/* Right actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        {onDeleteConversation && (
+          <button
+            type="button"
+            onClick={onDeleteConversation}
+            className="p-2.5 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-slate-200/80 dark:border-slate-700 transition-all cursor-pointer"
+            title="Hapus Percakapan"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onToggleDetails}
           className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
             isDetailsOpen
-              ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
-              : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200/80 dark:border-slate-700"
+              ? "bg-blue-50 dark:bg-slate-800 border-blue-200 dark:border-slate-700 text-blue-600 dark:text-blue-400"
+              : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           }`}
-          title="Info & Anggota Percakapan"
+          title="Detail Percakapan"
         >
           <Info className="w-4 h-4" />
         </button>

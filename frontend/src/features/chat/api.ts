@@ -183,3 +183,34 @@ export const useUpdateGroup = (convId: number) => {
     },
   });
 };
+
+export const useDeleteMessage = (convId?: number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (messageId: number) =>
+      apiFetch<{ message: string }>(`/api/v1/chat/messages/${messageId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      if (convId) {
+        queryClient.invalidateQueries({ queryKey: ["chat-messages", convId] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+    },
+  });
+};
+
+export const useDeleteConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (convId: number) =>
+      apiFetch<{ message: string }>(`/api/v1/chat/conversations/${convId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["chat-total-unread"] });
+    },
+  });
+};
+

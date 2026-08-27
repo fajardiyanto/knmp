@@ -23,6 +23,9 @@ type ChatRepository interface {
 	AddGroupMember(convID, userID int64, role string) error
 	RemoveGroupMember(convID, userID int64) error
 	UpdateGroup(convID int64, name string, description *string) error
+	SoftDeleteMessage(msgID int64) error
+	SoftDeleteConversation(convID int64) error
+	GetLatestMessageForConversation(convID int64) (*domain.Message, error)
 	SearchUsers(query string, excludeUserID int64, limit int) ([]domain.User, error)
 	GetUserByID(userID int64) (*domain.User, error)
 }
@@ -432,3 +435,55 @@ func (r *chatRepo) GetUserByID(userID int64) (*domain.User, error) {
 	}
 	return &u, nil
 }
+
+func (r *chatRepo) SoftDeleteMessage(msgID int64) error {
+	query := `UPDATE messages SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
+	_, err := r.db.Exec(query, msgID)
+	return err
+}
+
+func (r *chatRepo) SoftDeleteConversation(convID int64) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Soft delete conversation
+	updateConv := `UPDATE conversations SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
+	if _, err := tx.Exec(updateConv, convID); err != nil {
+		return err
+	}
+
+	// Soft delete all messages belonging to this conversation
+	updateMsgs := `UPDATE messages SET deleted_at = NOW(), updated_at = NOW() WHERE conversation_id = $1 AND deleted_at IS NULL`
+	if _, err := tx.Exec(updateMsgs, convID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *chatRepo) GetLatestMessageForConversation(convID int64) (*domain.Message, error) {
+	query := `
+		SELECT m.id, m.conversation_id, m.sender_id, m.message_type, m.content,
+		       m.attachment_url, m.attachment_name, m.attachment_size, m.created_at, m.updated_at, m.deleted_at,
+		       u.name as sender_name, u.email as sender_email, r.name as sender_role
+		FROM messages m
+		JOIN users u ON u.id = m.sender_id
+		LEFT JOIN model_has_roles mhr ON mhr.model_id = u.id AND mhr.model_type = 'App\\Models\\User'
+		LEFT JOIN roles r ON r.id = mhr.role_id
+		WHERE m.conversation_id = $1 AND m.deleted_at IS NULL
+		ORDER BY m.created_at DESC
+		LIMIT 1
+	`
+	var msg domain.Message
+	if err := r.db.Get(&msg, query, convID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &msg, nil
+}
+

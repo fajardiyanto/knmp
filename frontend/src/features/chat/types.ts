@@ -89,6 +89,8 @@ export interface WSEvent {
   type:
     | "new_message"
     | "message_read"
+    | "message_deleted"
+    | "conversation_deleted"
     | "user_typing"
     | "member_joined"
     | "member_left"

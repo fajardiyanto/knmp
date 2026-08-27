@@ -8,6 +8,7 @@ import {
   Users2,
   PanelLeftClose,
   PanelLeftOpen,
+  Trash2,
 } from "lucide-react";
 import { Conversation } from "../types";
 
@@ -19,6 +20,7 @@ interface ConversationListProps {
   onOpenNewGroup: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onDeleteConversation?: (convId: number) => void;
   isLoading?: boolean;
 }
 
@@ -30,6 +32,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   onOpenNewGroup,
   isCollapsed = false,
   onToggleCollapse,
+  onDeleteConversation,
   isLoading,
 }) => {
   const [search, setSearch] = useState("");
@@ -287,11 +290,27 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                       )}
                     </p>
 
-                    {c.unread_count > 0 && (
-                      <span className="px-2 py-0.5 text-[11px] font-bold text-white bg-blue-600 rounded-full shrink-0 animate-pulse">
-                        {c.unread_count}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {onDeleteConversation && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteConversation(c.id);
+                          }}
+                          className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          title="Hapus Percakapan"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {c.unread_count > 0 && (
+                        <span className="px-2 py-0.5 text-[11px] font-bold text-white bg-blue-600 rounded-full shrink-0 animate-pulse">
+                          {c.unread_count}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </button>

@@ -397,3 +397,44 @@ func (h *ChatHandler) HandleWebSocket(c *websocket.Conn) {
 		}
 	}
 }
+
+func (h *ChatHandler) DeleteMessage(c *fiber.Ctx) error {
+	userID, ok := c.Locals(middleware.CtxUserIDKey).(int64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	msgID, err := strconv.ParseInt(c.Params("messageId"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid message ID"})
+	}
+
+	if err := h.chatSvc.DeleteMessage(msgID, userID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Pesan berhasil dihapus",
+	})
+}
+
+func (h *ChatHandler) DeleteConversation(c *fiber.Ctx) error {
+	userID, ok := c.Locals(middleware.CtxUserIDKey).(int64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	convID, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid conversation ID"})
+	}
+
+	if err := h.chatSvc.DeleteConversation(convID, userID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Percakapan berhasil dihapus",
+	})
+}
+

@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCheck, FileText, Download, Eye, X } from "lucide-react";
+import { CheckCheck, FileText, Download, Eye, X, Trash2 } from "lucide-react";
 import { Message } from "../types";
+import { useDeleteMessage } from "../api";
+import { useAlert } from "../../../context/AlertContext";
 
 interface MessageListProps {
   messages: Message[];
   currentUserId: number;
+  convId?: number;
   isGroup?: boolean;
   isLoading?: boolean;
 }
@@ -12,11 +15,14 @@ interface MessageListProps {
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
   currentUserId,
+  convId,
   isGroup,
   isLoading,
 }) => {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
+  const { showConfirm } = useAlert();
+  const deleteMessage = useDeleteMessage(convId);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -91,7 +97,7 @@ export const MessageList: React.FC<MessageListProps> = ({
           return (
             <div
               key={msg.id || idx}
-              className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}
+              className={`flex flex-col group relative ${isMine ? "items-end" : "items-start"}`}
             >
               {/* Sender header for group messages from others */}
               {!isMine && isGroup && (
@@ -107,113 +113,136 @@ export const MessageList: React.FC<MessageListProps> = ({
                 </div>
               )}
 
-              {/* Bubble */}
-              <div
-                className={`max-w-[85%] sm:max-w-[70%] p-3.5 rounded-2xl text-[14px] shadow-2xs font-normal leading-relaxed break-words ${
-                  isMine
-                    ? "bg-blue-600 text-white rounded-br-xs"
-                    : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 rounded-bl-xs"
-                }`}
-              >
-                {/* Image Attachment Preview */}
-                {isImg && msg.attachment_url && (
-                  <div className="mb-2 relative group overflow-hidden rounded-xl bg-slate-950/10 dark:bg-slate-950/40 border border-black/5 dark:border-slate-700">
-                    <img
-                      src={msg.attachment_url}
-                      alt={msg.attachment_name || "Foto"}
-                      className="max-h-72 w-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105 cursor-pointer"
-                      onClick={() =>
-                        setLightboxImage({
-                          url: msg.attachment_url!,
-                          title: msg.attachment_name || "Foto Lampiran",
-                        })
-                      }
-                    />
-                    <div
-                      className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
-                      onClick={() =>
-                        setLightboxImage({
-                          url: msg.attachment_url!,
-                          title: msg.attachment_name || "Foto Lampiran",
-                        })
-                      }
-                    >
-                      <span className="px-3 py-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-slate-100 text-xs font-semibold flex items-center gap-1.5 shadow-md backdrop-blur-xs">
-                        <Eye className="w-3.5 h-3.5" /> Lihat Ukuran Penuh
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* File Attachment Card (Non-Image) */}
-                {!isImg && msg.attachment_url && (
-                  <div
-                    className={`mb-2 p-2.5 rounded-xl border flex items-center justify-between gap-3 ${
-                      isMine
-                        ? "bg-blue-700/50 border-blue-500/50 text-white"
-                        : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
-                    }`}
+              {/* Bubble & Action Container */}
+              <div className={`flex items-center gap-2 max-w-[85%] sm:max-w-[70%] ${isMine ? "flex-row" : "flex-row-reverse"}`}>
+                {/* Delete Message Button (Hover Action) */}
+                {isMine && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      showConfirm({
+                        title: "Hapus Pesan",
+                        message: "Apakah Anda yakin ingin menghapus pesan ini?",
+                        confirmText: "Hapus",
+                        isDestructive: true,
+                        onConfirm: () => deleteMessage.mutate(msg.id),
+                      });
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-150 cursor-pointer shrink-0"
+                    title="Hapus Pesan"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={`p-2 rounded-lg ${
-                          isMine ? "bg-blue-800 text-white" : "bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400"
-                        }`}
-                      >
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold truncate">
-                          {msg.attachment_name || "Dokumen Lampiran"}
-                        </p>
-                        {msg.attachment_size && (
-                          <p
-                            className={`text-[10px] ${
-                              isMine ? "text-blue-200" : "text-slate-400 dark:text-slate-500"
-                            }`}
-                          >
-                            {(msg.attachment_size / 1024).toFixed(1)} KB
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <a
-                      href={msg.attachment_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      download={msg.attachment_name || true}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isMine
-                          ? "hover:bg-blue-600 text-white"
-                          : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
-                      }`}
-                      title="Unduh Berkas"
-                    >
-                      <Download className="w-4 h-4" />
-                    </a>
-                  </div>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 )}
 
-                {/* Content text if not just boilerplate caption */}
-                {msg.content && (!isImg || (msg.content !== "Mengirim foto" && msg.content !== "Mengirim lampiran")) && (
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                )}
-
-                {/* Time & status indicator */}
+                {/* Bubble */}
                 <div
-                  className={`mt-1 flex items-center justify-end gap-1 text-[11px] ${
-                    isMine ? "text-blue-100" : "text-slate-400 dark:text-slate-400"
+                  className={`w-full p-3.5 rounded-2xl text-[14px] shadow-2xs font-normal leading-relaxed break-words ${
+                    isMine
+                      ? "bg-blue-600 text-white rounded-br-xs"
+                      : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 rounded-bl-xs"
                   }`}
                 >
-                  <span>{formatTime(msg.created_at)}</span>
-                  {isMine && (
-                    <CheckCheck
-                      className={`w-3.5 h-3.5 ${
-                        msg.is_read ? "text-emerald-300" : "text-blue-200"
-                      }`}
-                    />
+                  {/* Image Attachment Preview */}
+                  {isImg && msg.attachment_url && (
+                    <div className="mb-2 relative group/img overflow-hidden rounded-xl bg-slate-950/10 dark:bg-slate-950/40 border border-black/5 dark:border-slate-700">
+                      <img
+                        src={msg.attachment_url}
+                        alt={msg.attachment_name || "Foto"}
+                        className="max-h-72 w-full object-cover rounded-xl transition-transform duration-300 group-hover/img:scale-105 cursor-pointer"
+                        onClick={() =>
+                          setLightboxImage({
+                            url: msg.attachment_url!,
+                            title: msg.attachment_name || "Foto Lampiran",
+                          })
+                        }
+                      />
+                      <div
+                        className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
+                        onClick={() =>
+                          setLightboxImage({
+                            url: msg.attachment_url!,
+                            title: msg.attachment_name || "Foto Lampiran",
+                          })
+                        }
+                      >
+                        <span className="px-3 py-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-slate-100 text-xs font-semibold flex items-center gap-1.5 shadow-md backdrop-blur-xs">
+                          <Eye className="w-3.5 h-3.5" /> Lihat Ukuran Penuh
+                        </span>
+                      </div>
+                    </div>
                   )}
+
+                  {/* File Attachment Card (Non-Image) */}
+                  {!isImg && msg.attachment_url && (
+                    <div
+                      className={`mb-2 p-2.5 rounded-xl border flex items-center justify-between gap-3 ${
+                        isMine
+                          ? "bg-blue-700/50 border-blue-500/50 text-white"
+                          : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`p-2 rounded-lg ${
+                            isMine ? "bg-blue-800 text-white" : "bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400"
+                          }`}
+                        >
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold truncate">
+                            {msg.attachment_name || "Dokumen Lampiran"}
+                          </p>
+                          {msg.attachment_size && (
+                            <p
+                              className={`text-[10px] ${
+                                isMine ? "text-blue-200" : "text-slate-400 dark:text-slate-500"
+                              }`}
+                            >
+                              {(msg.attachment_size / 1024).toFixed(1)} KB
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <a
+                        href={msg.attachment_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        download={msg.attachment_name || true}
+                        className={`p-2 rounded-lg transition-colors ${
+                          isMine
+                            ? "hover:bg-blue-600 text-white"
+                            : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+                        }`}
+                        title="Unduh Berkas"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Content text if not just boilerplate caption */}
+                  {msg.content && (!isImg || (msg.content !== "Mengirim foto" && msg.content !== "Mengirim lampiran")) && (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  )}
+
+                  {/* Time & status indicator */}
+                  <div
+                    className={`mt-1 flex items-center justify-end gap-1 text-[11px] ${
+                      isMine ? "text-blue-100" : "text-slate-400 dark:text-slate-400"
+                    }`}
+                  >
+                    <span>{formatTime(msg.created_at)}</span>
+                    {isMine && (
+                      <CheckCheck
+                        className={`w-3.5 h-3.5 ${
+                          msg.is_read ? "text-emerald-300" : "text-blue-200"
+                        }`}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

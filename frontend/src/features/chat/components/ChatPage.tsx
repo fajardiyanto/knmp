@@ -5,10 +5,12 @@ import {
   useConversations,
   useCreateGroupChat,
   useCreatePersonalChat,
+  useDeleteConversation,
   useMarkAsRead,
   useMessages,
   useSendMessage,
 } from "../api";
+import { useAlert } from "../../../context/AlertContext";
 import { useChatSocket } from "../hooks/useChatSocket";
 import { Conversation } from "../types";
 import { ConversationList } from "./ConversationList";
@@ -22,6 +24,7 @@ import { MessageSquare } from "lucide-react";
 
 export const ChatPage: React.FC = () => {
   const { user } = useAuth();
+  const { showConfirm } = useAlert();
   const currentUserId = user?.id ? Number(user.id) : 0;
 
   const [activeConvId, setActiveConvId] = useState<number | undefined>(undefined);
@@ -45,6 +48,26 @@ export const ChatPage: React.FC = () => {
   const sendMessage = useSendMessage(activeConvId || 0);
   const createPersonalChat = useCreatePersonalChat();
   const createGroupChat = useCreateGroupChat();
+  const deleteConversation = useDeleteConversation();
+
+  const handleDeleteConversation = (convId: number) => {
+    showConfirm({
+      title: "Hapus Percakapan",
+      message: "Apakah Anda yakin ingin menghapus percakapan ini? Riwayat pesan akan dibersihkan.",
+      confirmText: "Hapus",
+      isDestructive: true,
+      onConfirm: () => {
+        deleteConversation.mutate(convId, {
+          onSuccess: () => {
+            if (activeConvId === convId) {
+              setActiveConvId(undefined);
+              setIsDetailsOpen(false);
+            }
+          },
+        });
+      },
+    });
+  };
 
   // Real-time WebSocket hook
   const { sendTyping } = useChatSocket(activeConvId);
@@ -132,6 +155,7 @@ export const ChatPage: React.FC = () => {
             onOpenNewGroup={() => setIsNewGroupOpen(true)}
             isCollapsed={isListCollapsed}
             onToggleCollapse={() => setIsListCollapsed(!isListCollapsed)}
+            onDeleteConversation={handleDeleteConversation}
             isLoading={isLoadingConvs}
           />
         </div>
@@ -150,6 +174,7 @@ export const ChatPage: React.FC = () => {
                 onToggleDetails={() => setIsDetailsOpen(!isDetailsOpen)}
                 onBackMobile={() => setActiveConvId(undefined)}
                 onToggleList={() => setIsListCollapsed(!isListCollapsed)}
+                onDeleteConversation={() => handleDeleteConversation(activeConversation.id)}
                 isListCollapsed={isListCollapsed}
                 isDetailsOpen={isDetailsOpen}
               />
@@ -158,6 +183,7 @@ export const ChatPage: React.FC = () => {
               <MessageList
                 messages={messages}
                 currentUserId={currentUserId}
+                convId={activeConvId}
                 isGroup={activeConversation.type === "group"}
                 isLoading={isLoadingMessages}
               />
@@ -201,6 +227,7 @@ export const ChatPage: React.FC = () => {
             currentUserId={currentUserId}
             isOpen={isDetailsOpen}
             onClose={() => setIsDetailsOpen(false)}
+            onDeleteConversation={() => handleDeleteConversation(activeConversation.id)}
           />
         )}
       </div>

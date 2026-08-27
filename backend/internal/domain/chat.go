@@ -111,14 +111,16 @@ type UpdateGroupRequest struct {
 type WSEventType string
 
 const (
-	WSEventNewMessage   WSEventType = "new_message"
-	WSEventMessageRead  WSEventType = "message_read"
-	WSEventUserTyping   WSEventType = "user_typing"
-	WSEventMemberJoined WSEventType = "member_joined"
-	WSEventMemberLeft   WSEventType = "member_left"
-	WSEventGroupUpdated WSEventType = "group_updated"
-	WSEventUserOnline   WSEventType = "user_online"
-	WSEventUserOffline  WSEventType = "user_offline"
+	WSEventNewMessage          WSEventType = "new_message"
+	WSEventMessageRead         WSEventType = "message_read"
+	WSEventMessageDeleted      WSEventType = "message_deleted"
+	WSEventConversationDeleted WSEventType = "conversation_deleted"
+	WSEventUserTyping          WSEventType = "user_typing"
+	WSEventMemberJoined        WSEventType = "member_joined"
+	WSEventMemberLeft          WSEventType = "member_left"
+	WSEventGroupUpdated        WSEventType = "group_updated"
+	WSEventUserOnline          WSEventType = "user_online"
+	WSEventUserOffline         WSEventType = "user_offline"
 )
 
 type WSEvent struct {

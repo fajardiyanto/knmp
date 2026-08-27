@@ -22,6 +22,8 @@ type ChatService interface {
 	AddGroupMember(convID, currentUserID int64, req domain.AddGroupMemberRequest) error
 	RemoveGroupMember(convID, currentUserID, targetUserID int64) error
 	UpdateGroup(convID, currentUserID int64, req domain.UpdateGroupRequest) error
+	DeleteMessage(msgID, currentUserID int64) error
+	DeleteConversation(convID, currentUserID int64) error
 	SearchUsers(query string, excludeUserID int64) ([]domain.User, error)
 	GetHub() ChatHub
 }
@@ -463,6 +465,74 @@ func (s *chatService) UpdateGroup(convID, currentUserID int64, req domain.Update
 	return nil
 }
 
+func (s *chatService) DeleteMessage(msgID, currentUserID int64) error {
+	msg, err := s.repo.GetMessageByID(msgID)
+	if err != nil {
+		return errors.New("pesan tidak ditemukan")
+	}
+
+	isMember, role, err := s.repo.IsUserMember(msg.ConversationID, currentUserID)
+	if err != nil || !isMember {
+		return errors.New("anda bukan anggota percakapan ini")
+	}
+
+	if msg.SenderID != currentUserID && role != "admin" {
+		return errors.New("hanya pengirim pesan atau admin yang dapat menghapus pesan")
+	}
+
+	if err := s.repo.SoftDeleteMessage(msgID); err != nil {
+		return err
+	}
+
+	// Broadcast message_deleted to conversation members
+	memberUserIDs, _ := s.repo.GetConversationMemberUserIDs(msg.ConversationID)
+	s.hub.BroadcastToUsers(memberUserIDs, domain.WSEvent{
+		Type:           domain.WSEventMessageDeleted,
+		ConversationID: msg.ConversationID,
+		Data: map[string]interface{}{
+			"message_id": msgID,
+		},
+		Timestamp: time.Now(),
+	})
+
+	return nil
+}
+
+func (s *chatService) DeleteConversation(convID, currentUserID int64) error {
+	conv, err := s.repo.GetConversationByID(convID)
+	if err != nil {
+		return errors.New("percakapan tidak ditemukan")
+	}
+
+	isMember, role, err := s.repo.IsUserMember(convID, currentUserID)
+	if err != nil || !isMember {
+		return errors.New("anda bukan anggota percakapan ini")
+	}
+
+	if conv.Type == domain.ConversationTypeGroup && role != "admin" {
+		return errors.New("hanya admin yang dapat menghapus grup percakapan")
+	}
+
+	memberUserIDs, _ := s.repo.GetConversationMemberUserIDs(convID)
+
+	if err := s.repo.SoftDeleteConversation(convID); err != nil {
+		return err
+	}
+
+	// Broadcast conversation_deleted to all former members
+	s.hub.BroadcastToUsers(memberUserIDs, domain.WSEvent{
+		Type:           domain.WSEventConversationDeleted,
+		ConversationID: convID,
+		Data: map[string]interface{}{
+			"conversation_id": convID,
+		},
+		Timestamp: time.Now(),
+	})
+
+	return nil
+}
+
 func (s *chatService) SearchUsers(query string, excludeUserID int64) ([]domain.User, error) {
 	return s.repo.SearchUsers(query, excludeUserID, 20)
 }
+
