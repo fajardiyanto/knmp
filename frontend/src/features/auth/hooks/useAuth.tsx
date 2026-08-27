@@ -68,14 +68,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
-    if (user.roles?.includes("superadmin")) return true;
+    const isSuper = user.roles?.some(
+      (r) =>
+        r.toLowerCase() === "superadmin" ||
+        r.toLowerCase() === "super admin" ||
+        r.toLowerCase() === "admin_ppk" ||
+        r.toLowerCase() === "admin"
+    );
+    if (isSuper) return true;
     return user.permissions?.includes(permission) || false;
   };
 
   const hasRole = (role: string): boolean => {
     if (!user) return false;
-    if (user.roles?.includes("superadmin")) return true;
-    return user.roles?.includes(role) || false;
+    const isSuper = user.roles?.some(
+      (r) => r.toLowerCase() === "superadmin" || r.toLowerCase() === "super admin"
+    );
+    if (isSuper) return true;
+    return user.roles?.some((r) => r.toLowerCase() === role.toLowerCase()) || false;
   };
 
   return (

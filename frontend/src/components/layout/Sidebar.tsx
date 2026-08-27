@@ -46,8 +46,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   const { data: unreadData } = useTotalUnreadCount();
   const unreadTotal = unreadData?.unread_count || 0;
 
-  const isSuperOrAdmin =
-    user?.roles?.includes("superadmin") || user?.roles?.includes("admin_ppk");
+  const isSuperOrAdmin = user?.roles?.some((r) => {
+    const lower = r.toLowerCase();
+    return lower.includes("super") || lower.includes("admin");
+  });
 
   const groups: NavGroup[] = [
     {
