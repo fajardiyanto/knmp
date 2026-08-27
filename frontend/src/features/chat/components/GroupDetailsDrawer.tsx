@@ -108,16 +108,16 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
         aria-hidden="true"
       />
 
-      <div className="fixed inset-y-0 right-0 z-50 xl:static xl:z-auto w-80 sm:w-96 bg-white border-l border-slate-200/90 h-full flex flex-col shrink-0 overflow-y-auto shadow-2xl xl:shadow-none animate-in slide-in-from-right duration-200">
+      <div className="fixed inset-y-0 right-0 z-50 xl:static xl:z-auto w-80 sm:w-96 bg-white dark:bg-slate-900 border-l border-slate-200/90 dark:border-slate-800 h-full flex flex-col shrink-0 overflow-y-auto shadow-2xl xl:shadow-none animate-in slide-in-from-right duration-200">
         {/* Header */}
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-base font-medium text-slate-800">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
             {isGroup ? "Detail Grup" : "Info Kontak"}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -137,7 +137,7 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
           {!isEditing ? (
             <div>
               <div className="flex items-center justify-center gap-1.5">
-                <h4 className="text-[15px] font-medium text-slate-800">
+                <h4 className="text-[15px] font-bold text-slate-800 dark:text-slate-100">
                   {conversation.display_name}
                 </h4>
                 {isAdmin && isGroup && (
@@ -148,7 +148,7 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
                       setDescription(conversation.description || "");
                       setIsEditing(true);
                     }}
-                    className="p-1 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100"
+                    className="p-1 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                     title="Ubah info grup"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -156,7 +156,7 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
                 )}
               </div>
               {conversation.description && (
-                <p className="text-[12.5px] text-slate-500 font-normal mt-1 leading-relaxed">
+                <p className="text-[12.5px] text-slate-500 dark:text-slate-400 font-normal mt-1 leading-relaxed">
                   {conversation.description}
                 </p>
               )}
@@ -168,28 +168,27 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nama Grup"
-                className="w-full px-3 py-1.5 text-[13.5px] border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full px-3 py-1.5 text-[13.5px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
               <textarea
                 rows={2}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Deskripsi Grup"
-                className="w-full px-3 py-1.5 text-[13px] border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                className="w-full px-3 py-1.5 text-[13px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
               />
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-3 py-1 text-xs text-slate-500 hover:bg-slate-100 rounded-lg"
+                  className="px-3 py-1 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
                 >
                   Batal
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveGroup}
-                  disabled={updateGroup.isPending}
-                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  className="px-3 py-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
                 >
                   Simpan
                 </button>
@@ -202,14 +201,14 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
         {isGroup && (
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
-              <h4 className="text-[13.5px] font-medium text-slate-700">
+              <h4 className="text-[13.5px] font-bold text-slate-700 dark:text-slate-300">
                 Anggota ({conversation.members?.length || 0})
               </h4>
               {isAdmin && (
                 <button
                   type="button"
                   onClick={() => setIsAddingMember(!isAddingMember)}
-                  className="flex items-center gap-1 text-[12px] font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors"
+                  className="flex items-center gap-1 text-[12px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 px-2 py-1 rounded-lg transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>Tambah</span>
@@ -219,7 +218,7 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
 
             {/* Add Member Panel */}
             {isAddingMember && (
-              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-xl space-y-2">
                 <div className="relative">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -227,11 +226,11 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
                     value={memberSearchQuery}
                     onChange={(e) => setMemberSearchQuery(e.target.value)}
                     placeholder="Cari user untuk ditambahkan..."
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
 
-                <div className="max-h-36 overflow-y-auto divide-y divide-slate-100">
+                <div className="max-h-36 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
                   {isSearching ? (
                     <div className="p-2 text-center text-xs text-slate-400">
                       Mencari...
@@ -251,12 +250,12 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
                           key={u.id}
                           type="button"
                           onClick={() => handleAddUser(u.id)}
-                          className="w-full p-2 flex items-center justify-between text-left hover:bg-white rounded-md text-xs cursor-pointer"
+                          className="w-full p-2 flex items-center justify-between text-left hover:bg-white dark:hover:bg-slate-900 rounded-md text-xs cursor-pointer"
                         >
-                          <span className="font-medium text-slate-700">
+                          <span className="font-medium text-slate-700 dark:text-slate-300">
                             {u.name}
                           </span>
-                          <span className="text-blue-600 font-medium">+ Tambah</span>
+                          <span className="text-blue-600 dark:text-blue-400 font-medium">+ Tambah</span>
                         </button>
                       );
                     })
@@ -266,7 +265,7 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
             )}
 
             {/* Members List */}
-            <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
               {conversation.members?.map((m: ConversationMember) => {
                 const isThisAdmin = m.role === "admin";
                 const isMe = m.user_id === currentUserId;
@@ -274,25 +273,25 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
                 return (
                   <div
                     key={m.id}
-                    className="p-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
+                    className="p-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
-                        <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center font-medium text-xs">
+                        <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center font-medium text-xs">
                           {m.user_name ? m.user_name.charAt(0).toUpperCase() : "U"}
                         </div>
                         {m.is_online && (
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 border border-white absolute -bottom-0.5 -right-0.5" />
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 border border-white dark:border-slate-900 absolute -bottom-0.5 -right-0.5" />
                         )}
                       </div>
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[13px] font-medium text-slate-800 truncate">
+                          <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100 truncate">
                             {m.user_name} {isMe && "(Anda)"}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-400 truncate font-normal">
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate font-normal">
                           {m.role_name || m.user_email}
                         </p>
                       </div>
@@ -300,7 +299,7 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
 
                     <div className="flex items-center gap-1 shrink-0">
                       {isThisAdmin && (
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-medium rounded-md border border-emerald-200/60 flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium rounded-md border border-emerald-200/60 dark:border-emerald-800/60 flex items-center gap-1">
                           <Shield className="w-2.5 h-2.5" /> Admin
                         </span>
                       )}
@@ -309,7 +308,7 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
                         <button
                           type="button"
                           onClick={() => handleRemoveUser(m.user_id)}
-                          className="p-1 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors ml-1"
+                          className="p-1 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors ml-1"
                           title="Keluarkan dari grup"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -325,11 +324,11 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
 
         {/* Leave Group Action */}
         {isGroup && (
-          <div className="pt-4 border-t border-slate-100">
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={handleLeaveGroup}
-              className="w-full py-2.5 px-4 rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50 border border-red-200/60 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl text-[13px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/60 dark:border-red-900/60 flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span>Keluar dari Grup</span>

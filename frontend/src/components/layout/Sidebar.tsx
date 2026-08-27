@@ -162,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* 2. Sidebar Element: 100% Fixed height, completely hidden on mobile when closed */}
       <aside
         className={cn(
-          "bg-white text-slate-700 flex flex-col justify-between border-r border-slate-200/90 shrink-0 select-none",
+          "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 flex flex-col justify-between border-r border-slate-200/90 dark:border-slate-800/90 shrink-0 select-none transition-colors duration-200",
           "h-screen h-[100dvh] max-h-screen",
           // Mobile (< lg): Hidden completely when closed. Full drawer when open.
           isOpen
@@ -175,7 +175,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Brand Logo Header aligned with Navbar h-16 */}
           <div
             className={cn(
-              "h-16 border-b border-slate-200/90 bg-white/95 backdrop-blur-xs flex items-center justify-between shrink-0 transition-all duration-300 px-4",
+              "h-16 border-b border-slate-200/90 dark:border-slate-800/90 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs flex items-center justify-between shrink-0 transition-all duration-300 px-4",
               !isOpen && "lg:justify-center lg:px-0"
             )}
           >
@@ -195,10 +195,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               {(isOpen || window.innerWidth < 1024) && (
                 <div className="overflow-hidden whitespace-nowrap">
-                  <span className="font-bold text-slate-900 text-[14.5px] tracking-wide block leading-tight">
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-[14.5px] tracking-wide block leading-tight">
                     SIMANDOR
                   </span>
-                  <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold tracking-wider uppercase">
                     SIMANDOR 360
                   </p>
                 </div>
@@ -209,7 +209,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={onCloseMobile}
-              className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Tutup Menu"
             >
               <X className="w-5 h-5" />
@@ -232,12 +232,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {/* Group Title or Separator */}
                 {isOpen ? (
                   group.title && (
-                    <div className="px-3 pt-2 pb-1 text-[10.5px] font-bold tracking-wider text-slate-400 uppercase">
+                    <div className="px-3 pt-2 pb-1 text-[10.5px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
                       {group.title}
                     </div>
                   )
                 ) : (
-                  gIdx > 0 && <div className="my-2.5 mx-auto w-6 border-t border-slate-200/80" />
+                  gIdx > 0 && <div className="my-2.5 mx-auto w-6 border-t border-slate-200/80 dark:border-slate-800" />
                 )}
 
                 {/* Group Items */}
@@ -253,8 +253,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           ? "gap-3 px-3 py-2.5"
                           : "justify-center w-11 h-11 mx-auto",
                         isActive
-                          ? "bg-[#eef4ff] text-[#3366ff] font-semibold shadow-2xs before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#3366ff] before:rounded-r-full"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                          ? "bg-[#eef4ff] dark:bg-blue-950/60 text-[#3366ff] dark:text-blue-400 font-semibold shadow-2xs before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#3366ff] before:rounded-r-full"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/70"
                       )
                     }
                   >
@@ -262,7 +262,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className={cn(
                         "shrink-0 transition-all duration-200 group-hover:scale-110",
                         isOpen ? "w-[18px] h-[18px]" : "w-5 h-5",
-                        "group-hover:text-[#3366ff]"
+                        "group-hover:text-[#3366ff] dark:group-hover:text-blue-400"
                       )}
                     />
 
@@ -281,18 +281,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <>
                         {/* Dot indicator for badges in collapsed mode */}
                         {typeof item.badge === "number" && item.badge > 0 && (
-                          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white" />
+                          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white dark:ring-slate-900" />
                         )}
 
                         {/* Floating Tooltip in collapsed mode */}
-                        <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2">
+                        <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2 border border-slate-700">
                           <span>{item.name}</span>
                           {typeof item.badge === "number" && item.badge > 0 && (
                             <span className="px-1.5 py-0.2 text-[10px] bg-blue-500 rounded-full font-bold">
                               {item.badge}
                             </span>
                           )}
-                          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
+                          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900 dark:border-r-slate-800" />
                         </div>
                       </>
                     )}
@@ -307,7 +307,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Footer / Logout & Collapse Toggle */}
       <div
         className={cn(
-          "border-t border-slate-100 bg-slate-50/50 shrink-0 transition-all duration-300",
+          "border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0 transition-all duration-300",
           isOpen ? "p-3 space-y-2" : "p-2 space-y-2 flex flex-col items-center"
         )}
       >
@@ -315,18 +315,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           type="button"
           onClick={logout}
           className={cn(
-            "flex items-center rounded-xl text-[13.5px] font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200 group cursor-pointer relative",
+            "flex items-center rounded-xl text-[13.5px] font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all duration-200 group cursor-pointer relative",
             isOpen ? "w-full gap-3 px-3 py-2.5" : "justify-center w-11 h-11"
           )}
           title={!isOpen ? "Logout" : undefined}
         >
-          <LogOut className="w-[18px] h-[18px] shrink-0 text-slate-500 group-hover:text-red-600 group-hover:scale-110 transition-all duration-200" />
+          <LogOut className="w-[18px] h-[18px] shrink-0 text-slate-500 dark:text-slate-400 group-hover:text-red-600 dark:group-hover:text-red-400 group-hover:scale-110 transition-all duration-200" />
           {isOpen ? (
             <span className="font-normal group-hover:font-medium">Logout</span>
           ) : (
-            <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+            <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 border border-slate-700">
               Logout
-              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
+              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900 dark:border-r-slate-800" />
             </div>
           )}
         </button>

@@ -171,17 +171,17 @@ export const AlertProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
       {/* 1. Modal Alert */}
       {alertState.isOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 transform animate-in zoom-in-95 duration-200">
             <div className="flex items-start gap-4">
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="p-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shrink-0">
                 {getAlertIcon(alertState.type)}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-slate-900 leading-tight">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight">
                   {alertState.title}
                 </h3>
-                <p className="mt-2 text-sm text-slate-600 font-normal leading-relaxed whitespace-pre-line">
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 font-normal leading-relaxed whitespace-pre-line">
                   {alertState.message}
                 </p>
               </div>
@@ -204,27 +204,27 @@ export const AlertProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
       {/* 2. Modal Confirmation */}
       {confirmState.isOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 transform animate-in zoom-in-95 duration-200">
             <div className="flex items-start gap-4">
               <div
-                className={`p-2 rounded-xl border ${
+                className={`p-2 rounded-2xl border shrink-0 ${
                   confirmState.isDestructive
-                    ? "bg-rose-50 border-rose-100"
-                    : "bg-blue-50 border-blue-100"
+                    ? "bg-rose-50 dark:bg-rose-950/40 border-rose-100 dark:border-rose-900/60"
+                    : "bg-blue-50 dark:bg-blue-950/40 border-blue-100 dark:border-blue-900/60"
                 }`}
               >
                 {confirmState.isDestructive ? (
-                  <AlertTriangle className="w-8 h-8 text-rose-600 shrink-0" />
+                  <AlertTriangle className="w-8 h-8 text-rose-600 dark:text-rose-400 shrink-0" />
                 ) : (
-                  <HelpCircle className="w-8 h-8 text-blue-600 shrink-0" />
+                  <HelpCircle className="w-8 h-8 text-blue-600 dark:text-blue-400 shrink-0" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-slate-900 leading-tight">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight">
                   {confirmState.title}
                 </h3>
-                <p className="mt-2 text-sm text-slate-600 font-normal leading-relaxed whitespace-pre-line">
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 font-normal leading-relaxed whitespace-pre-line">
                   {confirmState.message}
                 </p>
               </div>
@@ -235,7 +235,7 @@ export const AlertProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 type="button"
                 disabled={confirmState.isLoading}
                 onClick={handleCancelConfirm}
-                className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer disabled:opacity-50"
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50"
               >
                 {confirmState.cancelText}
               </button>

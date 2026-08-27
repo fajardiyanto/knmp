@@ -114,7 +114,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   };
 
   return (
-    <div className="p-3 sm:p-4 bg-white border-t border-slate-200/90 shrink-0">
+    <div className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-t border-slate-200/90 dark:border-slate-800 transition-colors duration-200">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -126,24 +126,24 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
       {/* Attachment Preview Box */}
       {selectedFile && (
-        <div className="mb-2.5 p-2 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3 animate-in fade-in duration-150">
+        <div className="mb-2.5 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 animate-in fade-in duration-150">
           <div className="flex items-center gap-3 min-w-0">
             {filePreview ? (
               <img
                 src={filePreview}
                 alt="Preview"
-                className="w-12 h-12 object-cover rounded-lg border border-slate-200"
+                className="w-12 h-12 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
               />
             ) : (
-              <div className="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <FileText className="w-6 h-6" />
               </div>
             )}
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-slate-800 truncate">
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
                 {selectedFile.name}
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">
                 {(selectedFile.size / 1024).toFixed(1)} KB
               </p>
             </div>
@@ -152,7 +152,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           <button
             type="button"
             onClick={handleRemoveFile}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
             title="Hapus Lampiran"
           >
             <X className="w-4 h-4" />
@@ -160,12 +160,12 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         </div>
       )}
 
-      <div className="flex items-end gap-2 bg-slate-50 border border-slate-200/90 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 focus-within:bg-white transition-all shadow-2xs">
+      <div className="flex items-end gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition-all shadow-2xs">
         {/* Attachment button */}
         <button
           type="button"
           disabled={isBusy}
-          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors shrink-0 cursor-pointer disabled:opacity-50"
+          className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700/60 rounded-xl transition-colors shrink-0 cursor-pointer disabled:opacity-50"
           title="Lampirkan Gambar atau Berkas"
           onClick={() => fileInputRef.current?.click()}
         >
@@ -181,7 +181,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           onKeyDown={handleKeyDown}
           disabled={isBusy}
           placeholder="Tulis pesan... (Enter untuk kirim, Shift+Enter untuk baris baru)"
-          className="flex-1 max-h-32 bg-transparent text-[14px] text-slate-800 focus:outline-none resize-none py-1.5 px-1 font-normal placeholder:text-slate-400 leading-relaxed disabled:opacity-50"
+          className="flex-1 max-h-32 bg-transparent text-[14px] text-slate-800 dark:text-slate-100 focus:outline-none resize-none py-1.5 px-1 font-normal placeholder:text-slate-400 dark:placeholder:text-slate-500 leading-relaxed disabled:opacity-50"
         />
 
         {/* Send Button */}
@@ -192,7 +192,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           className={`p-2 rounded-xl text-white transition-all shrink-0 cursor-pointer flex items-center justify-center ${
             (content.trim() || selectedFile) && !isBusy
               ? "bg-blue-600 hover:bg-blue-700 shadow-xs active:scale-95"
-              : "bg-slate-300 text-slate-100 cursor-not-allowed"
+              : "bg-slate-300 dark:bg-slate-700 text-slate-100 dark:text-slate-500 cursor-not-allowed"
           }`}
           title="Kirim Pesan"
         >

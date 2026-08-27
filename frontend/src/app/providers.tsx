@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "../features/auth/hooks/useAuth";
 import { AlertProvider } from "../context/AlertContext";
+import { ThemeProvider } from "../context/ThemeContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,9 +19,11 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <AlertProvider>{children}</AlertProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AlertProvider>{children}</AlertProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </BrowserRouter>
   );

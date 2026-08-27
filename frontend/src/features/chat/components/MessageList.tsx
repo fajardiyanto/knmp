@@ -72,13 +72,13 @@ export const MessageList: React.FC<MessageListProps> = ({
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/50">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/50 dark:bg-slate-950/40 transition-colors duration-200">
         {messages.map((msg, idx) => {
           // System message
           if (msg.message_type === "system") {
             return (
               <div key={msg.id || idx} className="flex justify-center my-2">
-                <span className="px-3 py-1 bg-slate-200/80 text-slate-600 text-[11.5px] rounded-full font-normal shadow-2xs">
+                <span className="px-3 py-1 bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11.5px] rounded-full font-normal shadow-2xs">
                   {msg.content}
                 </span>
               </div>
@@ -96,11 +96,11 @@ export const MessageList: React.FC<MessageListProps> = ({
               {/* Sender header for group messages from others */}
               {!isMine && isGroup && (
                 <div className="flex items-center gap-1.5 mb-1 px-1">
-                  <span className="text-[12px] font-medium text-slate-700">
+                  <span className="text-[12px] font-bold text-slate-700 dark:text-slate-300">
                     {msg.sender_name || "Pengguna"}
                   </span>
                   {msg.sender_role && (
-                    <span className="text-[10px] text-slate-400 font-normal">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
                       • {msg.sender_role}
                     </span>
                   )}
@@ -112,12 +112,12 @@ export const MessageList: React.FC<MessageListProps> = ({
                 className={`max-w-[85%] sm:max-w-[70%] p-3.5 rounded-2xl text-[14px] shadow-2xs font-normal leading-relaxed break-words ${
                   isMine
                     ? "bg-blue-600 text-white rounded-br-xs"
-                    : "bg-white text-slate-800 border border-slate-200/80 rounded-bl-xs"
+                    : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 rounded-bl-xs"
                 }`}
               >
                 {/* Image Attachment Preview */}
                 {isImg && msg.attachment_url && (
-                  <div className="mb-2 relative group overflow-hidden rounded-xl bg-slate-950/10 border border-black/5">
+                  <div className="mb-2 relative group overflow-hidden rounded-xl bg-slate-950/10 dark:bg-slate-950/40 border border-black/5 dark:border-slate-700">
                     <img
                       src={msg.attachment_url}
                       alt={msg.attachment_name || "Foto"}
@@ -138,7 +138,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                         })
                       }
                     >
-                      <span className="px-3 py-1.5 rounded-lg bg-white/90 text-slate-900 text-xs font-semibold flex items-center gap-1.5 shadow-md backdrop-blur-xs">
+                      <span className="px-3 py-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-slate-100 text-xs font-semibold flex items-center gap-1.5 shadow-md backdrop-blur-xs">
                         <Eye className="w-3.5 h-3.5" /> Lihat Ukuran Penuh
                       </span>
                     </div>
@@ -151,13 +151,13 @@ export const MessageList: React.FC<MessageListProps> = ({
                     className={`mb-2 p-2.5 rounded-xl border flex items-center justify-between gap-3 ${
                       isMine
                         ? "bg-blue-700/50 border-blue-500/50 text-white"
-                        : "bg-slate-50 border-slate-200 text-slate-800"
+                        : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div
                         className={`p-2 rounded-lg ${
-                          isMine ? "bg-blue-800 text-white" : "bg-blue-100 text-blue-600"
+                          isMine ? "bg-blue-800 text-white" : "bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400"
                         }`}
                       >
                         <FileText className="w-4 h-4" />
@@ -169,7 +169,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                         {msg.attachment_size && (
                           <p
                             className={`text-[10px] ${
-                              isMine ? "text-blue-200" : "text-slate-400"
+                              isMine ? "text-blue-200" : "text-slate-400 dark:text-slate-500"
                             }`}
                           >
                             {(msg.attachment_size / 1024).toFixed(1)} KB
@@ -186,7 +186,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                       className={`p-2 rounded-lg transition-colors ${
                         isMine
                           ? "hover:bg-blue-600 text-white"
-                          : "hover:bg-slate-200 text-slate-600"
+                          : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
                       }`}
                       title="Unduh Berkas"
                     >
@@ -200,14 +200,20 @@ export const MessageList: React.FC<MessageListProps> = ({
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 )}
 
-                {/* Timestamp & status ticks */}
+                {/* Time & status indicator */}
                 <div
-                  className={`flex items-center justify-end gap-1 mt-1 text-[10.5px] ${
-                    isMine ? "text-blue-100" : "text-slate-400"
+                  className={`mt-1 flex items-center justify-end gap-1 text-[11px] ${
+                    isMine ? "text-blue-100" : "text-slate-400 dark:text-slate-400"
                   }`}
                 >
                   <span>{formatTime(msg.created_at)}</span>
-                  {isMine && <CheckCheck className="w-3.5 h-3.5 text-blue-200" />}
+                  {isMine && (
+                    <CheckCheck
+                      className={`w-3.5 h-3.5 ${
+                        msg.is_read ? "text-emerald-300" : "text-blue-200"
+                      }`}
+                    />
+                  )}
                 </div>
               </div>
             </div>

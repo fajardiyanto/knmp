@@ -24,7 +24,7 @@ export const AppLayout: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-screen h-[100dvh] w-full bg-[#f4f6fa] flex font-sans overflow-hidden">
+    <div className="h-screen h-[100dvh] w-full bg-[#f4f6fa] dark:bg-[#0b1120] text-slate-800 dark:text-slate-100 flex font-sans overflow-hidden transition-colors duration-200">
       {/* 1. Sidebar (Fixed permanently) */}
       <Sidebar
         isOpen={isSidebarOpen}
