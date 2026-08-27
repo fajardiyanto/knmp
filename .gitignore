@@ -93,8 +93,10 @@ redis_data/
 *.tar.gz
 
 # Uploaded test & scratch files
-uploads/
-storage/
+/uploads/
+/storage/
+/backend/storage/uploads/*
+!/backend/storage/uploads/.gitkeep
 temp/
 tmp/
 scratch/
