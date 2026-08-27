@@ -113,9 +113,9 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-8.5rem)] flex flex-col w-full font-sans">
+    <div className="h-[calc(100vh-8.5rem)] flex flex-col w-full font-sans transition-colors duration-200">
       {/* Main Chat Workspace Card */}
-      <div className="flex-1 flex overflow-hidden bg-white shadow-sm border border-slate-200/80 rounded-2xl">
+      <div className="flex-1 flex overflow-hidden bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800 rounded-2xl">
         {/* 1. Left Panel: Conversations List */}
         <div
           className={`${
@@ -136,7 +136,7 @@ export const ChatPage: React.FC = () => {
         <div
           className={`${
             !activeConvId ? "hidden md:flex" : "flex"
-          } flex-1 flex-col h-full bg-slate-50/50 min-w-0`}
+          } flex-1 flex-col h-full bg-slate-50/50 dark:bg-slate-950/40 min-w-0`}
         >
           {activeConversation ? (
             <>
@@ -164,14 +164,14 @@ export const ChatPage: React.FC = () => {
               />
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/50">
-              <div className="w-16 h-16 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 shadow-xs">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/50 dark:bg-slate-900/60 transition-colors duration-200">
+              <div className="w-16 h-16 rounded-3xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4 shadow-xs">
                 <MessageSquare className="w-8 h-8" />
               </div>
-              <h3 className="text-base font-medium text-slate-800 mb-1">
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1">
                 Pilih atau Mulai Percakapan
               </h3>
-              <p className="text-[13.5px] text-slate-400 max-w-sm font-normal">
+              <p className="text-[13.5px] text-slate-400 dark:text-slate-400 max-w-sm font-normal">
                 Pilih percakapan dari daftar di sebelah kiri atau buat pesan baru
                 untuk berkoordinasi langsung dengan rekan kerja Anda.
               </p>

@@ -58,3 +58,62 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* ==========================================================================
+   Universal Dark Mode Theme Adaptations (Clean Deep Slate Palette)
+   ========================================================================== */
+html.dark .bg-white {
+  background-color: #0f172a;
+}
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-50\/60,
+html.dark .bg-slate-50\/70,
+html.dark .bg-slate-50\/80,
+html.dark .bg-slate-50\/90 {
+  background-color: #1e293b;
+}
+html.dark .bg-slate-100 {
+  background-color: #1e293b;
+}
+html.dark .bg-slate-200,
+html.dark .bg-slate-200\/80 {
+  background-color: #334155;
+}
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-200\/90,
+html.dark .border-slate-300 {
+  border-color: #334155;
+}
+html.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b;
+}
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #f8fafc;
+}
+html.dark .text-slate-700 {
+  color: #e2e8f0;
+}
+html.dark .text-slate-600 {
+  color: #cbd5e1;
+}
+html.dark .text-slate-500 {
+  color: #94a3b8;
+}
+html.dark select option {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+html.dark table thead {
+  background-color: #1e293b;
+  color: #94a3b8;
+}
+html.dark table tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.7);
+}
+
