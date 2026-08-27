@@ -9,8 +9,8 @@ export const AppLayout: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#f4f6fa] flex font-sans overflow-x-hidden">
-      {/* 1. Sidebar */}
+    <div className="h-screen h-[100dvh] w-full bg-[#f4f6fa] flex font-sans overflow-hidden">
+      {/* 1. Sidebar (Fixed permanently) */}
       <Sidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen((prev) => !prev)}
@@ -18,9 +18,9 @@ export const AppLayout: React.FC = () => {
       />
 
       {/* 2. Main content area */}
-      <div className="flex-1 flex flex-col min-w-0 w-full">
+      <div className="flex-1 flex flex-col min-w-0 h-full w-full overflow-hidden">
         <Navbar onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)} />
-        <main className="flex-1 p-3.5 sm:p-5 lg:p-7 overflow-y-auto w-full max-w-full">
+        <main className="flex-1 p-3.5 sm:p-5 lg:p-7 overflow-y-auto overflow-x-hidden w-full max-w-full">
           <Outlet />
         </main>
       </div>

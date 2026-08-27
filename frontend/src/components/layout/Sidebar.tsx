@@ -131,6 +131,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
+  React.useEffect(() => {
+    if (isOpen && typeof window !== "undefined" && window.innerWidth < 1024) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
   const handleNavClick = () => {
     if (window.innerWidth < 1024 && onCloseMobile) {
       onCloseMobile();
@@ -148,16 +159,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
-      {/* 2. Sidebar Element: Off-canvas drawer on mobile/iPad (< lg), Sticky sidebar on desktop (>= lg) */}
+      {/* 2. Sidebar Element: 100% Fixed height, never scrolls with page */}
       <aside
         className={cn(
-          "bg-white text-slate-700 min-h-screen flex flex-col justify-between border-r border-slate-200/90 shrink-0 h-screen transition-all duration-300 ease-in-out select-none",
-          // Mobile & iPad (< lg): Fixed off-canvas
-          "fixed inset-y-0 left-0 z-50 lg:static lg:z-30",
-          isOpen ? "translate-x-0 w-64 shadow-2xl lg:shadow-none" : "-translate-x-full lg:translate-x-0 lg:w-[72px]"
+          "bg-white text-slate-700 flex flex-col justify-between border-r border-slate-200/90 shrink-0 select-none",
+          "h-screen h-[100dvh] max-h-screen",
+          // Mobile & iPad (< lg): Fixed off-canvas drawer
+          "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out",
+          // Desktop (>= lg): Stays fixed in layout height
+          "lg:static lg:z-30 lg:translate-x-0 transition-[width,transform]",
+          isOpen
+            ? "translate-x-0 w-64 shadow-2xl lg:shadow-none"
+            : "-translate-x-full lg:translate-x-0 lg:w-[72px]"
         )}
       >
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Brand Logo Header aligned with Navbar h-16 */}
           <div
             className={cn(
