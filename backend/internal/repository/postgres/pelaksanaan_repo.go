@@ -24,13 +24,13 @@ func (r *pelaksanaanRepo) GetByID(ctx context.Context, id int64) (*domain.Pelaks
 	query := `
 		SELECT p.id, p.knmp_id, p.user_id, p.nama, p.tanggal, p.jenis_laporan,
 		       p.status_k3, p.kendala, p.keterangan, p.additional_data, p.created_by,
-		       p.updated_by, p.created_at, p.updated_at,
+		       p.updated_by, p.created_at, p.updated_at, p.deleted_at,
 		       COALESCE(k.name, '') as knmp_name,
 		       COALESCE(u.name, 'SuperAdmin') as user_name
 		FROM pelaksanaans p
 		LEFT JOIN knmps k ON p.knmp_id = k.id
 		LEFT JOIN users u ON p.user_id = u.id
-		WHERE p.id = $1
+		WHERE p.id = $1 AND p.deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &p, query, id)
 	if err != nil {
@@ -47,13 +47,13 @@ func (r *pelaksanaanRepo) List(ctx context.Context, knmpID *int64) ([]*domain.Pe
 	query := `
 		SELECT p.id, p.knmp_id, p.user_id, p.nama, p.tanggal, p.jenis_laporan,
 		       p.status_k3, p.kendala, p.keterangan, p.additional_data, p.created_by,
-		       p.updated_by, p.created_at, p.updated_at,
+		       p.updated_by, p.created_at, p.updated_at, p.deleted_at,
 		       COALESCE(k.name, '') as knmp_name,
 		       COALESCE(u.name, 'SuperAdmin') as user_name
 		FROM pelaksanaans p
 		LEFT JOIN knmps k ON p.knmp_id = k.id
 		LEFT JOIN users u ON p.user_id = u.id
-		WHERE 1=1
+		WHERE p.deleted_at IS NULL
 	`
 	var args []any
 	if knmpID != nil {
@@ -83,7 +83,7 @@ func (r *pelaksanaanRepo) Update(ctx context.Context, p *domain.Pelaksanaan) err
 		UPDATE pelaksanaans
 		SET knmp_id = $1, user_id = $2, nama = $3, tanggal = $4, jenis_laporan = $5,
 		    status_k3 = $6, kendala = $7, keterangan = $8, additional_data = $9, updated_by = $10, updated_at = NOW()
-		WHERE id = $11
+		WHERE id = $11 AND deleted_at IS NULL
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		p.KnmpID, p.UserID, p.Nama, p.Tanggal, p.JenisLaporan,
@@ -93,6 +93,6 @@ func (r *pelaksanaanRepo) Update(ctx context.Context, p *domain.Pelaksanaan) err
 }
 
 func (r *pelaksanaanRepo) Delete(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM pelaksanaans WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE pelaksanaans SET deleted_at = NOW() WHERE id = $1`, id)
 	return err
 }

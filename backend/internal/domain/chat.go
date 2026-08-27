@@ -20,6 +20,7 @@ type Conversation struct {
 	LastMessageAt time.Time        `db:"last_message_at" json:"last_message_at"`
 	CreatedAt     time.Time        `db:"created_at" json:"created_at"`
 	UpdatedAt     time.Time        `db:"updated_at" json:"updated_at"`
+	DeletedAt     *time.Time       `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	// Populated fields for UI
 	DisplayName    string               `db:"-" json:"display_name"`
@@ -49,16 +50,17 @@ type ConversationMember struct {
 }
 
 type Message struct {
-	ID             int64     `db:"id" json:"id"`
-	ConversationID int64     `db:"conversation_id" json:"conversation_id"`
-	SenderID       int64     `db:"sender_id" json:"sender_id"`
-	MessageType    string    `db:"message_type" json:"message_type"` // "text" | "system" | "file" | "image"
-	Content        string    `db:"content" json:"content"`
-	AttachmentURL  *string   `db:"attachment_url" json:"attachment_url,omitempty"`
-	AttachmentName *string   `db:"attachment_name" json:"attachment_name,omitempty"`
-	AttachmentSize *int64    `db:"attachment_size" json:"attachment_size,omitempty"`
-	CreatedAt      time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
+	ID             int64      `db:"id" json:"id"`
+	ConversationID int64      `db:"conversation_id" json:"conversation_id"`
+	SenderID       int64      `db:"sender_id" json:"sender_id"`
+	MessageType    string     `db:"message_type" json:"message_type"` // "text" | "system" | "file" | "image"
+	Content        string     `db:"content" json:"content"`
+	AttachmentURL  *string    `db:"attachment_url" json:"attachment_url,omitempty"`
+	AttachmentName *string    `db:"attachment_name" json:"attachment_name,omitempty"`
+	AttachmentSize *int64     `db:"attachment_size" json:"attachment_size,omitempty"`
+	CreatedAt      time.Time  `db:"created_at" json:"created_at"`
+	UpdatedAt      time.Time  `db:"updated_at" json:"updated_at"`
+	DeletedAt      *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	// Populated fields
 	SenderName  string `db:"sender_name" json:"sender_name,omitempty"`

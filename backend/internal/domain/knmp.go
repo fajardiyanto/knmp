@@ -14,8 +14,9 @@ type Knmp struct {
 	Lat           *string   `db:"lat" json:"lat,omitempty"`
 	Long          *string   `db:"long" json:"long,omitempty"`
 	Status        string    `db:"status" json:"status"` // 'aktif' | 'nonaktif'
-	CreatedAt     time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt     time.Time  `db:"created_at" json:"created_at"`
+	UpdatedAt     time.Time  `db:"updated_at" json:"updated_at"`
+	DeletedAt     *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	// Relational details
 	RegionalName    *string `db:"regional_name" json:"regional_name,omitempty"`
@@ -26,19 +27,21 @@ type Knmp struct {
 }
 
 type Periode struct {
-	ID           int64     `db:"id" json:"id"`
-	Year         int       `db:"year" json:"year"`
-	TanggalMulai string    `db:"tanggal_mulai" json:"tanggal_mulai"`
-	TanggalAkhir string    `db:"tanggal_akhir" json:"tanggal_akhir"`
-	CreatedAt    time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
+	ID           int64      `db:"id" json:"id"`
+	Year         int        `db:"year" json:"year"`
+	TanggalMulai string     `db:"tanggal_mulai" json:"tanggal_mulai"`
+	TanggalAkhir string     `db:"tanggal_akhir" json:"tanggal_akhir"`
+	CreatedAt    time.Time  `db:"created_at" json:"created_at"`
+	UpdatedAt    time.Time  `db:"updated_at" json:"updated_at"`
+	DeletedAt    *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 }
 
 type JenisBangunan struct {
-	ID        int64     `db:"id" json:"id"`
-	Nama      string    `db:"nama" json:"nama"`
-	Deskripsi *string   `db:"deskripsi" json:"deskripsi,omitempty"`
-	IsActive  bool      `db:"is_active" json:"is_active"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	ID        int64      `db:"id" json:"id"`
+	Nama      string     `db:"nama" json:"nama"`
+	Deskripsi *string    `db:"deskripsi" json:"deskripsi,omitempty"`
+	IsActive  bool       `db:"is_active" json:"is_active"`
+	CreatedAt time.Time  `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time  `db:"updated_at" json:"updated_at"`
+	DeletedAt *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 }

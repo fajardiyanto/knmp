@@ -23,7 +23,7 @@ func (r *knmpRepo) GetByID(ctx context.Context, id int64) (*domain.Knmp, error) 
 	var k domain.Knmp
 	query := `
 		SELECT k.id, k.regional_id, k.province_id, k.regency_id, k.district_id, k.sub_district_id,
-		       k.name, k.jenis_knmp, k.lat, k.long, k.status, k.created_at, k.updated_at,
+		       k.name, k.jenis_knmp, k.lat, k.long, k.status, k.created_at, k.updated_at, k.deleted_at,
 		       r.name as regional_name, p.name as province_name, rg.name as regency_name,
 		       d.name as district_name, sd.name as sub_district_name
 		FROM knmps k
@@ -32,7 +32,7 @@ func (r *knmpRepo) GetByID(ctx context.Context, id int64) (*domain.Knmp, error) 
 		LEFT JOIN regencies rg ON k.regency_id = rg.id
 		LEFT JOIN districts d ON k.district_id = d.id
 		LEFT JOIN sub_districts sd ON k.sub_district_id = sd.id
-		WHERE k.id = $1
+		WHERE k.id = $1 AND k.deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &k, query, id)
 	if err != nil {
@@ -48,7 +48,7 @@ func (r *knmpRepo) List(ctx context.Context, filter repository.KnmpFilter) ([]*d
 	var results []*domain.Knmp
 	query := `
 		SELECT k.id, k.regional_id, k.province_id, k.regency_id, k.district_id, k.sub_district_id,
-		       k.name, k.jenis_knmp, k.lat, k.long, k.status, k.created_at, k.updated_at,
+		       k.name, k.jenis_knmp, k.lat, k.long, k.status, k.created_at, k.updated_at, k.deleted_at,
 		       r.name as regional_name, p.name as province_name, rg.name as regency_name,
 		       d.name as district_name, sd.name as sub_district_name
 		FROM knmps k
@@ -57,7 +57,7 @@ func (r *knmpRepo) List(ctx context.Context, filter repository.KnmpFilter) ([]*d
 		LEFT JOIN regencies rg ON k.regency_id = rg.id
 		LEFT JOIN districts d ON k.district_id = d.id
 		LEFT JOIN sub_districts sd ON k.sub_district_id = sd.id
-		WHERE 1=1
+		WHERE k.deleted_at IS NULL
 	`
 	var args []any
 	argIdx := 1
@@ -153,7 +153,7 @@ func (r *knmpRepo) Update(ctx context.Context, knmp *domain.Knmp) error {
 }
 
 func (r *knmpRepo) Delete(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM knmps WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE knmps SET deleted_at = NOW() WHERE id = $1`, id)
 	return err
 }
 
@@ -162,120 +162,92 @@ func (r *knmpRepo) GetWidgetStats(ctx context.Context) (map[string]any, error) {
 
 	// 1. Total Lokasi & Status Counts
 	var totalKnmps int
-	_ = r.db.GetContext(ctx, &totalKnmps, `SELECT COUNT(*) FROM knmps`)
+	_ = r.db.GetContext(ctx, &totalKnmps, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL`)
 	stats["total_knmps"] = totalKnmps
 
 	var onTrack int
-	_ = r.db.GetContext(ctx, &onTrack, `SELECT COUNT(*) FROM knmps WHERE status = 'aktif' OR status = 'on_track'`)
+	_ = r.db.GetContext(ctx, &onTrack, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND (status = 'aktif' OR status = 'on_track')`)
 	stats["on_track"] = onTrack
 
 	var perluPerhatian int
-	_ = r.db.GetContext(ctx, &perluPerhatian, `SELECT COUNT(*) FROM knmps WHERE status = 'perlu_perhatian'`)
+	_ = r.db.GetContext(ctx, &perluPerhatian, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND status = 'perlu_perhatian'`)
 	stats["perlu_perhatian"] = perluPerhatian
 
 	var kritis int
-	_ = r.db.GetContext(ctx, &kritis, `SELECT COUNT(*) FROM knmps WHERE status = 'kritis'`)
+	_ = r.db.GetContext(ctx, &kritis, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND status = 'kritis'`)
 	stats["kritis"] = kritis
 
 	var pemeliharaan int
-	_ = r.db.GetContext(ctx, &pemeliharaan, `SELECT COUNT(*) FROM knmps WHERE status = 'pemeliharaan'`)
+	_ = r.db.GetContext(ctx, &pemeliharaan, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND (status = 'pemeliharaan' OR status = 'nonaktif')`)
 	stats["pemeliharaan"] = pemeliharaan
 
-	var belumMulai int
-	_ = r.db.GetContext(ctx, &belumMulai, `SELECT COUNT(*) FROM knmps WHERE status = 'nonaktif' OR status = 'belum_mulai'`)
-	stats["belum_mulai"] = belumMulai
-
-	// 2. Pelaksanaan, Workers & Issues
-	var totalPelaksanaan int
-	_ = r.db.GetContext(ctx, &totalPelaksanaan, `SELECT COUNT(*) FROM pelaksanaans`)
-	stats["total_pelaksanaan"] = totalPelaksanaan
-
-	var totalWorkers int
-	_ = r.db.GetContext(ctx, &totalWorkers, `SELECT COALESCE(SUM(jumlah_pekerja), 0) FROM absensis`)
-	stats["total_workers"] = totalWorkers
-
-	var todayWorkers int
-	_ = r.db.GetContext(ctx, &todayWorkers, `SELECT COALESCE(SUM(jumlah_pekerja), 0) FROM absensis WHERE DATE(tanggal) = CURRENT_DATE`)
-	stats["today_workers"] = todayWorkers
-
-	var totalIssues int
-	_ = r.db.GetContext(ctx, &totalIssues, `SELECT COUNT(*) FROM issues WHERE status != 'selesai'`)
-	stats["total_issues"] = totalIssues
-
-	// 3. Serapan Keuangan
-	var pagu float64
-	_ = r.db.GetContext(ctx, &pagu, `SELECT COALESCE(SUM(realisasi_anggaran), 0) FROM pembayarans WHERE termin ILIKE '%Anggaran%' OR termin ILIKE '%Pagu%'`)
-	if pagu == 0 {
-		_ = r.db.GetContext(ctx, &pagu, `SELECT COALESCE(SUM(realisasi_anggaran), 0) FROM pembayarans`)
+	// 2. Aggregate Realisasi Anggaran & Fisik
+	var agg struct {
+		TotalPagu      float64 `db:"total_pagu"`
+		TotalRealisasi float64 `db:"total_realisasi"`
+		AvgFisik       float64 `db:"avg_fisik"`
 	}
+	aggQuery := `
+		SELECT 
+			COALESCE(SUM(pk.pagu_anggaran), 0) as total_pagu,
+			COALESCE(SUM(pm.realisasi_anggaran), 0) as total_realisasi,
+			COALESCE(AVG(l.realisasi_progres_fisik), 0) as avg_fisik
+		FROM knmps k
+		LEFT JOIN (
+			SELECT knmp_id, 
+			       COALESCE(NULLIF(additional_data->>'pagu_anggaran', '')::numeric, 0) as pagu_anggaran 
+			FROM persiapans 
+			WHERE jenis = 'kontrak' AND deleted_at IS NULL
+		) pk ON k.id = pk.knmp_id
+		LEFT JOIN (
+			SELECT knmp_id, SUM(realisasi_anggaran) as realisasi_anggaran
+			FROM pembayarans p
+			JOIN persiapans ps ON p.persiapan_kontrak_id = ps.id
+			WHERE p.deleted_at IS NULL AND ps.deleted_at IS NULL
+			GROUP BY knmp_id
+		) pm ON k.id = pm.knmp_id
+		LEFT JOIN (
+			SELECT p.knmp_id, AVG(l.realisasi_progres_fisik) as realisasi_progres_fisik
+			FROM laporans l
+			JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
+			WHERE l.deleted_at IS NULL AND p.deleted_at IS NULL
+			GROUP BY p.knmp_id
+		) l ON k.id = l.knmp_id
+		WHERE k.deleted_at IS NULL
+	`
+	_ = r.db.GetContext(ctx, &agg, aggQuery)
+	stats["total_pagu"] = agg.TotalPagu
+	stats["total_realisasi"] = agg.TotalRealisasi
+	stats["avg_fisik"] = agg.AvgFisik
 
-	var realisasi float64
-	_ = r.db.GetContext(ctx, &realisasi, `SELECT COALESCE(SUM(realisasi_anggaran), 0) FROM pembayarans WHERE termin NOT ILIKE '%Anggaran%' AND termin NOT ILIKE '%Pagu%'`)
-
-	percentage := 0.0
-	if pagu > 0 {
-		percentage = (realisasi / pagu) * 100
-		if percentage > 100 {
-			percentage = 100
-		}
+	// 3. Progres Per Wilayah
+	var regionalStats []struct {
+		RegionalID   int64   `db:"regional_id" json:"regional_id"`
+		RegionalName string  `db:"regional_name" json:"regional_name"`
+		TotalKnmps   int     `db:"total_knmps" json:"total_knmps"`
+		AvgFisik     float64 `db:"avg_fisik" json:"avg_fisik"`
 	}
-	remainingPercentage := 100.0 - percentage
-	if remainingPercentage < 0 {
-		remainingPercentage = 0
-	}
-
-	stats["finance"] = map[string]any{
-		"pagu":                 pagu,
-		"realisasi":            realisasi,
-		"percentage":           percentage,
-		"remaining_percentage": remainingPercentage,
-	}
-
-	// 4. Deviasi Proyek
-	var deviasi10 int
-	_ = r.db.GetContext(ctx, &deviasi10, `SELECT COUNT(*) FROM laporans WHERE ABS(COALESCE(realisasi_bobot, 0) - COALESCE(rencana_bobot, 0)) > 10`)
-	var deviasi20 int
-	_ = r.db.GetContext(ctx, &deviasi20, `SELECT COUNT(*) FROM laporans WHERE ABS(COALESCE(realisasi_bobot, 0) - COALESCE(rencana_bobot, 0)) > 20`)
-	stats["deviation_10"] = deviasi10
-	stats["deviation_20"] = deviasi20
-
-	// 5. Verifikasi Approval
-	var pengawasApproved int
-	_ = r.db.GetContext(ctx, &pengawasApproved, `SELECT COUNT(*) FROM verifikasis WHERE verified_by_pengawas_at IS NOT NULL`)
-	var timValidasiApproved int
-	_ = r.db.GetContext(ctx, &timValidasiApproved, `SELECT COUNT(*) FROM verifikasis WHERE verified_by_wakil_ppk_at IS NOT NULL`)
-	var ppkApproved int
-	_ = r.db.GetContext(ctx, &ppkApproved, `SELECT COUNT(*) FROM verifikasis WHERE status = 'terverifikasi'`)
-	var totalDocs int
-	_ = r.db.GetContext(ctx, &totalDocs, `SELECT COUNT(*) FROM documents`)
-
-	stats["approval"] = map[string]any{
-		"pengawas":     pengawasApproved,
-		"tim_validasi": timValidasiApproved,
-		"ppk":          ppkApproved,
-		"total_docs":   totalDocs,
-	}
-
-	// 6. Tahapan Proyeksi
-	var totalKontrak int
-	_ = r.db.GetContext(ctx, &totalKontrak, `SELECT COUNT(*) FROM persiapans WHERE jenis = 'kontrak'`)
-	var totalPcm int
-	_ = r.db.GetContext(ctx, &totalPcm, `SELECT COUNT(*) FROM pcms`)
-	var totalLapangan int
-	_ = r.db.GetContext(ctx, &totalLapangan, `SELECT COUNT(*) FROM persiapans WHERE jenis = 'lapangan'`)
-	var totalLaporan int
-	_ = r.db.GetContext(ctx, &totalLaporan, `SELECT COUNT(*) FROM laporans`)
-
-	stats["stages"] = map[string]int{
-		"perencanaan": totalKnmps,
-		"kontrak":     totalKontrak,
-		"pcm":         totalPcm,
-		"lapangan":    totalLapangan,
-		"pelaksanaan": totalPelaksanaan,
-		"laporan":     totalLaporan,
-		"pho":         0,
-		"fho":         0,
-	}
+	regQuery := `
+		SELECT 
+			COALESCE(r.id, 0) as regional_id,
+			COALESCE(r.name, 'Lainnya') as regional_name,
+			COUNT(k.id) as total_knmps,
+			COALESCE(AVG(l.avg_progres), 0) as avg_fisik
+		FROM knmps k
+		LEFT JOIN regionals r ON k.regional_id = r.id
+		LEFT JOIN (
+			SELECT p.knmp_id, AVG(lp.realisasi_progres_fisik) as avg_progres
+			FROM laporans lp
+			JOIN pelaksanaans p ON lp.pelaksanaan_id = p.id
+			WHERE lp.deleted_at IS NULL AND p.deleted_at IS NULL
+			GROUP BY p.knmp_id
+		) l ON k.id = l.knmp_id
+		WHERE k.deleted_at IS NULL
+		GROUP BY r.id, r.name
+		ORDER BY r.id ASC
+	`
+	_ = r.db.SelectContext(ctx, &regionalStats, regQuery)
+	stats["regional_stats"] = regionalStats
 
 	return stats, nil
 }
@@ -286,7 +258,7 @@ func (r *knmpRepo) ListMap(ctx context.Context) ([]*domain.Knmp, error) {
 
 func (r *knmpRepo) ListPeriodes(ctx context.Context) ([]*domain.Periode, error) {
 	results := make([]*domain.Periode, 0)
-	err := r.db.SelectContext(ctx, &results, `SELECT id, year, tanggal_mulai, tanggal_akhir, created_at, updated_at FROM periodes ORDER BY year DESC`)
+	err := r.db.SelectContext(ctx, &results, `SELECT id, year, tanggal_mulai, tanggal_akhir, created_at, updated_at, deleted_at FROM periodes WHERE deleted_at IS NULL ORDER BY year DESC`)
 	return results, err
 }
 
@@ -296,21 +268,21 @@ func (r *knmpRepo) CreatePeriode(ctx context.Context, p *domain.Periode) error {
 }
 
 func (r *knmpRepo) UpdatePeriode(ctx context.Context, p *domain.Periode) error {
-	query := `UPDATE periodes SET year = $1, tanggal_mulai = $2, tanggal_akhir = $3, updated_at = NOW() WHERE id = $4`
+	query := `UPDATE periodes SET year = $1, tanggal_mulai = $2, tanggal_akhir = $3, updated_at = NOW() WHERE id = $4 AND deleted_at IS NULL`
 	_, err := r.db.ExecContext(ctx, query, p.Year, p.TanggalMulai, p.TanggalAkhir, p.ID)
 	return err
 }
 
 func (r *knmpRepo) DeletePeriode(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM periodes WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE periodes SET deleted_at = NOW() WHERE id = $1`, id)
 	return err
 }
 
 func (r *knmpRepo) ListJenisBangunans(ctx context.Context, activeOnly bool) ([]*domain.JenisBangunan, error) {
 	results := make([]*domain.JenisBangunan, 0)
-	query := `SELECT id, nama, deskripsi, is_active, created_at, updated_at FROM jenis_bangunans`
+	query := `SELECT id, nama, deskripsi, is_active, created_at, updated_at, deleted_at FROM jenis_bangunans WHERE deleted_at IS NULL`
 	if activeOnly {
-		query += ` WHERE is_active = true`
+		query += ` AND is_active = true`
 	}
 	query += ` ORDER BY nama ASC`
 	err := r.db.SelectContext(ctx, &results, query)
@@ -323,12 +295,12 @@ func (r *knmpRepo) CreateJenisBangunan(ctx context.Context, jb *domain.JenisBang
 }
 
 func (r *knmpRepo) UpdateJenisBangunan(ctx context.Context, jb *domain.JenisBangunan) error {
-	query := `UPDATE jenis_bangunans SET nama = $1, deskripsi = $2, is_active = $3, updated_at = NOW() WHERE id = $4`
+	query := `UPDATE jenis_bangunans SET nama = $1, deskripsi = $2, is_active = $3, updated_at = NOW() WHERE id = $4 AND deleted_at IS NULL`
 	_, err := r.db.ExecContext(ctx, query, jb.Nama, jb.Deskripsi, jb.IsActive, jb.ID)
 	return err
 }
 
 func (r *knmpRepo) DeleteJenisBangunan(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM jenis_bangunans WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE jenis_bangunans SET deleted_at = NOW() WHERE id = $1`, id)
 	return err
 }

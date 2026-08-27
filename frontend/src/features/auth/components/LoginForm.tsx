@@ -40,7 +40,7 @@ export const LoginForm: React.FC = () => {
     <div className="min-h-screen bg-[#f4f6fa] flex items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center">
-          
+
           {/* Left Column: SIMANTAP Banner Poster */}
           <div className="hidden lg:block bg-slate-900 p-6 h-full min-h-[580px] flex items-center justify-center overflow-hidden">
             <img
@@ -56,7 +56,7 @@ export const LoginForm: React.FC = () => {
           {/* Right Column: Login Form */}
           <div className="p-8 sm:p-12">
             <div className="max-w-md mx-auto space-y-6">
-              
+
               {/* KKP / KNMP Logo */}
               <div className="flex items-center gap-3">
                 <img
@@ -141,42 +141,42 @@ export const LoginForm: React.FC = () => {
                 <div className="grid grid-cols-3 gap-1.5">
                   <button
                     type="button"
-                    onClick={() => handleQuickLogin("superadmin@gmail.com", "superadmin")}
+                    onClick={() => handleQuickLogin("superadmin@gmail.com", "password")}
                     className="px-2 py-1.5 text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-center transition-colors"
                   >
                     SuperAdmin
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleQuickLogin("kontraktor@gmail.com", "kontraktor")}
+                    onClick={() => handleQuickLogin("kontraktor@gmail.com", "password")}
                     className="px-2 py-1.5 text-[11px] font-medium bg-blue-50 hover:bg-blue-100 text-[#004B87] rounded-lg text-center transition-colors"
                   >
                     Kontraktor
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleQuickLogin("pengawas@gmail.com", "pengawas")}
+                    onClick={() => handleQuickLogin("pengawas@gmail.com", "password")}
                     className="px-2 py-1.5 text-[11px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-center transition-colors"
                   >
                     Pengawas
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleQuickLogin("wakil_ppk@gmail.com", "wakil_ppk")}
+                    onClick={() => handleQuickLogin("wakil_ppk@gmail.com", "password")}
                     className="px-2 py-1.5 text-[11px] font-medium bg-purple-50 hover:bg-purple-100 text-purple-800 rounded-lg text-center transition-colors"
                   >
                     Wakil PPK
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleQuickLogin("admin_ppk@gmail.com", "admin_ppk")}
+                    onClick={() => handleQuickLogin("admin_ppk@gmail.com", "password")}
                     className="px-2 py-1.5 text-[11px] font-medium bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-center transition-colors"
                   >
                     Admin PPK
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleQuickLogin("ppk@gmail.com", "ppk")}
+                    onClick={() => handleQuickLogin("ppk@gmail.com", "password")}
                     className="px-2 py-1.5 text-[11px] font-medium bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-lg text-center transition-colors"
                   >
                     PPK

@@ -26,9 +26,9 @@ func (r *docRepo) GetByID(ctx context.Context, id int64) (*domain.Document, erro
 	query := `
 		SELECT id, documentable_type, documentable_id, file_name, file_path,
 		       file_type, category, version, status, note, uploaded_at, verified_at,
-		       uploaded_by, verified_by, created_at, updated_at
+		       uploaded_by, verified_by, created_at, updated_at, deleted_at
 		FROM documents
-		WHERE id = $1
+		WHERE id = $1 AND deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &doc, query, id)
 	if err != nil {
@@ -45,9 +45,9 @@ func (r *docRepo) ListByEntity(ctx context.Context, docType string, docID int64)
 	query := `
 		SELECT id, documentable_type, documentable_id, file_name, file_path,
 		       file_type, category, version, status, note, uploaded_at, verified_at,
-		       uploaded_by, verified_by, created_at, updated_at
+		       uploaded_by, verified_by, created_at, updated_at, deleted_at
 		FROM documents
-		WHERE documentable_type = $1 AND documentable_id = $2
+		WHERE documentable_type = $1 AND documentable_id = $2 AND deleted_at IS NULL
 		ORDER BY id ASC
 	`
 	err := r.db.SelectContext(ctx, &docs, query, docType, docID)
@@ -59,9 +59,9 @@ func (r *docRepo) ListByEntityAndCategory(ctx context.Context, docType string, d
 	query := `
 		SELECT id, documentable_type, documentable_id, file_name, file_path,
 		       file_type, category, version, status, note, uploaded_at, verified_at,
-		       uploaded_by, verified_by, created_at, updated_at
+		       uploaded_by, verified_by, created_at, updated_at, deleted_at
 		FROM documents
-		WHERE documentable_type = $1 AND documentable_id = $2 AND category = $3
+		WHERE documentable_type = $1 AND documentable_id = $2 AND category = $3 AND deleted_at IS NULL
 		ORDER BY id ASC
 	`
 	err := r.db.SelectContext(ctx, &docs, query, docType, docID, category)
@@ -91,7 +91,7 @@ func (r *docRepo) Update(ctx context.Context, doc *domain.Document) error {
 		UPDATE documents
 		SET file_name = $1, file_path = $2, file_type = $3, category = $4,
 		    version = $5, status = $6, note = $7, updated_at = NOW()
-		WHERE id = $8
+		WHERE id = $8 AND deleted_at IS NULL
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		doc.FileName, doc.FilePath, doc.FileType, doc.Category,
@@ -101,7 +101,7 @@ func (r *docRepo) Update(ctx context.Context, doc *domain.Document) error {
 }
 
 func (r *docRepo) Delete(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM documents WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE documents SET deleted_at = NOW() WHERE id = $1`, id)
 	return err
 }
 
@@ -109,7 +109,7 @@ func (r *docRepo) Verify(ctx context.Context, id int64, status string, note *str
 	query := `
 		UPDATE documents
 		SET status = $1, note = $2, verified_by = $3, verified_at = NOW(), updated_at = NOW()
-		WHERE id = $4
+		WHERE id = $4 AND deleted_at IS NULL
 	`
 	_, err := r.db.ExecContext(ctx, query, status, note, verifiedBy, id)
 	return err
@@ -129,11 +129,11 @@ func (r *verifRepo) GetLatestVerification(ctx context.Context, verifiableType st
 	var v domain.Verification
 	query := `
 		SELECT v.id, v.verifiable_type, v.verifiable_id, v.step, v.status, v.note,
-		       v.verified_by, v.verified_at, v.is_current, v.superseded_at, v.created_at, v.updated_at,
+		       v.verified_by, v.verified_at, v.is_current, v.superseded_at, v.created_at, v.updated_at, v.deleted_at,
 		       u.name as verifier_name
 		FROM verifications v
 		LEFT JOIN users u ON v.verified_by = u.id
-		WHERE v.verifiable_type = $1 AND v.verifiable_id = $2 AND v.step = $3 AND v.is_current = true
+		WHERE v.verifiable_type = $1 AND v.verifiable_id = $2 AND v.step = $3 AND v.is_current = true AND v.deleted_at IS NULL
 		ORDER BY v.id DESC LIMIT 1
 	`
 	err := r.db.GetContext(ctx, &v, query, verifiableType, verifiableID, step)
@@ -150,11 +150,11 @@ func (r *verifRepo) ListVerifications(ctx context.Context, verifiableType string
 	var results []*domain.Verification
 	query := `
 		SELECT v.id, v.verifiable_type, v.verifiable_id, v.step, v.status, v.note,
-		       v.verified_by, v.verified_at, v.is_current, v.superseded_at, v.created_at, v.updated_at,
+		       v.verified_by, v.verified_at, v.is_current, v.superseded_at, v.created_at, v.updated_at, v.deleted_at,
 		       u.name as verifier_name
 		FROM verifications v
 		LEFT JOIN users u ON v.verified_by = u.id
-		WHERE v.verifiable_type = $1 AND v.verifiable_id = $2
+		WHERE v.verifiable_type = $1 AND v.verifiable_id = $2 AND v.deleted_at IS NULL
 		ORDER BY v.id DESC
 	`
 	err := r.db.SelectContext(ctx, &results, query, verifiableType, verifiableID)

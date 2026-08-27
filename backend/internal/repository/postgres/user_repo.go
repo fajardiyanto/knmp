@@ -21,7 +21,7 @@ func NewUserRepo(db *sqlx.DB) repository.UserRepository {
 
 func (r *userRepo) GetByID(ctx context.Context, id int64) (*domain.User, error) {
 	var user domain.User
-	query := `SELECT id, name, email, email_verified_at, password, remember_token, created_at, updated_at FROM users WHERE id = $1`
+	query := `SELECT id, name, email, email_verified_at, password, remember_token, created_at, updated_at, deleted_at FROM users WHERE id = $1 AND deleted_at IS NULL`
 	err := r.db.GetContext(ctx, &user, query, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -34,7 +34,7 @@ func (r *userRepo) GetByID(ctx context.Context, id int64) (*domain.User, error) 
 
 func (r *userRepo) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
-	query := `SELECT id, name, email, email_verified_at, password, remember_token, created_at, updated_at FROM users WHERE email = $1`
+	query := `SELECT id, name, email, email_verified_at, password, remember_token, created_at, updated_at, deleted_at FROM users WHERE email = $1 AND deleted_at IS NULL`
 	err := r.db.GetContext(ctx, &user, query, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -48,7 +48,7 @@ func (r *userRepo) GetByEmail(ctx context.Context, email string) (*domain.User, 
 func (r *userRepo) List(ctx context.Context, search string) ([]*domain.User, error) {
 	var users []*domain.User
 	query := `
-		SELECT u.id, u.name, u.email, u.email_verified_at, u.created_at, u.updated_at,
+		SELECT u.id, u.name, u.email, u.email_verified_at, u.created_at, u.updated_at, u.deleted_at,
 		       COALESCE(r.name, 'Admin') as role_name,
 		       COALESCE(k.name, '-') as knmp_name
 		FROM users u
@@ -56,11 +56,12 @@ func (r *userRepo) List(ctx context.Context, search string) ([]*domain.User, err
 		LEFT JOIN roles r ON mhr.role_id = r.id
 		LEFT JOIN user_knmps uk ON u.id = uk.user_id
 		LEFT JOIN knmps k ON uk.knmp_id = k.id
+		WHERE u.deleted_at IS NULL
 	`
 	var args []any
 
 	if search != "" {
-		query += ` WHERE u.name ILIKE $1 OR u.email ILIKE $1`
+		query += ` AND (u.name ILIKE $1 OR u.email ILIKE $1)`
 		args = append(args, "%"+search+"%")
 	}
 	query += ` ORDER BY u.id ASC`
@@ -86,10 +87,10 @@ func (r *userRepo) Update(ctx context.Context, user *domain.User) error {
 	var query string
 	var err error
 	if user.Password != "" {
-		query = `UPDATE users SET name = $1, email = $2, password = $3, updated_at = NOW() WHERE id = $4`
+		query = `UPDATE users SET name = $1, email = $2, password = $3, updated_at = NOW() WHERE id = $4 AND deleted_at IS NULL`
 		_, err = r.db.ExecContext(ctx, query, user.Name, user.Email, user.Password, user.ID)
 	} else {
-		query = `UPDATE users SET name = $1, email = $2, updated_at = NOW() WHERE id = $3`
+		query = `UPDATE users SET name = $1, email = $2, updated_at = NOW() WHERE id = $3 AND deleted_at IS NULL`
 		_, err = r.db.ExecContext(ctx, query, user.Name, user.Email, user.ID)
 	}
 	if err != nil {
@@ -99,7 +100,7 @@ func (r *userRepo) Update(ctx context.Context, user *domain.User) error {
 }
 
 func (r *userRepo) Delete(ctx context.Context, id int64) error {
-	query := `DELETE FROM users WHERE id = $1`
+	query := `UPDATE users SET deleted_at = NOW() WHERE id = $1`
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }

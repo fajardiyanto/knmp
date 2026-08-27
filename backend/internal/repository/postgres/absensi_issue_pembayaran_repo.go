@@ -25,11 +25,11 @@ func (r *absensiRepo) GetByID(ctx context.Context, id int64) (*domain.Absensi, e
 	var a domain.Absensi
 	query := `
 		SELECT a.id, a.pelaksanaan_id, a.user_id, a.tipe_absensi, a.recorded_at,
-		       a.lat, a.long, a.status, a.created_by, a.updated_by, a.created_at, a.updated_at,
+		       a.lat, a.long, a.status, a.created_by, a.updated_by, a.created_at, a.updated_at, a.deleted_at,
 		       p.nama as pelaksanaan_name
 		FROM absensis a
 		JOIN pelaksanaans p ON a.pelaksanaan_id = p.id
-		WHERE a.id = $1
+		WHERE a.id = $1 AND a.deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &a, query, id)
 	if err != nil {
@@ -45,11 +45,11 @@ func (r *absensiRepo) List(ctx context.Context, filter repository.AbsensiFilter)
 	results := make([]*domain.Absensi, 0)
 	query := `
 		SELECT a.id, a.pelaksanaan_id, a.user_id, a.tipe_absensi, a.recorded_at,
-		       a.lat, a.long, a.status, a.created_by, a.updated_by, a.created_at, a.updated_at,
+		       a.lat, a.long, a.status, a.created_by, a.updated_by, a.created_at, a.updated_at, a.deleted_at,
 		       p.nama as pelaksanaan_name
 		FROM absensis a
 		JOIN pelaksanaans p ON a.pelaksanaan_id = p.id
-		WHERE 1=1
+		WHERE a.deleted_at IS NULL
 	`
 	var args []any
 	argIdx := 1
@@ -69,8 +69,13 @@ func (r *absensiRepo) List(ctx context.Context, filter repository.AbsensiFilter)
 		args = append(args, filter.Status)
 		argIdx++
 	}
+	if filter.Tanggal != "" {
+		query += fmt.Sprintf(" AND DATE(a.recorded_at) = $%d", argIdx)
+		args = append(args, filter.Tanggal)
+		argIdx++
+	}
 
-	query += " ORDER BY a.recorded_at DESC"
+	query += " ORDER BY a.id DESC"
 
 	err := r.db.SelectContext(ctx, &results, query, args...)
 	return results, err
@@ -93,7 +98,7 @@ func (r *absensiRepo) Update(ctx context.Context, a *domain.Absensi) error {
 		UPDATE absensis
 		SET pelaksanaan_id = $1, user_id = $2, tipe_absensi = $3, recorded_at = $4,
 		    lat = $5, long = $6, status = $7, updated_by = $8, updated_at = NOW()
-		WHERE id = $9
+		WHERE id = $9 AND deleted_at IS NULL
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		a.PelaksanaanID, a.UserID, a.TipeAbsensi, a.RecordedAt,
@@ -103,12 +108,12 @@ func (r *absensiRepo) Update(ctx context.Context, a *domain.Absensi) error {
 }
 
 func (r *absensiRepo) UpdateStatus(ctx context.Context, id int64, status string) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE absensis SET status = $1, updated_at = NOW() WHERE id = $2`, status, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE absensis SET status = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL`, status, id)
 	return err
 }
 
 func (r *absensiRepo) Delete(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM absensis WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE absensis SET deleted_at = NOW() WHERE id = $1`, id)
 	return err
 }
 
@@ -126,13 +131,13 @@ func (r *issueRepo) GetByID(ctx context.Context, id int64) (*domain.Issue, error
 	var i domain.Issue
 	query := `
 		SELECT i.id, i.knmp_id, i.kategori_issue, i.tingkat, i.status, i.uraian_masalah,
-		       i.created_by, i.created_at, i.updated_at,
+		       i.created_by, i.created_at, i.updated_at, i.deleted_at,
 		       COALESCE(k.name, '-') as knmp_name,
 		       COALESCE(u.name, 'Kontraktor') as created_by_name
 		FROM issues i
 		LEFT JOIN knmps k ON i.knmp_id = k.id
 		LEFT JOIN users u ON i.created_by = u.id
-		WHERE i.id = $1
+		WHERE i.id = $1 AND i.deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &i, query, id)
 	if err != nil {
@@ -148,13 +153,13 @@ func (r *issueRepo) List(ctx context.Context, filter repository.IssueFilter) ([]
 	results := make([]*domain.Issue, 0)
 	query := `
 		SELECT i.id, i.knmp_id, i.kategori_issue, i.tingkat, i.status, i.uraian_masalah,
-		       i.created_by, i.created_at, i.updated_at,
+		       i.created_by, i.created_at, i.updated_at, i.deleted_at,
 		       COALESCE(k.name, '-') as knmp_name,
 		       COALESCE(u.name, 'Kontraktor') as created_by_name
 		FROM issues i
 		LEFT JOIN knmps k ON i.knmp_id = k.id
 		LEFT JOIN users u ON i.created_by = u.id
-		WHERE 1=1
+		WHERE i.deleted_at IS NULL
 	`
 	var args []any
 	argIdx := 1
@@ -201,7 +206,7 @@ func (r *issueRepo) Update(ctx context.Context, issue *domain.Issue) error {
 	query := `
 		UPDATE issues
 		SET knmp_id = $1, kategori_issue = $2, tingkat = $3, status = $4, uraian_masalah = $5, updated_at = NOW()
-		WHERE id = $6
+		WHERE id = $6 AND deleted_at IS NULL
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		issue.KnmpID, issue.KategoriIssue, issue.Tingkat, issue.Status, issue.UraianMasalah, issue.ID,
@@ -210,12 +215,12 @@ func (r *issueRepo) Update(ctx context.Context, issue *domain.Issue) error {
 }
 
 func (r *issueRepo) UpdateStatus(ctx context.Context, id int64, status string) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE issues SET status = $1, updated_at = NOW() WHERE id = $2`, status, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE issues SET status = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL`, status, id)
 	return err
 }
 
 func (r *issueRepo) Delete(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM issues WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE issues SET deleted_at = NOW() WHERE id = $1`, id)
 	return err
 }
 
@@ -234,10 +239,10 @@ func (r *pembayaranRepo) GetByID(ctx context.Context, id int64) (*domain.Pembaya
 	query := `
 		SELECT p.id, p.persiapan_kontrak_id, p.kategori, p.name, p.termin,
 		       p.realisasi_anggaran, p.realisasi_fisik, p.norek_pekerja,
-		       p.created_at, p.updated_at, pk.nama as persiapan_name
+		       p.created_at, p.updated_at, p.deleted_at, pk.nama as persiapan_name
 		FROM pembayarans p
 		JOIN persiapans pk ON p.persiapan_kontrak_id = pk.id
-		WHERE p.id = $1
+		WHERE p.id = $1 AND p.deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &p, query, id)
 	if err != nil {
@@ -254,10 +259,10 @@ func (r *pembayaranRepo) List(ctx context.Context, persiapanKontrakID *int64) ([
 	query := `
 		SELECT p.id, p.persiapan_kontrak_id, p.kategori, p.name, p.termin,
 		       p.realisasi_anggaran, p.realisasi_fisik, p.norek_pekerja,
-		       p.created_at, p.updated_at, pk.nama as persiapan_name
+		       p.created_at, p.updated_at, p.deleted_at, pk.nama as persiapan_name
 		FROM pembayarans p
 		JOIN persiapans pk ON p.persiapan_kontrak_id = pk.id
-		WHERE 1=1
+		WHERE p.deleted_at IS NULL
 	`
 	var args []any
 	if persiapanKontrakID != nil {
@@ -286,7 +291,7 @@ func (r *pembayaranRepo) Update(ctx context.Context, p *domain.Pembayaran) error
 		UPDATE pembayarans
 		SET persiapan_kontrak_id = $1, kategori = $2, name = $3, termin = $4,
 		    realisasi_anggaran = $5, realisasi_fisik = $6, norek_pekerja = $7, updated_at = NOW()
-		WHERE id = $8
+		WHERE id = $8 AND deleted_at IS NULL
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		p.PersiapanKontrakID, p.Kategori, p.Name, p.Termin, p.RealisasiAnggaran, p.RealisasiFisik, p.NorekPekerja, p.ID,
@@ -295,7 +300,7 @@ func (r *pembayaranRepo) Update(ctx context.Context, p *domain.Pembayaran) error
 }
 
 func (r *pembayaranRepo) Delete(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM pembayarans WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE pembayarans SET deleted_at = NOW() WHERE id = $1`, id)
 	return err
 }
 

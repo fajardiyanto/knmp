@@ -19,6 +19,7 @@ type Document struct {
 	VerifiedBy       *int64     `db:"verified_by" json:"verified_by,omitempty"`
 	CreatedAt        time.Time  `db:"created_at" json:"created_at"`
 	UpdatedAt        time.Time  `db:"updated_at" json:"updated_at"`
+	DeletedAt        *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	// URL for frontend viewing / downloading
 	FileURL          string     `db:"-" json:"file_url"`
@@ -37,6 +38,7 @@ type Verification struct {
 	SupersededAt   *time.Time `db:"superseded_at" json:"superseded_at,omitempty"`
 	CreatedAt      time.Time  `db:"created_at" json:"created_at"`
 	UpdatedAt      time.Time  `db:"updated_at" json:"updated_at"`
+	DeletedAt      *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	// Relational details
 	VerifierName   *string    `db:"verifier_name" json:"verifier_name,omitempty"`

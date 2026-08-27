@@ -17,6 +17,7 @@ type Pelaksanaan struct {
 	UpdatedBy      *int64      `db:"updated_by" json:"updated_by,omitempty"`
 	CreatedAt      time.Time   `db:"created_at" json:"created_at"`
 	UpdatedAt      time.Time   `db:"updated_at" json:"updated_at"`
+	DeletedAt      *time.Time  `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	// Relational details
 	KnmpName      *string     `db:"knmp_name" json:"knmp_name,omitempty"`

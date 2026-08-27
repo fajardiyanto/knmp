@@ -25,13 +25,13 @@ func (r *laporanRepo) GetByID(ctx context.Context, id int64) (*domain.Laporan, e
 		SELECT l.id, l.pelaksanaan_id, l.user_id, l.nama, l.tanggal, l.jenis_laporan,
 		       l.keberapa, l.cuaca, l.jumlah_tenaga_kerja, l.rencana_progres_fisik,
 		       l.realisasi_progres_fisik, l.status, l.lat, l.long, l.keterangan,
-		       l.additional_data, l.created_by, l.updated_by, l.created_at, l.updated_at,
+		       l.additional_data, l.created_by, l.updated_by, l.created_at, l.updated_at, l.deleted_at,
 		       p.nama as pelaksanaan_name,
 		       COALESCE(u.name, 'Kontraktor') as user_name
 		FROM laporans l
 		JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
 		LEFT JOIN users u ON l.user_id = u.id
-		WHERE l.id = $1
+		WHERE l.id = $1 AND l.deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &l, query, id)
 	if err != nil {
@@ -50,7 +50,7 @@ func (r *laporanRepo) List(ctx context.Context, filter repository.LaporanFilter)
 		SELECT DISTINCT l.id, l.pelaksanaan_id, l.user_id, l.nama, l.tanggal, l.jenis_laporan,
 		       l.keberapa, l.cuaca, l.jumlah_tenaga_kerja, l.rencana_progres_fisik,
 		       l.realisasi_progres_fisik, l.status, l.lat, l.long, l.keterangan,
-		       l.additional_data, l.created_by, l.updated_by, l.created_at, l.updated_at,
+		       l.additional_data, l.created_by, l.updated_by, l.created_at, l.updated_at, l.deleted_at,
 		       p.nama as pelaksanaan_name,
 		       COALESCE(u.name, 'Kontraktor') as user_name
 		FROM laporans l
@@ -60,7 +60,7 @@ func (r *laporanRepo) List(ctx context.Context, filter repository.LaporanFilter)
 	if filter.JenisBangunanID != nil {
 		query += " JOIN laporan_jenis_bangunan ljb ON l.id = ljb.laporan_id"
 	}
-	query += " WHERE 1=1"
+	query += " WHERE l.deleted_at IS NULL"
 
 	var args []any
 	argIdx := 1
@@ -113,33 +113,32 @@ func (r *laporanRepo) Create(ctx context.Context, l *domain.Laporan, details []*
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO laporans (pelaksanaan_id, user_id, nama, tanggal, jenis_laporan, keberapa, cuaca,
-		                      jumlah_tenaga_kerja, rencana_progres_fisik, realisasi_progres_fisik,
-		                      status, lat, long, keterangan, additional_data, created_by, updated_by,
-		                      created_at, updated_at)
+		INSERT INTO laporans (pelaksanaan_id, user_id, nama, tanggal, jenis_laporan, keberapa, cuaca, jumlah_tenaga_kerja, rencana_progres_fisik, realisasi_progres_fisik, status, lat, long, keterangan, additional_data, created_by, updated_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 	err = tx.QueryRowContext(ctx, query,
-		l.PelaksanaanID, l.UserID, l.Nama, l.Tanggal, l.JenisLaporan, l.Keberapa, l.Cuaca,
-		l.JumlahTenagaKerja, l.RencanaProgresFisik, l.RealisasiProgresFisik,
+		l.PelaksanaanID, l.UserID, l.Nama, l.Tanggal, l.JenisLaporan, l.Keberapa,
+		l.Cuaca, l.JumlahTenagaKerja, l.RencanaProgresFisik, l.RealisasiProgresFisik,
 		l.Status, l.Lat, l.Long, l.Keterangan, l.AdditionalData, l.CreatedBy, l.UpdatedBy,
 	).Scan(&l.ID, &l.CreatedAt, &l.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("insert laporan: %w", err)
 	}
 
-	detailQuery := `
-		INSERT INTO laporan_jenis_bangunan (laporan_id, jenis_bangunan_id, rencana_progres_fisik, realisasi_progres_fisik, keterangan, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-		RETURNING id, created_at, updated_at
-	`
-	for _, d := range details {
-		d.LaporanID = l.ID
-		err = tx.QueryRowContext(ctx, detailQuery, d.LaporanID, d.JenisBangunanID, d.RencanaProgresFisik, d.RealisasiProgresFisik, d.Keterangan).
-			Scan(&d.ID, &d.CreatedAt, &d.UpdatedAt)
-		if err != nil {
-			return fmt.Errorf("insert laporan detail: %w", err)
+	if len(details) > 0 {
+		detailQuery := `
+			INSERT INTO laporan_jenis_bangunan (laporan_id, jenis_bangunan_id, rencana_progres_fisik, realisasi_progres_fisik, keterangan, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+			RETURNING id, created_at, updated_at
+		`
+		for _, d := range details {
+			d.LaporanID = l.ID
+			err = tx.QueryRowContext(ctx, detailQuery, d.LaporanID, d.JenisBangunanID, d.RencanaProgresFisik, d.RealisasiProgresFisik, d.Keterangan).
+				Scan(&d.ID, &d.CreatedAt, &d.UpdatedAt)
+			if err != nil {
+				return fmt.Errorf("insert laporan detail: %w", err)
+			}
 		}
 	}
 
@@ -157,22 +156,21 @@ func (r *laporanRepo) Update(ctx context.Context, l *domain.Laporan, details []*
 		UPDATE laporans
 		SET pelaksanaan_id = $1, user_id = $2, nama = $3, tanggal = $4, jenis_laporan = $5,
 		    keberapa = $6, cuaca = $7, jumlah_tenaga_kerja = $8, rencana_progres_fisik = $9,
-		    realisasi_progres_fisik = $10, status = $11, lat = $12, long = $13, keterangan = $14,
-		    additional_data = $15, updated_by = $16, updated_at = NOW()
-		WHERE id = $17
+		    realisasi_progres_fisik = $10, status = $11, lat = $12, long = $13,
+		    keterangan = $14, additional_data = $15, updated_by = $16, updated_at = NOW()
+		WHERE id = $17 AND deleted_at IS NULL
 	`
 	_, err = tx.ExecContext(ctx, query,
-		l.PelaksanaanID, l.UserID, l.Nama, l.Tanggal, l.JenisLaporan,
-		l.Keberapa, l.Cuaca, l.JumlahTenagaKerja, l.RencanaProgresFisik,
-		l.RealisasiProgresFisik, l.Status, l.Lat, l.Long, l.Keterangan,
-		l.AdditionalData, l.UpdatedBy, l.ID,
+		l.PelaksanaanID, l.UserID, l.Nama, l.Tanggal, l.JenisLaporan, l.Keberapa,
+		l.Cuaca, l.JumlahTenagaKerja, l.RencanaProgresFisik, l.RealisasiProgresFisik,
+		l.Status, l.Lat, l.Long, l.Keterangan, l.AdditionalData, l.UpdatedBy, l.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("update laporan: %w", err)
 	}
 
 	if len(details) > 0 {
-		_, _ = tx.ExecContext(ctx, `DELETE FROM laporan_jenis_bangunan WHERE laporan_id = $1`, l.ID)
+		_, _ = tx.ExecContext(ctx, `UPDATE laporan_jenis_bangunan SET deleted_at = NOW() WHERE laporan_id = $1`, l.ID)
 		detailQuery := `
 			INSERT INTO laporan_jenis_bangunan (laporan_id, jenis_bangunan_id, rencana_progres_fisik, realisasi_progres_fisik, keterangan, created_at, updated_at)
 			VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
@@ -192,13 +190,13 @@ func (r *laporanRepo) Update(ctx context.Context, l *domain.Laporan, details []*
 }
 
 func (r *laporanRepo) UpdateStatus(ctx context.Context, id int64, status string) error {
-	query := `UPDATE laporans SET status = $1, updated_at = NOW() WHERE id = $2`
+	query := `UPDATE laporans SET status = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL`
 	_, err := r.db.ExecContext(ctx, query, status, id)
 	return err
 }
 
 func (r *laporanRepo) Delete(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM laporans WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE laporans SET deleted_at = NOW() WHERE id = $1`, id)
 	return err
 }
 
@@ -206,11 +204,11 @@ func (r *laporanRepo) GetDetailsByLaporanID(ctx context.Context, laporanID int64
 	var details []*domain.LaporanJenisBangunan
 	query := `
 		SELECT ljb.id, ljb.laporan_id, ljb.jenis_bangunan_id, ljb.rencana_progres_fisik,
-		       ljb.realisasi_progres_fisik, ljb.keterangan, ljb.created_at, ljb.updated_at,
+		       ljb.realisasi_progres_fisik, ljb.keterangan, ljb.created_at, ljb.updated_at, ljb.deleted_at,
 		       jb.nama as jenis_bangunan_name
 		FROM laporan_jenis_bangunan ljb
 		JOIN jenis_bangunans jb ON ljb.jenis_bangunan_id = jb.id
-		WHERE ljb.laporan_id = $1
+		WHERE ljb.laporan_id = $1 AND ljb.deleted_at IS NULL
 		ORDER BY ljb.id ASC
 	`
 	err := r.db.SelectContext(ctx, &details, query, laporanID)

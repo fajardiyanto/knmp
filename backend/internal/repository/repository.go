@@ -103,6 +103,7 @@ type AbsensiFilter struct {
 	PelaksanaanID *int64
 	TipeAbsensi   string
 	Status        string
+	Tanggal       string
 }
 
 type AbsensiRepository interface {

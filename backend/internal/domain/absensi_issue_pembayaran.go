@@ -15,6 +15,7 @@ type Absensi struct {
 	UpdatedBy           *int64        `db:"updated_by" json:"updated_by,omitempty"`
 	CreatedAt           time.Time     `db:"created_at" json:"created_at"`
 	UpdatedAt           time.Time     `db:"updated_at" json:"updated_at"`
+	DeletedAt           *time.Time    `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	// Relational details
 	PelaksanaanName     *string       `db:"pelaksanaan_name" json:"pelaksanaan_name,omitempty"`
@@ -32,6 +33,7 @@ type Issue struct {
 	CreatedBy           *int64        `db:"created_by" json:"created_by,omitempty"`
 	CreatedAt           time.Time     `db:"created_at" json:"created_at"`
 	UpdatedAt           time.Time     `db:"updated_at" json:"updated_at"`
+	DeletedAt           *time.Time    `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	// Relational details
 	KnmpName            *string       `db:"knmp_name" json:"knmp_name,omitempty"`
@@ -51,6 +53,7 @@ type Pembayaran struct {
 	NorekPekerja       *string     `db:"norek_pekerja" json:"norek_pekerja,omitempty"`
 	CreatedAt          time.Time   `db:"created_at" json:"created_at"`
 	UpdatedAt          time.Time   `db:"updated_at" json:"updated_at"`
+	DeletedAt          *time.Time  `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	// Relational details
 	PersiapanName      *string     `db:"persiapan_name" json:"persiapan_name,omitempty"`

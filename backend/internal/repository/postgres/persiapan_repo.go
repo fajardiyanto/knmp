@@ -106,11 +106,11 @@ func (r *persiapanRepo) Delete(ctx context.Context, id int64) error {
 func (r *persiapanRepo) GetPCM(ctx context.Context, persiapanKontrakID int64) (*domain.PCM, error) {
 	var pcm domain.PCM
 	query := `
-		SELECT p.id, p.persiapan_kontrak_id, p.nama, p.tanggal, p.keterangan, p.created_at, p.updated_at,
+		SELECT p.id, p.persiapan_kontrak_id, p.nama, p.tanggal, p.keterangan, p.created_at, p.updated_at, p.deleted_at,
 		       COALESCE(pk.nama, '') as kontrak_nama
 		FROM pcm p
 		LEFT JOIN persiapans pk ON p.persiapan_kontrak_id = pk.id
-		WHERE p.persiapan_kontrak_id = $1
+		WHERE p.persiapan_kontrak_id = $1 AND p.deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &pcm, query, persiapanKontrakID)
 	if err != nil {
@@ -125,11 +125,11 @@ func (r *persiapanRepo) GetPCM(ctx context.Context, persiapanKontrakID int64) (*
 func (r *persiapanRepo) GetPCMByID(ctx context.Context, id int64) (*domain.PCM, error) {
 	var pcm domain.PCM
 	query := `
-		SELECT p.id, p.persiapan_kontrak_id, p.nama, p.tanggal, p.keterangan, p.created_at, p.updated_at,
+		SELECT p.id, p.persiapan_kontrak_id, p.nama, p.tanggal, p.keterangan, p.created_at, p.updated_at, p.deleted_at,
 		       COALESCE(pk.nama, '') as kontrak_nama
 		FROM pcm p
 		LEFT JOIN persiapans pk ON p.persiapan_kontrak_id = pk.id
-		WHERE p.id = $1
+		WHERE p.id = $1 AND p.deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &pcm, query, id)
 	if err != nil {
@@ -144,11 +144,11 @@ func (r *persiapanRepo) GetPCMByID(ctx context.Context, id int64) (*domain.PCM, 
 func (r *persiapanRepo) ListPCM(ctx context.Context, persiapanKontrakID *int64) ([]*domain.PCM, error) {
 	var results []*domain.PCM
 	query := `
-		SELECT p.id, p.persiapan_kontrak_id, p.nama, p.tanggal, p.keterangan, p.created_at, p.updated_at,
+		SELECT p.id, p.persiapan_kontrak_id, p.nama, p.tanggal, p.keterangan, p.created_at, p.updated_at, p.deleted_at,
 		       COALESCE(pk.nama, '') as kontrak_nama
 		FROM pcm p
 		LEFT JOIN persiapans pk ON p.persiapan_kontrak_id = pk.id
-		WHERE 1=1
+		WHERE p.deleted_at IS NULL
 	`
 	var args []any
 	if persiapanKontrakID != nil {
@@ -163,7 +163,7 @@ func (r *persiapanRepo) ListPCM(ctx context.Context, persiapanKontrakID *int64) 
 
 func (r *persiapanRepo) CreateOrUpdatePCM(ctx context.Context, pcm *domain.PCM) error {
 	if pcm.ID != 0 {
-		query := `UPDATE pcm SET persiapan_kontrak_id = $1, nama = $2, tanggal = $3, keterangan = $4, updated_at = NOW() WHERE id = $5`
+		query := `UPDATE pcm SET persiapan_kontrak_id = $1, nama = $2, tanggal = $3, keterangan = $4, updated_at = NOW() WHERE id = $5 AND deleted_at IS NULL`
 		_, err := r.db.ExecContext(ctx, query, pcm.PersiapanKontrakID, pcm.Nama, pcm.Tanggal, pcm.Keterangan, pcm.ID)
 		return err
 	}
@@ -178,6 +178,6 @@ func (r *persiapanRepo) CreateOrUpdatePCM(ctx context.Context, pcm *domain.PCM) 
 }
 
 func (r *persiapanRepo) DeletePCM(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM pcm WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE pcm SET deleted_at = NOW() WHERE id = $1`, id)
 	return err
 }
