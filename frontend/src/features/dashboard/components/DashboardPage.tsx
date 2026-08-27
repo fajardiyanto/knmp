@@ -518,55 +518,55 @@ export const DashboardPage: React.FC = () => {
             Peta Sebaran Lokasi KNMP
           </h3>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+          <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 max-w-full">
             <button
               type="button"
               onClick={() => setActiveFilter("all")}
-              className="px-4 py-2 text-sm font-medium bg-[#3b82f6] text-white rounded-xl hover:bg-[#2563eb] transition-all shadow-xs"
+              className="px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium bg-[#3b82f6] text-white rounded-xl hover:bg-[#2563eb] transition-all shadow-xs shrink-0 whitespace-nowrap cursor-pointer"
             >
               Bantuan
             </button>
             <button
               type="button"
               onClick={() => setActiveFilter(activeFilter === ">75%" ? "all" : ">75%")}
-              className={`px-3.5 py-2 text-sm font-medium border rounded-xl flex items-center gap-2 transition-colors shadow-2xs ${
+              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium border rounded-xl flex items-center gap-1.5 sm:gap-2 transition-colors shadow-2xs shrink-0 whitespace-nowrap cursor-pointer ${
                 activeFilter === ">75%"
                   ? "bg-emerald-50 border-emerald-400 text-emerald-700 ring-2 ring-emerald-200"
                   : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
               }`}
             >
-              <svg width="14" height="18" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="13" height="16" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
                 <path fillRule="evenodd" clipRule="evenodd" d="M10 0C4.47715 0 0 4.47715 0 10C0 17 10 26 10 26C10 26 20 17 20 10C20 4.47715 15.5228 0 10 0ZM10 14C12.2091 14 14 12.2091 14 10C14 7.79086 12.2091 6 10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14Z" fill="#22c55e"/>
               </svg>
-              <span>&gt; 75 %</span>
+              <span className="whitespace-nowrap">&gt; 75%</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveFilter(activeFilter === "<75%" ? "all" : "<75%")}
-              className={`px-3.5 py-2 text-sm font-medium border rounded-xl flex items-center gap-2 transition-colors shadow-2xs ${
+              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium border rounded-xl flex items-center gap-1.5 sm:gap-2 transition-colors shadow-2xs shrink-0 whitespace-nowrap cursor-pointer ${
                 activeFilter === "<75%"
                   ? "bg-amber-50 border-amber-400 text-amber-700 ring-2 ring-amber-200"
                   : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
               }`}
             >
-              <svg width="14" height="18" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="13" height="16" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
                 <path fillRule="evenodd" clipRule="evenodd" d="M10 0C4.47715 0 0 4.47715 0 10C0 17 10 26 10 26C10 26 20 17 20 10C20 4.47715 15.5228 0 10 0ZM10 14C12.2091 14 14 12.2091 14 10C14 7.79086 12.2091 6 10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14Z" fill="#eab308"/>
               </svg>
-              <span>&lt; 75 %</span>
+              <span className="whitespace-nowrap">&lt; 75%</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveFilter(activeFilter === "<50%" ? "all" : "<50%")}
-              className={`px-3.5 py-2 text-sm font-medium border rounded-xl flex items-center gap-2 transition-colors shadow-2xs ${
+              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium border rounded-xl flex items-center gap-1.5 sm:gap-2 transition-colors shadow-2xs shrink-0 whitespace-nowrap cursor-pointer ${
                 activeFilter === "<50%"
                   ? "bg-rose-50 border-rose-400 text-rose-700 ring-2 ring-rose-200"
                   : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
               }`}
             >
-              <svg width="14" height="18" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="13" height="16" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
                 <path fillRule="evenodd" clipRule="evenodd" d="M10 0C4.47715 0 0 4.47715 0 10C0 17 10 26 10 26C10 26 20 17 20 10C20 4.47715 15.5228 0 10 0ZM10 14C12.2091 14 14 12.2091 14 10C14 7.79086 12.2091 6 10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14Z" fill="#ef4444"/>
               </svg>
-              <span>&lt; 50 %</span>
+              <span className="whitespace-nowrap">&lt; 50%</span>
             </button>
           </div>
         </div>
