@@ -1,0 +1,611 @@
+import React, { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowLeft,
+  FileText,
+  UploadCloud,
+  CheckCircle2,
+  Clock,
+  Eye,
+  Trash2,
+  Plus,
+  X,
+  FileCheck,
+} from "lucide-react";
+import { apiFetch } from "../../../lib/api-client";
+import { formatDate } from "../../../lib/utils";
+
+interface PembayaranDetail {
+  id: number;
+  name: string;
+  persiapan_name?: string;
+  termin: string;
+  realisasi_anggaran: number;
+  realisasi_fisik: number;
+  documents?: Array<{
+    id: number;
+    category: string;
+    file_name: string;
+    file_path: string;
+    file_url: string;
+    mime_type: string;
+    size: number;
+    created_at: string;
+    status?: string;
+    verified_by?: number;
+    verified_at?: string;
+  }>;
+}
+
+interface RequiredDocDef {
+  no: number;
+  code: string;
+  name: string;
+  isCustom?: boolean;
+}
+
+const DEFAULT_ANGGARAN_DOCS: RequiredDocDef[] = [
+  { no: 1, code: "bapp_doc", name: "BAPP" },
+  { no: 2, code: "rpd_doc", name: "RPD" },
+  { no: 3, code: "permohonan_pembayaran_doc", name: "Permohonan Pembayaran" },
+  { no: 4, code: "kwitansi_doc", name: "Kwitansi" },
+  { no: 5, code: "ba_pembayaran_doc", name: "BA Pembayaran" },
+];
+
+export const UploadDokumenAnggaranPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [customDocs, setCustomDocs] = useState<RequiredDocDef[]>([]);
+  const [isAddCustomOpen, setIsAddCustomOpen] = useState(false);
+  const [customDocName, setCustomDocName] = useState("");
+  const [customUploadFile, setCustomUploadFile] = useState<File | null>(null);
+
+  const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
+
+  // 1. Fetch Pembayaran Detail
+  const { data: pembayaran, isLoading } = useQuery<PembayaranDetail>({
+    queryKey: ["pembayaran-detail", id],
+    queryFn: () => apiFetch<PembayaranDetail>(`/api/v1/pembayaran/${id}`),
+    enabled: !!id,
+  });
+
+  const allDocDefs = [...DEFAULT_ANGGARAN_DOCS, ...customDocs];
+
+  // Document Upload Mutation
+  const uploadMutation = useMutation({
+    mutationFn: async ({ category, file }: { category: string; file: File }) => {
+      const fd = new FormData();
+      fd.append("documentable_type", "pembayaran");
+      fd.append("documentable_id", id || "0");
+      fd.append("category", category);
+      fd.append("file", file);
+
+      return apiFetch("/api/v1/documents", {
+        method: "POST",
+        body: fd,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pembayaran-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["pembayaran-list"] });
+      setUploadingCategory(null);
+    },
+    onError: (err: any) => {
+      alert("Gagal mengunggah berkas: " + err.message);
+      setUploadingCategory(null);
+    },
+  });
+
+  // Delete Document Mutation
+  const deleteDocMutation = useMutation({
+    mutationFn: (docId: number) =>
+      apiFetch(`/api/v1/documents/${docId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pembayaran-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["pembayaran-list"] });
+    },
+  });
+
+  // Verify Document Mutation
+  const verifyDocMutation = useMutation({
+    mutationFn: ({ docId, status }: { docId: number; status: string }) =>
+      apiFetch(`/api/v1/documents/${docId}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pembayaran-detail", id] });
+    },
+  });
+
+  const handleFileSelect = (category: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadingCategory(category);
+      uploadMutation.mutate({ category, file });
+    }
+  };
+
+  const handleAddCustomDoc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customDocName.trim()) return;
+
+    const code = `custom_anggaran_${Date.now()}`;
+    const newDocDef = {
+      no: allDocDefs.length + 1,
+      code,
+      name: customDocName.trim(),
+      isCustom: true,
+    };
+
+    setCustomDocs((prev) => [...prev, newDocDef]);
+
+    if (customUploadFile) {
+      setUploadingCategory(code);
+      try {
+        const fd = new FormData();
+        fd.append("documentable_type", "pembayaran");
+        fd.append("documentable_id", id || "0");
+        fd.append("category", code);
+        fd.append("file", customUploadFile);
+
+        await apiFetch("/api/v1/documents", {
+          method: "POST",
+          body: fd,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["pembayaran-detail", id] });
+        queryClient.invalidateQueries({ queryKey: ["pembayaran-list"] });
+      } catch (err: any) {
+        alert("Gagal mengunggah dokumen: " + err.message);
+      } finally {
+        setUploadingCategory(null);
+      }
+    }
+
+    setCustomDocName("");
+    setCustomUploadFile(null);
+    setIsAddCustomOpen(false);
+  };
+
+  // Calculations for 4 Summary Cards
+  const docs = pembayaran?.documents || [];
+  const totalRequired = allDocDefs.length;
+  const uploadedCount = allDocDefs.filter((d) => docs.some((doc) => doc.category === d.code)).length;
+  const belumUploadCount = totalRequired - uploadedCount;
+
+  const verifiedCount = docs.filter((d) => d.status === "terverifikasi").length;
+  const verifiedPct = uploadedCount > 0 ? Math.round((verifiedCount / uploadedCount) * 100) : 0;
+  const belumVerifCount = uploadedCount - verifiedCount;
+  const belumVerifPct = uploadedCount > 0 ? 100 - verifiedPct : 100;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center text-slate-500 text-sm">
+        Memuat berkas dokumen anggaran...
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 w-full font-sans pb-12">
+      {/* 1. Go Back Button */}
+      <div>
+        <button
+          type="button"
+          onClick={() => navigate("/pembayaran")}
+          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Kembali</span>
+        </button>
+      </div>
+
+      {/* 2. Header Section: Target Title & 4 Summary Cards */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 bg-transparent">
+        {/* Left Title Info */}
+        <div className="flex items-start gap-4">
+          <div className="w-13 h-13 rounded-2xl bg-[#0d6efd] text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
+            <FileText className="w-7 h-7" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-xl lg:text-2xl font-extrabold text-slate-900 tracking-tight">
+              Upload Dokumen
+            </h2>
+            <p className="text-[13.5px] font-semibold text-slate-600">
+              Target: <span className="font-bold text-slate-900">{pembayaran?.name || "Anggaran Survey"}</span>
+            </p>
+            <p className="text-xs font-semibold text-[#0d6efd]">
+              Sistem akan mendeteksi kelengkapan dokumen
+            </p>
+          </div>
+        </div>
+
+        {/* Right 4 Summary Metric Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          {/* Belum Upload */}
+          <div className="bg-[#fef2f2] border border-[#fee2e2] rounded-2xl px-5 py-3.5 flex items-center gap-3.5 min-w-[175px]">
+            <div className="w-11 h-11 rounded-full bg-[#ef4444] text-white flex items-center justify-center shrink-0">
+              <UploadCloud className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-[11px] font-bold text-[#ef4444] tracking-wider uppercase">
+                BELUM UPLOAD
+              </div>
+              <div className="text-2xl font-normal text-slate-900 leading-tight my-0.5">
+                {belumUploadCount}
+              </div>
+              <div className="text-xs font-semibold text-[#ef4444]">Pending</div>
+            </div>
+          </div>
+
+          {/* Upload */}
+          <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-2xl px-5 py-3.5 flex items-center gap-3.5 min-w-[175px]">
+            <div className="w-11 h-11 rounded-full bg-[#22c55e] text-white flex items-center justify-center shrink-0">
+              <FileCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-[11px] font-bold text-[#16a34a] tracking-wider uppercase">
+                UPLOAD
+              </div>
+              <div className="text-2xl font-normal text-slate-900 leading-tight my-0.5">
+                {uploadedCount}
+              </div>
+              <div className="text-xs font-semibold text-[#16a34a]">{totalRequired} Required</div>
+            </div>
+          </div>
+
+          {/* Terverifikasi */}
+          <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-2xl px-5 py-3.5 flex items-center gap-3.5 min-w-[175px]">
+            <div className="w-11 h-11 rounded-full bg-[#0ea5e9] text-white flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-[11px] font-bold text-[#0284c7] tracking-wider uppercase">
+                TERVERIFIKASI
+              </div>
+              <div className="text-2xl font-normal text-slate-900 leading-tight my-0.5">
+                {verifiedCount}
+              </div>
+              <div className="text-xs font-semibold text-[#0284c7]">{verifiedPct}%</div>
+            </div>
+          </div>
+
+          {/* Belum Verif */}
+          <div className="bg-[#fefce8] border border-[#fef9c3] rounded-2xl px-5 py-3.5 flex items-center gap-3.5 min-w-[175px]">
+            <div className="w-11 h-11 rounded-full bg-[#eab308] text-white flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-[11px] font-bold text-[#ca8a04] tracking-wider uppercase">
+                BELUM VERIF.
+              </div>
+              <div className="text-2xl font-normal text-slate-900 leading-tight my-0.5">
+                {belumVerifCount}
+              </div>
+              <div className="text-xs font-semibold text-[#ca8a04]">{belumVerifPct}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Document Table Card */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-slate-700">
+            <thead className="bg-slate-50/80 border-b border-slate-200/90 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <tr>
+                <th className="py-4 px-4 text-center w-14">No.</th>
+                <th className="py-4 px-5 min-w-[220px]">Dokumen</th>
+                <th className="py-4 px-5 min-w-[240px]">Upload File</th>
+                <th className="py-4 px-4 text-center">Tgl Upload</th>
+                <th className="py-4 px-4 text-center">Verifikasi Pengawas</th>
+                <th className="py-4 px-4 text-center">Tgl Verifikasi</th>
+                <th className="py-4 px-4 text-center">Status</th>
+                <th className="py-4 px-5 text-center w-36">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {allDocDefs.map((def) => {
+                const doc = docs.find((d) => d.category === def.code);
+                const isUploaded = !!doc;
+                const isVerified = doc?.status === "terverifikasi";
+                const isUploadingThis = uploadingCategory === def.code;
+
+                return (
+                  <tr key={def.code} className="hover:bg-slate-50/60 transition-colors">
+                    {/* No. */}
+                    <td className="py-4 px-4 text-center font-medium text-slate-500 text-[13.5px]">
+                      {def.no}
+                    </td>
+
+                    {/* Dokumen Name */}
+                    <td className="py-4 px-5 font-normal text-slate-800 text-[14.5px]">
+                      {def.name}
+                    </td>
+
+                    {/* Upload File Interactive Box */}
+                    <td className="py-4 px-5">
+                      {isUploaded ? (
+                        <div className="flex items-center justify-between p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs">
+                          <div className="truncate pr-2">
+                            <span className="font-bold text-emerald-900 block truncate">
+                              {doc.file_name}
+                            </span>
+                            <span className="text-[11px] text-emerald-700 font-mono">
+                              {(doc.size / 1024).toFixed(0)} KB
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <a
+                              href={doc.file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1 text-emerald-700 hover:text-emerald-900"
+                              title="Lihat Berkas"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm("Hapus file dokumen ini?")) {
+                                  deleteDocMutation.mutate(doc.id);
+                                }
+                              }}
+                              className="p-1 text-rose-500 hover:text-rose-700"
+                              title="Hapus File"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="relative flex flex-col items-center justify-center p-3 border-2 border-dashed border-[#b6d0ff] bg-[#eef4ff] hover:bg-[#e2edff] rounded-xl cursor-pointer transition-all text-center">
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+                            onChange={(e) => handleFileSelect(def.code, e)}
+                            disabled={isUploadingThis}
+                          />
+                          <span className="text-xs font-bold text-[#0d6efd]">
+                            {isUploadingThis ? "Mengunggah..." : "Klik untuk upload"}
+                          </span>
+                          <span className="text-[10.5px] text-slate-500 mt-0.5">
+                            Dokumen & Foto (max 20MB)
+                          </span>
+                        </label>
+                      )}
+                    </td>
+
+                    {/* Tgl Upload */}
+                    <td className="py-4 px-4 text-center text-[13px] text-slate-600 font-medium">
+                      {doc ? formatDate(doc.created_at) : "-"}
+                    </td>
+
+                    {/* Verifikasi Pengawas */}
+                    <td className="py-4 px-4 text-center">
+                      {isVerified ? (
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Terverifikasi
+                        </span>
+                      ) : isUploaded ? (
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          Belum Diverifikasi
+                        </span>
+                      ) : (
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
+                          Belum Diverifikasi
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Tgl Verifikasi */}
+                    <td className="py-4 px-4 text-center text-[13px] text-slate-600 font-medium">
+                      {doc?.verified_at ? formatDate(doc.verified_at) : "-"}
+                    </td>
+
+                    {/* Status */}
+                    <td className="py-4 px-4 text-center text-[13px] font-medium">
+                      {isVerified ? (
+                        <span className="text-emerald-600 font-bold">Terverifikasi</span>
+                      ) : isUploaded ? (
+                        <span className="text-blue-600 font-bold">Sudah Upload</span>
+                      ) : (
+                        <span className="text-slate-400">Belum Upload</span>
+                      )}
+                    </td>
+
+                    {/* Aksi */}
+                    <td className="py-4 px-5 text-center text-xs">
+                      {isUploaded ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              verifyDocMutation.mutate({
+                                docId: doc.id,
+                                status: isVerified ? "dalam_verifikasi" : "terverifikasi",
+                              })
+                            }
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                              isVerified
+                                ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            }`}
+                          >
+                            {isVerified ? "Batal Verif" : "Verifikasi"}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">Menunggu upload</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Sub-footer */}
+        <div className="p-4 sm:p-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs font-semibold text-slate-600">
+          <div>
+            5 dokumen wajib + {customDocs.length} tambahan
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsAddCustomOpen(true)}
+            className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Dokumen</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 4. Keterangan Status Upload & Verifikasi Card */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 lg:p-6 shadow-xs space-y-3">
+        <h4 className="text-sm font-bold text-slate-800">
+          Keterangan Status Upload & Verifikasi
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+          <div className="space-y-1">
+            <div className="font-bold text-emerald-600">Terverifikasi</div>
+            <p className="text-slate-500">Dokumen sudah diverifikasi oleh pengawas KNMP.</p>
+          </div>
+
+          <div className="space-y-1">
+            <div className="font-bold text-blue-600">Dalam Verifikasi</div>
+            <p className="text-slate-500">Dokumen sedang diverifikasi oleh pengawas.</p>
+          </div>
+
+          <div className="space-y-1">
+            <div className="font-bold text-amber-600">Belum Diverifikasi</div>
+            <p className="text-slate-500">Menunggu antrian diverifikasi oleh pengawas.</p>
+          </div>
+
+          <div className="space-y-1">
+            <div className="font-bold text-rose-600">Belum Upload</div>
+            <p className="text-slate-500">Dokumen belum diupload ke sistem.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Persyaratan Dokumen Alert Box */}
+      <div className="bg-[#eef4ff] border border-[#d6e4ff] rounded-2xl p-5 lg:p-6 text-xs text-slate-700 space-y-2">
+        <h4 className="font-bold text-[#0d6efd] text-[13px] flex items-center gap-2">
+          <FileText className="w-4 h-4" />
+          <span>Persyaratan Dokumen</span>
+        </h4>
+        <ul className="list-disc list-inside space-y-1 text-slate-600 font-medium">
+          <li>Halaman ini menampilkan daftar dokumen yang perlu dilengkapi.</li>
+          <li>Setiap dokumen dapat diunggah, ditinjau, dan diverifikasi sesuai statusnya.</li>
+          <li>Gunakan pola upload dan verifikasi yang sama dengan Persiapan Lapangan saat logic backend ditambahkan.</li>
+        </ul>
+      </div>
+
+      {/* Modal Tambah Dokumen (Tambahan) */}
+      {isAddCustomOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-[460px] w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80">
+              <h3 className="text-sm font-bold text-slate-800 tracking-tight">
+                Tambah Dokumen (Tambahan)
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddCustomOpen(false);
+                  setCustomUploadFile(null);
+                  setCustomDocName("");
+                }}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCustomDoc}>
+              <div className="p-6 space-y-5">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Nama Dokumen
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customDocName}
+                    onChange={(e) => setCustomDocName(e.target.value)}
+                    placeholder="e.g., Dokumen Tambahan"
+                    className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] placeholder:text-slate-400 transition-all"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    Berikan nama kategori internal dokumen Anda
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-800">
+                    File Dokumen
+                  </label>
+                  <div className="flex items-center justify-between border border-slate-200 rounded-lg overflow-hidden p-1 bg-white">
+                    <label className="cursor-pointer inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-colors">
+                      Choose Files
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.heic,.heif"
+                        onChange={(e) => setCustomUploadFile(e.target.files?.[0] || null)}
+                      />
+                    </label>
+
+                    <span className="text-xs text-slate-500 truncate px-2 flex-1">
+                      {customUploadFile ? customUploadFile.name : "No file chosen"}
+                    </span>
+
+                    <button
+                      type="button"
+                      className="px-3 py-1 text-xs font-semibold text-[#3366ff] hover:text-[#2554d7] transition-colors"
+                    >
+                      Upload
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Format: PDF/DOC/XLS/JPG/PNG/WEBP/HEIC/HEIF, Max 20MB
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-6 py-3.5 border-t border-slate-200/80 flex items-center justify-end gap-2.5 bg-white">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddCustomOpen(false);
+                    setCustomUploadFile(null);
+                    setCustomDocName("");
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg transition-colors shadow-2xs"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-[#3366ff] hover:bg-[#2554d7] rounded-lg transition-colors shadow-2xs"
+                >
+                  Unggah Dokumen
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

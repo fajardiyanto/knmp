@@ -1,0 +1,143 @@
+# ==============================================================================
+# Marine Regulatory 360 (KKPRL Platform) - Global .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment & Sensitive Credentials
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.env
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+
+# ------------------------------------------------------------------------------
+# 2. Go Backend Build Artifacts
+# ------------------------------------------------------------------------------
+# Binaries and executables
+backend/bin/
+backend/*.exe
+backend/*.exe~
+backend/*.dll
+backend/*.so
+backend/*.dylib
+backend/server
+backend/main
+backend/app
+*.exe
+*.test
+*.prof
+
+# Go workspace & vendor
+backend/vendor/
+vendor/
+go.work
+go.work.sum
+
+# Go coverage & test artifacts
+*.out
+cover.out
+coverage.html
+coverage.txt
+
+# ------------------------------------------------------------------------------
+# 3. Node.js & Frontend Build Outputs
+# ------------------------------------------------------------------------------
+# Dependencies
+node_modules/
+frontend/node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+dist-ssr/
+frontend/dist/
+frontend/dist-ssr/
+build/
+out/
+.vite/
+frontend/.vite/
+
+# TypeScript cache
+*.tsbuildinfo
+.eslintcache
+
+# Package manager logs & debug files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ------------------------------------------------------------------------------
+# 4. Storage, Database & Docker Volumes
+# ------------------------------------------------------------------------------
+data/
+backend/data/
+postgres_data/
+minio_data/
+redis_data/
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+*.tar.gz
+
+# Uploaded test & scratch files
+uploads/
+storage/
+temp/
+tmp/
+scratch/
+
+# ------------------------------------------------------------------------------
+# 5. IDE, Code Editors & Tooling
+# ------------------------------------------------------------------------------
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# JetBrains / IntelliJ / GoLand / WebStorm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Vim & Emacs
+*.swp
+*.swo
+*~
+.#*
+
+# ------------------------------------------------------------------------------
+# 6. Operating System Generated Files
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory

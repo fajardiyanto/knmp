@@ -1,0 +1,200 @@
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../auth/hooks/useAuth";
+import {
+  useConversationDetails,
+  useConversations,
+  useCreateGroupChat,
+  useCreatePersonalChat,
+  useMarkAsRead,
+  useMessages,
+  useSendMessage,
+} from "../api";
+import { useChatSocket } from "../hooks/useChatSocket";
+import { Conversation } from "../types";
+import { ConversationList } from "./ConversationList";
+import { ChatHeader } from "./ChatHeader";
+import { MessageList } from "./MessageList";
+import { MessageComposer } from "./MessageComposer";
+import { NewChatModal } from "./NewChatModal";
+import { NewGroupModal } from "./NewGroupModal";
+import { GroupDetailsDrawer } from "./GroupDetailsDrawer";
+import { MessageSquare } from "lucide-react";
+
+export const ChatPage: React.FC = () => {
+  const { user } = useAuth();
+  const currentUserId = user?.id ? Number(user.id) : 0;
+
+  const [activeConvId, setActiveConvId] = useState<number | undefined>(undefined);
+  const [isNewChatOpen, setIsNewChatOpen] = useState(false);
+  const [isNewGroupOpen, setIsNewGroupOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  // Queries & Mutations
+  const { data: convsData, isLoading: isLoadingConvs } = useConversations();
+  const conversations = convsData || [];
+
+  const { data: activeConvData } = useConversationDetails(activeConvId);
+  const activeConversation = activeConvData;
+
+  const { data: messagesData, isLoading: isLoadingMessages } =
+    useMessages(activeConvId);
+  const messages = messagesData || [];
+
+  const markAsRead = useMarkAsRead();
+  const sendMessage = useSendMessage(activeConvId || 0);
+  const createPersonalChat = useCreatePersonalChat();
+  const createGroupChat = useCreateGroupChat();
+
+  // Real-time WebSocket hook
+  const { sendTyping } = useChatSocket(activeConvId);
+
+  // Auto select first conversation if none selected on desktop
+  useEffect(() => {
+    if (!activeConvId && conversations.length > 0 && window.innerWidth >= 768) {
+      setActiveConvId(conversations[0].id);
+    }
+  }, [conversations, activeConvId]);
+
+  // Mark as read on active conversation open
+  useEffect(() => {
+    if (activeConvId) {
+      markAsRead.mutate(activeConvId);
+    }
+  }, [activeConvId]);
+
+  const handleSelectConversation = (conv: Conversation) => {
+    setActiveConvId(conv.id);
+  };
+
+  const handleSendMessage = (content: string) => {
+    if (!activeConvId) return;
+    sendMessage.mutate({ content });
+  };
+
+  const handleStartPersonalChat = (targetUserId: number) => {
+    createPersonalChat.mutate(
+      { user_id: targetUserId },
+      {
+        onSuccess: (res) => {
+          setIsNewChatOpen(false);
+          if (res?.id) {
+            setActiveConvId(res.id);
+          }
+        },
+      }
+    );
+  };
+
+  const handleCreateGroup = (
+    name: string,
+    description: string,
+    memberIds: number[]
+  ) => {
+    createGroupChat.mutate(
+      { name, description, member_ids: memberIds },
+      {
+        onSuccess: (res) => {
+          setIsNewGroupOpen(false);
+          if (res?.id) {
+            setActiveConvId(res.id);
+          }
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="h-[calc(100vh-8.5rem)] flex flex-col w-full font-sans">
+      {/* Main Chat Workspace Card */}
+      <div className="flex-1 flex overflow-hidden bg-white shadow-sm border border-slate-200/80 rounded-2xl">
+        {/* 1. Left Panel: Conversations List */}
+        <div
+          className={`${
+            activeConvId ? "hidden md:flex" : "flex"
+          } w-full md:w-auto h-full`}
+        >
+          <ConversationList
+            conversations={conversations}
+            activeId={activeConvId}
+            onSelect={handleSelectConversation}
+            onOpenNewChat={() => setIsNewChatOpen(true)}
+            onOpenNewGroup={() => setIsNewGroupOpen(true)}
+            isLoading={isLoadingConvs}
+          />
+        </div>
+
+        {/* 2. Middle Panel: Active Message Area */}
+        <div
+          className={`${
+            !activeConvId ? "hidden md:flex" : "flex"
+          } flex-1 flex-col h-full bg-slate-50/50 min-w-0`}
+        >
+          {activeConversation ? (
+            <>
+              {/* Active Conversation Header */}
+              <ChatHeader
+                conversation={activeConversation}
+                onToggleDetails={() => setIsDetailsOpen(!isDetailsOpen)}
+                onBackMobile={() => setActiveConvId(undefined)}
+                isDetailsOpen={isDetailsOpen}
+              />
+
+              {/* Message Stream */}
+              <MessageList
+                messages={messages}
+                currentUserId={currentUserId}
+                isGroup={activeConversation.type === "group"}
+                isLoading={isLoadingMessages}
+              />
+
+              {/* Composer */}
+              <MessageComposer
+                onSend={handleSendMessage}
+                onTyping={sendTyping}
+                isSending={sendMessage.isPending}
+              />
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/50">
+              <div className="w-16 h-16 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 shadow-xs">
+                <MessageSquare className="w-8 h-8" />
+              </div>
+              <h3 className="text-base font-medium text-slate-800 mb-1">
+                Pilih atau Mulai Percakapan
+              </h3>
+              <p className="text-[13.5px] text-slate-400 max-w-sm font-normal">
+                Pilih percakapan dari daftar di sebelah kiri atau buat pesan baru
+                untuk berkoordinasi langsung dengan rekan kerja Anda.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* 3. Right Panel: Group / Contact Details Drawer */}
+        {activeConversation && isDetailsOpen && (
+          <GroupDetailsDrawer
+            conversation={activeConversation}
+            currentUserId={currentUserId}
+            isOpen={isDetailsOpen}
+            onClose={() => setIsDetailsOpen(false)}
+          />
+        )}
+      </div>
+
+      {/* Modals */}
+      <NewChatModal
+        isOpen={isNewChatOpen}
+        onClose={() => setIsNewChatOpen(false)}
+        onSelectUser={handleStartPersonalChat}
+        isCreating={createPersonalChat.isPending}
+      />
+
+      <NewGroupModal
+        isOpen={isNewGroupOpen}
+        onClose={() => setIsNewGroupOpen(false)}
+        onCreateGroup={handleCreateGroup}
+        isCreating={createGroupChat.isPending}
+      />
+    </div>
+  );
+};
