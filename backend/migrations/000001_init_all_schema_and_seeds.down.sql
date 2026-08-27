@@ -1,33 +1,49 @@
 -- 000001_init_all_schema_and_seeds.down.sql
 
+-- Chat & Realtime Messaging
 DROP TABLE IF EXISTS message_reads CASCADE;
 DROP TABLE IF EXISTS messages CASCADE;
 DROP TABLE IF EXISTS conversation_members CASCADE;
 DROP TABLE IF EXISTS conversations CASCADE;
 
+-- Verification & Document Storage
 DROP TABLE IF EXISTS verifications CASCADE;
 DROP TABLE IF EXISTS documents CASCADE;
 
+-- Execution, Operations & Finance
 DROP TABLE IF EXISTS pembayarans CASCADE;
 DROP TABLE IF EXISTS issues CASCADE;
 DROP TABLE IF EXISTS absensis CASCADE;
+DROP TABLE IF EXISTS laporan_jenis_bangunan CASCADE;
 DROP TABLE IF EXISTS laporan_details CASCADE;
 DROP TABLE IF EXISTS laporans CASCADE;
 DROP TABLE IF EXISTS pelaksanaans CASCADE;
+DROP TABLE IF EXISTS pcm CASCADE;
 DROP TABLE IF EXISTS pcms CASCADE;
 DROP TABLE IF EXISTS persiapans CASCADE;
 
+-- KNMP Master & Spatial / Geographic Structure
+DROP TABLE IF EXISTS user_knmps CASCADE;
 DROP TABLE IF EXISTS user_has_knmps CASCADE;
 DROP TABLE IF EXISTS knmps CASCADE;
+DROP TABLE IF EXISTS sub_districts CASCADE;
 DROP TABLE IF EXISTS desas CASCADE;
+DROP TABLE IF EXISTS districts CASCADE;
 DROP TABLE IF EXISTS kecamatans CASCADE;
+DROP TABLE IF EXISTS regencies CASCADE;
 DROP TABLE IF EXISTS kabupatens CASCADE;
+DROP TABLE IF EXISTS provinces CASCADE;
 DROP TABLE IF EXISTS provinsis CASCADE;
+DROP TABLE IF EXISTS regionals CASCADE;
 DROP TABLE IF EXISTS periodes CASCADE;
 DROP TABLE IF EXISTS jenis_bangunans CASCADE;
 
+-- User, Roles & Permissions
 DROP TABLE IF EXISTS role_has_permissions CASCADE;
 DROP TABLE IF EXISTS model_has_roles CASCADE;
 DROP TABLE IF EXISTS permissions CASCADE;
 DROP TABLE IF EXISTS roles CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+
+-- Migration Tracker
+DROP TABLE IF EXISTS schema_migrations CASCADE;
