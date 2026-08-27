@@ -351,15 +351,15 @@ export const IssuePage: React.FC = () => {
         </div>
 
         {/* Row 2: Verifikasi, Status, Reset, Buat Issue */}
-        <div className="flex flex-wrap items-center justify-between gap-3.5">
-          <div className="flex flex-wrap items-center gap-3.5 flex-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pt-1 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
             <select
               value={selectedVerifikasi}
               onChange={(e) => {
                 setSelectedVerifikasi(e.target.value);
                 setPage(1);
               }}
-              className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700 min-w-[150px]"
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700"
             >
               <option value="">Semua Verifikasi</option>
               <option value="terverifikasi">Terverifikasi</option>
@@ -372,7 +372,7 @@ export const IssuePage: React.FC = () => {
                 setSelectedStatus(e.target.value);
                 setPage(1);
               }}
-              className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700 min-w-[150px]"
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700"
             >
               <option value="">Semua Status</option>
               <option value="menunggu_pengawas">Menunggu Pengawas</option>
@@ -381,11 +381,11 @@ export const IssuePage: React.FC = () => {
             </select>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
             <button
               type="button"
               onClick={handleReset}
-              className="px-4 py-2 text-xs font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center gap-1.5 shadow-xs shrink-0"
+              className="flex-1 sm:flex-none px-4 py-2 text-xs font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset</span>
@@ -394,10 +394,10 @@ export const IssuePage: React.FC = () => {
             <button
               type="button"
               onClick={handleOpenAdd}
-              className="px-4.5 py-2 text-xs font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center gap-1.5 shadow-xs shrink-0"
+              className="w-full sm:w-auto px-4.5 py-2 text-xs font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
-              <span>+ Buat Issue</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span>Buat Issue</span>
             </button>
           </div>
         </div>

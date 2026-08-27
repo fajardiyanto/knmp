@@ -21,6 +21,7 @@ import {
   LogOut,
   FileText,
   MessageSquare,
+  X,
 } from "lucide-react";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useTotalUnreadCount } from "../../features/chat/api";
@@ -40,9 +41,14 @@ interface NavGroup {
 interface SidebarProps {
   isOpen?: boolean;
   onToggle?: () => void;
+  onCloseMobile?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onToggle }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  isOpen = true,
+  onToggle,
+  onCloseMobile,
+}) => {
   const { hasPermission, user, logout } = useAuth();
   const { data: unreadData } = useTotalUnreadCount();
   const unreadTotal = unreadData?.unread_count || 0;
@@ -125,45 +131,76 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onToggle }) => 
     },
   ];
 
+  const handleNavClick = () => {
+    if (window.innerWidth < 1024 && onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
   return (
-    <aside
-      className={cn(
-        "bg-white text-slate-700 min-h-screen flex flex-col justify-between border-r border-slate-200/90 shrink-0 sticky top-0 h-screen z-40 transition-all duration-300 ease-in-out select-none",
-        isOpen ? "w-64" : "w-[72px]"
-      )}
-    >
-      <div className="flex-1 flex flex-col min-h-0">
-        {/* Brand Logo Header aligned with Navbar h-16 */}
+    <>
+      {/* 1. Mobile & iPad Backdrop Overlay */}
+      {isOpen && (
         <div
-          className={cn(
-            "h-16 border-b border-slate-200/90 bg-white/95 backdrop-blur-xs flex items-center shrink-0 transition-all duration-300",
-            isOpen ? "px-5 gap-3" : "justify-center px-0"
-          )}
-        >
-          <div className="relative group/logo cursor-pointer shrink-0">
-            <img
-              src="/assets/img/simandor.png"
-              alt="SIMANDOR"
-              className={cn(
-                "object-contain transition-all duration-300 group-hover/logo:scale-105",
-                isOpen ? "w-9 h-auto" : "w-8 h-auto"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-300"
+          onClick={onCloseMobile}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* 2. Sidebar Element: Off-canvas drawer on mobile/iPad (< lg), Sticky sidebar on desktop (>= lg) */}
+      <aside
+        className={cn(
+          "bg-white text-slate-700 min-h-screen flex flex-col justify-between border-r border-slate-200/90 shrink-0 h-screen transition-all duration-300 ease-in-out select-none",
+          // Mobile & iPad (< lg): Fixed off-canvas
+          "fixed inset-y-0 left-0 z-50 lg:static lg:z-30",
+          isOpen ? "translate-x-0 w-64 shadow-2xl lg:shadow-none" : "-translate-x-full lg:translate-x-0 lg:w-[72px]"
+        )}
+      >
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Brand Logo Header aligned with Navbar h-16 */}
+          <div
+            className={cn(
+              "h-16 border-b border-slate-200/90 bg-white/95 backdrop-blur-xs flex items-center justify-between shrink-0 transition-all duration-300 px-4",
+              !isOpen && "lg:justify-center lg:px-0"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative group/logo cursor-pointer shrink-0">
+                <img
+                  src="/assets/img/simandor.png"
+                  alt="SIMANDOR"
+                  className={cn(
+                    "object-contain transition-all duration-300 group-hover/logo:scale-105",
+                    isOpen ? "w-9 h-auto" : "w-8 h-auto"
+                  )}
+                  onError={(e) => {
+                    e.currentTarget.src = "/assets/img/kkp-logo.png";
+                  }}
+                />
+              </div>
+              {(isOpen || window.innerWidth < 1024) && (
+                <div className="overflow-hidden whitespace-nowrap">
+                  <span className="font-bold text-slate-900 text-[14.5px] tracking-wide block leading-tight">
+                    SIMANDOR
+                  </span>
+                  <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">
+                    SIMANDOR 360
+                  </p>
+                </div>
               )}
-              onError={(e) => {
-                e.currentTarget.src = "/assets/img/kkp-logo.png";
-              }}
-            />
-          </div>
-          {isOpen && (
-            <div className="overflow-hidden whitespace-nowrap">
-              <span className="font-bold text-slate-900 text-[14.5px] tracking-wide block leading-tight">
-                SIMANDOR
-              </span>
-              <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">
-                SIMANDOR 360
-              </p>
             </div>
-          )}
-        </div>
+
+            {/* Mobile close button (visible only on mobile/iPad) */}
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              aria-label="Tutup Menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
         {/* Navigation Menus List */}
         <div
@@ -194,6 +231,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onToggle }) => 
                   <NavLink
                     key={item.name + item.href}
                     to={item.href}
+                    onClick={handleNavClick}
                     className={({ isActive }) =>
                       cn(
                         "relative flex items-center rounded-xl text-[13.5px] font-medium transition-all duration-200 ease-out group",
@@ -296,5 +334,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onToggle }) => 
         )}
       </div>
     </aside>
+    </>
   );
 };

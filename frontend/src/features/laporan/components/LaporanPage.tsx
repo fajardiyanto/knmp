@@ -358,12 +358,11 @@ export const LaporanPage: React.FC = () => {
 
   return (
     <div className="space-y-6 w-full font-sans pb-12">
-      {/* 1. Top Filter Bar (Two Rows) */}
-      <div className="space-y-3">
-        {/* Row 1 */}
-        <div className="flex flex-wrap items-center gap-3">
+      {/* 1. Top Filter & Actions Card */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:flex xl:flex-wrap items-center gap-3">
           {/* Search Box */}
-          <div className="relative min-w-[220px]">
+          <div className="relative w-full sm:min-w-[180px] lg:max-w-[220px]">
             <input
               type="text"
               value={search}
@@ -372,7 +371,7 @@ export const LaporanPage: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Search..."
-              className="w-full pl-9 pr-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#0d6efd]/20 focus:border-[#0d6efd] placeholder:text-slate-400"
+              className="w-full pl-9 pr-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#0d6efd]/20 focus:border-[#0d6efd] transition-all placeholder:text-slate-400"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
           </div>
@@ -381,7 +380,7 @@ export const LaporanPage: React.FC = () => {
           <select
             value={selectedJenis}
             onChange={(e) => setSelectedJenis(e.target.value)}
-            className="px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 min-w-[140px]"
+            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[130px]"
           >
             <option value="">Semua Jenis</option>
             <option value="harian">Harian</option>
@@ -393,7 +392,7 @@ export const LaporanPage: React.FC = () => {
           <select
             value={selectedJB}
             onChange={(e) => setSelectedJB(e.target.value)}
-            className="px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 min-w-[180px]"
+            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[170px]"
           >
             <option value="">Semua Jenis Bangunan</option>
             {jbOptions.map((jb) => (
@@ -407,7 +406,7 @@ export const LaporanPage: React.FC = () => {
           <select
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
-            className="px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 min-w-[140px]"
+            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[140px]"
           >
             <option value="">Semua User</option>
             {userOptions.map((u) => (
@@ -416,70 +415,65 @@ export const LaporanPage: React.FC = () => {
               </option>
             ))}
           </select>
+
+          {/* Pelaksanaan Dropdown */}
+          <select
+            value={selectedPelaksanaan}
+            onChange={(e) => setSelectedPelaksanaan(e.target.value)}
+            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[170px]"
+          >
+            <option value="">Semua Pelaksanaan</option>
+            {pelaksanaanOptions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nama}
+              </option>
+            ))}
+          </select>
+
+          {/* File Dropdown */}
+          <select
+            value={selectedFileType}
+            onChange={(e) => setSelectedFileType(e.target.value)}
+            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[130px]"
+          >
+            <option value="">Semua File</option>
+            <option value="document">Dokumen</option>
+            <option value="image">Gambar</option>
+            <option value="empty">Tanpa File</option>
+          </select>
+
+          {/* Status Dropdown */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[160px]"
+          >
+            <option value="">Semua Status</option>
+            <option value="baru">Baru</option>
+            <option value="menunggu_pengawas">Menunggu Pengawas</option>
+            <option value="menunggu_wakil_ppk">Menunggu Wakil PPK</option>
+            <option value="terverifikasi">Terverifikasi</option>
+          </select>
         </div>
 
-        {/* Row 2 */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Pelaksanaan Dropdown */}
-            <select
-              value={selectedPelaksanaan}
-              onChange={(e) => setSelectedPelaksanaan(e.target.value)}
-              className="px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 min-w-[180px]"
-            >
-              <option value="">Semua Pelaksanaan</option>
-              {pelaksanaanOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nama}
-                </option>
-              ))}
-            </select>
-
-            {/* File Dropdown */}
-            <select
-              value={selectedFileType}
-              onChange={(e) => setSelectedFileType(e.target.value)}
-              className="px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 min-w-[130px]"
-            >
-              <option value="">Semua File</option>
-              <option value="document">Dokumen</option>
-              <option value="image">Gambar</option>
-              <option value="empty">Tanpa File</option>
-            </select>
-
-            {/* Status Dropdown */}
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 min-w-[160px]"
-            >
-              <option value="">Semua Status</option>
-              <option value="baru">Baru</option>
-              <option value="menunggu_pengawas">Menunggu Pengawas</option>
-              <option value="menunggu_wakil_ppk">Menunggu Wakil PPK</option>
-              <option value="terverifikasi">Terverifikasi</option>
-            </select>
-          </div>
-
-          {/* Action Buttons: Reset & Buat Laporan */}
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="px-4 py-2.5 text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center gap-2 shadow-xs"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>Reset</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleOpenAdd}
-              className="px-4.5 py-2.5 text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center gap-2 shadow-xs"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Buat Laporan</span>
-            </button>
-          </div>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Reset</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="w-full sm:w-auto px-4.5 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Buat Laporan</span>
+          </button>
         </div>
       </div>
 

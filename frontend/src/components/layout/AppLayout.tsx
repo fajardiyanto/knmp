@@ -4,20 +4,23 @@ import { Navbar } from "./Navbar";
 import { Sidebar } from "./Sidebar";
 
 export const AppLayout: React.FC = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    return typeof window !== "undefined" ? window.innerWidth >= 1024 : true;
+  });
 
   return (
-    <div className="min-h-screen bg-[#f4f6fa] flex font-sans">
+    <div className="min-h-screen bg-[#f4f6fa] flex font-sans overflow-x-hidden">
       {/* 1. Sidebar */}
       <Sidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen((prev) => !prev)}
+        onCloseMobile={() => setIsSidebarOpen(false)}
       />
 
       {/* 2. Main content area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 w-full">
         <Navbar onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)} />
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto w-full">
+        <main className="flex-1 p-3.5 sm:p-5 lg:p-7 overflow-y-auto w-full max-w-full">
           <Outlet />
         </main>
       </div>

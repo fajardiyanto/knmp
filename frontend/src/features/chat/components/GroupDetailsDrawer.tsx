@@ -100,20 +100,28 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
   };
 
   return (
-    <div className="w-80 lg:w-96 bg-white border-l border-slate-200/90 h-full flex flex-col shrink-0 overflow-y-auto">
-      {/* Header */}
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-        <h3 className="text-base font-medium text-slate-800">
-          {isGroup ? "Detail Grup" : "Info Kontak"}
-        </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
+    <>
+      {/* Backdrop on mobile/tablet */}
+      <div
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 xl:hidden"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      <div className="fixed inset-y-0 right-0 z-50 xl:static xl:z-auto w-80 sm:w-96 bg-white border-l border-slate-200/90 h-full flex flex-col shrink-0 overflow-y-auto shadow-2xl xl:shadow-none animate-in slide-in-from-right duration-200">
+        {/* Header */}
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-base font-medium text-slate-800">
+            {isGroup ? "Detail Grup" : "Info Kontak"}
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
       <div className="p-5 space-y-6 flex-1 overflow-y-auto">
         {/* Profile Card */}
@@ -330,5 +338,6 @@ export const GroupDetailsDrawer: React.FC<GroupDetailsDrawerProps> = ({
         )}
       </div>
     </div>
+    </>
   );
 };

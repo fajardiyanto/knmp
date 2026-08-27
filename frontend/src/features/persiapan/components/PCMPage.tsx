@@ -204,11 +204,11 @@ export const PCMPage: React.FC = () => {
 
   return (
     <div className="space-y-6 w-full font-sans pb-12">
-      {/* 1. Top Filter Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Search Box */}
-          <div className="relative min-w-[220px]">
+      {/* 1. Top Action Row: Search, Dropdowns, Reset, Tambah Data */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap items-center gap-3 flex-1">
+          {/* Search Input */}
+          <div className="relative w-full sm:min-w-[180px] lg:max-w-[240px]">
             <input
               type="text"
               value={search}
@@ -217,7 +217,7 @@ export const PCMPage: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Search..."
-              className="w-full pl-9 pr-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#0d6efd]/20 focus:border-[#0d6efd] placeholder:text-slate-400"
+              className="w-full pl-9 pr-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#0d6efd]/20 focus:border-[#0d6efd] transition-all placeholder:text-slate-400"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
           </div>
@@ -229,7 +229,7 @@ export const PCMPage: React.FC = () => {
               setSelectedKontrakFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 min-w-[170px]"
+            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[170px]"
           >
             <option value="">Semua Kontrak</option>
             {kontrakList.map((k) => (
@@ -246,7 +246,7 @@ export const PCMPage: React.FC = () => {
               setSelectedDocFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 min-w-[150px]"
+            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[150px]"
           >
             <option value="">Semua Dokumen</option>
             <option value="ada">Ada Dokumen</option>
@@ -256,11 +256,11 @@ export const PCMPage: React.FC = () => {
         </div>
 
         {/* Action Buttons: Reset & Tambah Data */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2.5 text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center gap-2 shadow-xs"
+            className="flex-1 sm:flex-none px-3.5 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Reset</span>
@@ -268,7 +268,7 @@ export const PCMPage: React.FC = () => {
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="px-4.5 py-2.5 text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center gap-2 shadow-xs"
+            className="w-full sm:w-auto px-4 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Data</span>

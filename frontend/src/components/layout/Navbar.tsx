@@ -19,18 +19,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
   };
 
   return (
-    <header className="bg-white border-b border-slate-200/90 px-8 sm:px-10 lg:px-12 h-16 flex items-center justify-between sticky top-0 z-30 shadow-xs">
-      {/* Left section: Hamburger & Search Form */}
-      <div className="flex items-center gap-6 pl-2 sm:pl-3">
+    <header className="bg-white border-b border-slate-200/90 px-3.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+      {/* Left section: Hamburger & Brand title on mobile */}
+      <div className="flex items-center gap-3 sm:gap-4">
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="p-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/60 shadow-2xs transition-all cursor-pointer"
+          className="p-2 sm:p-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/60 shadow-2xs transition-all cursor-pointer"
           aria-label="Toggle Sidebar"
           title="Buka/Tutup Sidebar"
         >
           <Menu className="w-5 h-5" />
         </button>
+
+        {/* Small screen brand indicator */}
+        <div className="lg:hidden flex items-center gap-2">
+          <span className="font-bold text-slate-800 text-sm tracking-tight">SIMANDOR</span>
+        </div>
       </div>
 
       {/* Right section: Fullscreen, Notification, Profile */}

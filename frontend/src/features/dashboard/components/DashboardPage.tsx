@@ -513,12 +513,12 @@ export const DashboardPage: React.FC = () => {
 
       {/* 1. Top Section: Full-Width GIS Satellite Map */}
       <Card className="p-0 overflow-hidden border border-slate-200/90 rounded-2xl shadow-xs">
-        <div className="px-6 py-4 bg-white border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
-          <h3 className="text-lg font-medium text-slate-800 tracking-wide">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-white border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <h3 className="text-base sm:text-lg font-medium text-slate-800 tracking-wide">
             Peta Sebaran Lokasi KNMP
           </h3>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setActiveFilter("all")}
@@ -571,11 +571,11 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        <div ref={mapContainerRef} className="w-full min-h-[580px] h-[600px] lg:h-[680px] bg-slate-950 relative z-10" />
+        <div ref={mapContainerRef} className="w-full min-h-[380px] h-[420px] sm:h-[500px] lg:h-[640px] bg-slate-950 relative z-10" />
       </Card>
 
       {/* 2. Metric Stat Cards Row (8 Cards in 2 Rows) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 lg:gap-5">
         {statCards.map((card, idx) => (
           <div
             key={idx}
@@ -680,7 +680,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* 4. Bottom Section: Serapan Keuangan, Deviasi Proyek, Verifikasi Approval */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
 
         {/* Card 1: Serapan Keuangan */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
