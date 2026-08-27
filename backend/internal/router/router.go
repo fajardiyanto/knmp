@@ -13,16 +13,17 @@ import (
 )
 
 type Handlers struct {
-	Auth        *handler.AuthHandler
-	Knmp        *handler.KnmpHandler
-	Persiapan   *handler.PersiapanHandler
-	Pelaksanaan *handler.PelaksanaanHandler
-	Laporan     *handler.LaporanHandler
-	Absensi     *handler.AbsensiHandler
-	Issue       *handler.IssueHandler
-	Pembayaran  *handler.PembayaranHandler
-	Document    *handler.DocumentHandler
-	Chat        *handler.ChatHandler
+	Auth         *handler.AuthHandler
+	Knmp         *handler.KnmpHandler
+	Persiapan    *handler.PersiapanHandler
+	Pelaksanaan  *handler.PelaksanaanHandler
+	Laporan      *handler.LaporanHandler
+	Absensi      *handler.AbsensiHandler
+	Issue        *handler.IssueHandler
+	Pembayaran   *handler.PembayaranHandler
+	Document     *handler.DocumentHandler
+	Chat         *handler.ChatHandler
+	Notification *handler.NotificationHandler
 }
 
 func New(cfg *config.Config, h *Handlers) *fiber.App {
@@ -181,6 +182,15 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 		chat.Post("/groups/:id/members", h.Chat.AddMember)
 		chat.Delete("/groups/:id/members/:userId", h.Chat.RemoveMember)
 		chat.Get("/users/search", h.Chat.SearchUsers)
+	}
+
+	// Notifications
+	if h.Notification != nil {
+		notif := protected.Group("/notifications")
+		notif.Get("", h.Notification.GetNotifications)
+		notif.Put("/read-all", h.Notification.MarkAllAsRead)
+		notif.Put("/:id/read", h.Notification.MarkAsRead)
+		notif.Delete("/:id", h.Notification.DeleteNotification)
 	}
 
 	return app

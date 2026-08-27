@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -26,14 +27,16 @@ type ChatService interface {
 }
 
 type chatService struct {
-	repo postgres.ChatRepository
-	hub  ChatHub
+	repo     postgres.ChatRepository
+	hub      ChatHub
+	notifSvc NotificationService
 }
 
-func NewChatService(repo postgres.ChatRepository, hub ChatHub) ChatService {
+func NewChatService(repo postgres.ChatRepository, hub ChatHub, notifSvc NotificationService) ChatService {
 	return &chatService{
-		repo: repo,
-		hub:  hub,
+		repo:     repo,
+		hub:      hub,
+		notifSvc: notifSvc,
 	}
 }
 
@@ -261,7 +264,7 @@ func (s *chatService) SendMessage(convID, currentUserID int64, req domain.SendMe
 		return nil, err
 	}
 
-	// Real-time broadcast to all members
+	// Real-time broadcast and notification to all members
 	memberUserIDs, err := s.repo.GetConversationMemberUserIDs(convID)
 	if err == nil && len(memberUserIDs) > 0 {
 		s.hub.BroadcastToUsers(memberUserIDs, domain.WSEvent{
@@ -270,6 +273,15 @@ func (s *chatService) SendMessage(convID, currentUserID int64, req domain.SendMe
 			Data:           createdMsg,
 			Timestamp:      time.Now(),
 		})
+
+		if s.notifSvc != nil {
+			for _, mid := range memberUserIDs {
+				if mid != currentUserID {
+					targetID := mid
+					s.notifSvc.NotifyNewChat(context.Background(), currentUserID, createdMsg.SenderName, &targetID, nil, createdMsg.Content)
+				}
+			}
+		}
 	}
 
 	return createdMsg, nil

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Menu, Search, Bell, Maximize2, LogOut, User as UserIcon } from "lucide-react";
+import { Menu, Maximize2, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "../../features/auth/hooks/useAuth";
+import { NotificationDropdown } from "./NotificationDropdown";
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -49,14 +50,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           <Maximize2 className="w-4 h-4" />
         </button>
 
-        <button
-          type="button"
-          className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors relative"
-          title="Notifikasi"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="w-2 h-2 rounded-full bg-emerald-500 absolute top-2 right-2 ring-2 ring-white" />
-        </button>
+        {/* Live Notification Dropdown */}
+        <NotificationDropdown />
 
         {/* User Profile */}
         <div className="relative">

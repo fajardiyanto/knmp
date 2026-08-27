@@ -64,10 +64,12 @@ func main() {
 	docRepo := postgres.NewDocumentRepo(db)
 	verifRepo := postgres.NewVerificationRepo(db)
 	chatRepo := postgres.NewChatRepo(db)
+	notifRepo := postgres.NewNotificationRepo(db)
 
 	// 4. Initialize Services & Hubs
 	chatHub := service.NewChatHub()
 
+	notifSvc := service.NewNotificationService(notifRepo)
 	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret)
 	knmpSvc := service.NewKnmpService(knmpRepo, geoRepo)
 	persiapanSvc := service.NewPersiapanService(persiapanRepo, docRepo, storageEngine)
@@ -77,20 +79,21 @@ func main() {
 	issueSvc := service.NewIssueService(issueRepo, verifRepo, docRepo, storageEngine)
 	pembayaranSvc := service.NewPembayaranService(pembayaranRepo, docRepo, storageEngine)
 	docSvc := service.NewDocumentService(docRepo, storageEngine)
-	chatSvc := service.NewChatService(chatRepo, chatHub)
+	chatSvc := service.NewChatService(chatRepo, chatHub, notifSvc)
 
 	// 5. Initialize Handlers
 	handlers := &router.Handlers{
-		Auth:        handler.NewAuthHandler(authSvc),
-		Knmp:        handler.NewKnmpHandler(knmpSvc),
-		Persiapan:   handler.NewPersiapanHandler(persiapanSvc),
-		Pelaksanaan: handler.NewPelaksanaanHandler(pelaksanaanSvc),
-		Laporan:     handler.NewLaporanHandler(laporanSvc),
-		Absensi:     handler.NewAbsensiHandler(absensiSvc),
-		Issue:       handler.NewIssueHandler(issueSvc),
-		Pembayaran:  handler.NewPembayaranHandler(pembayaranSvc),
-		Document:    handler.NewDocumentHandler(docSvc),
-		Chat:        handler.NewChatHandler(chatSvc, cfg.JWTSecret, storageEngine),
+		Auth:         handler.NewAuthHandler(authSvc),
+		Knmp:         handler.NewKnmpHandler(knmpSvc),
+		Persiapan:    handler.NewPersiapanHandler(persiapanSvc),
+		Pelaksanaan:  handler.NewPelaksanaanHandler(pelaksanaanSvc),
+		Laporan:      handler.NewLaporanHandler(laporanSvc),
+		Absensi:      handler.NewAbsensiHandler(absensiSvc),
+		Issue:        handler.NewIssueHandler(issueSvc),
+		Pembayaran:   handler.NewPembayaranHandler(pembayaranSvc),
+		Document:     handler.NewDocumentHandler(docSvc),
+		Chat:         handler.NewChatHandler(chatSvc, cfg.JWTSecret, storageEngine),
+		Notification: handler.NewNotificationHandler(notifSvc),
 	}
 
 	// 6. Build App & Listen
