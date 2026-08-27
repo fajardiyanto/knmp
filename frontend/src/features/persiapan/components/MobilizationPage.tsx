@@ -74,28 +74,31 @@ export const MobilizationPage: React.FC = () => {
   });
 
   // 1. Fetch Mobilisasi / Persiapan Lapangan Data (jenis = 'lapangan')
-  const { data: lapanganList = [], isLoading } = useQuery<PersiapanItem[]>({
+  const { data: rawLapanganList, isLoading } = useQuery<PersiapanItem[]>({
     queryKey: ["persiapan-lapangan"],
     queryFn: () => apiFetch<PersiapanItem[]>("/api/v1/persiapan?jenis=lapangan"),
   });
+  const lapanganList = Array.isArray(rawLapanganList) ? rawLapanganList : [];
 
   // 2. Fetch Users for filter
-  const { data: userOptions = [] } = useQuery<UserOption[]>({
+  const { data: rawUserOptions } = useQuery<UserOption[]>({
     queryKey: ["user-options"],
     queryFn: async () => {
       const res = await apiFetch<any[]>("/api/v1/users");
-      return res.map((u) => ({ id: u.id, name: u.name }));
+      return Array.isArray(res) ? res.map((u) => ({ id: u.id, name: u.name })) : [];
     },
   });
+  const userOptions = Array.isArray(rawUserOptions) ? rawUserOptions : [];
 
   // 3. Fetch KNMPs for dropdown
-  const { data: knmpOptions = [] } = useQuery<KnmpOption[]>({
+  const { data: rawKnmpOptions } = useQuery<KnmpOption[]>({
     queryKey: ["knmp-all-options"],
     queryFn: async () => {
       const res = await apiFetch<any[]>("/api/v1/knmp");
-      return res.map((k) => ({ id: k.id, name: k.name }));
+      return Array.isArray(res) ? res.map((k) => ({ id: k.id, name: k.name })) : [];
     },
   });
+  const knmpOptions = Array.isArray(rawKnmpOptions) ? rawKnmpOptions : [];
 
   // Save / Update Mutation
   const saveMutation = useMutation({

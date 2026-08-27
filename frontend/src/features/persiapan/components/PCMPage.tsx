@@ -66,19 +66,21 @@ export const PCMPage: React.FC = () => {
   });
 
   // 1. Fetch PCM List
-  const { data: pcmList = [], isLoading } = useQuery<PCMItem[]>({
+  const { data: rawPcmList, isLoading } = useQuery<PCMItem[]>({
     queryKey: ["pcm-list"],
     queryFn: () => apiFetch<PCMItem[]>("/api/v1/pcm"),
   });
+  const pcmList = Array.isArray(rawPcmList) ? rawPcmList : [];
 
   // 2. Fetch Kontrak List for dropdown
-  const { data: kontrakList = [] } = useQuery<KontrakOption[]>({
+  const { data: rawKontrakList } = useQuery<KontrakOption[]>({
     queryKey: ["persiapan-kontrak-options"],
     queryFn: async () => {
       const res = await apiFetch<any[]>("/api/v1/persiapan?jenis=kontrak");
-      return res.map((k) => ({ id: k.id, nama: k.nama }));
+      return Array.isArray(res) ? res.map((k) => ({ id: k.id, nama: k.nama })) : [];
     },
   });
+  const kontrakList = Array.isArray(rawKontrakList) ? rawKontrakList : [];
 
   // Save / Update PCM Mutation
   const saveMutation = useMutation({

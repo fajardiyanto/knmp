@@ -81,27 +81,30 @@ export const PersiapanKontrakPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   // 1. Fetch Persiapan Kontrak list
-  const { data: list = [], isLoading } = useQuery<PersiapanItem[]>({
+  const { data: rawList, isLoading } = useQuery<PersiapanItem[]>({
     queryKey: ["persiapan-kontrak"],
     queryFn: () => apiFetch<PersiapanItem[]>("/api/v1/persiapan?jenis=kontrak"),
   });
 
   // 2. Fetch KNMP options
-  const { data: knmpOptions = [] } = useQuery<KnmpOption[]>({
+  const { data: rawKnmpOptions } = useQuery<KnmpOption[]>({
     queryKey: ["knmp-options"],
     queryFn: () => apiFetch<KnmpOption[]>("/api/v1/knmp"),
   });
 
   // 3. Fetch User options
-  const { data: userOptions = [] } = useQuery<UserOption[]>({
+  const { data: rawUserOptions } = useQuery<UserOption[]>({
     queryKey: ["user-options"],
     queryFn: () => apiFetch<UserOption[]>("/api/v1/users"),
   });
 
+  const safeList = Array.isArray(rawList) ? rawList : [];
+  const knmpOptions = Array.isArray(rawKnmpOptions) ? rawKnmpOptions : [];
+  const userOptions = Array.isArray(rawUserOptions) ? rawUserOptions : [];
+
   // Filtering
-  const safeList = Array.isArray(list) ? list : [];
   const filteredData = safeList.filter((item) => {
-    if (search && !item.nama.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !item.nama?.toLowerCase().includes(search.toLowerCase())) return false;
     if (selectedUser && item.user_name !== selectedUser) return false;
     if (selectedKnmp && item.knmp_name !== selectedKnmp) return false;
     if (selectedFileType === "document") {
@@ -122,12 +125,12 @@ export const PersiapanKontrakPage: React.FC = () => {
   const currentData = filteredData.slice(startIndex, startIndex + perPage);
 
   // Summary Metrics
-  const totalDataCount = list.length;
+  const totalDataCount = safeList.length;
   let docOnlyCount = 0;
   let imgOnlyCount = 0;
   let emptyFileCount = 0;
 
-  list.forEach((item) => {
+  safeList.forEach((item) => {
     const docs = item.documents || [];
     if (docs.length === 0) {
       emptyFileCount++;
