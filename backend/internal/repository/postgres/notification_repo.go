@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"knmp-v2-backend/internal/domain"
 )
 
@@ -59,9 +60,12 @@ func (r *notificationRepo) GetByUserID(ctx context.Context, userID int64, userRo
 	`
 
 	var notifs []domain.Notification
-	err := r.db.SelectContext(ctx, &notifs, query, userID, userRoles, limit)
+	err := r.db.SelectContext(ctx, &notifs, query, userID, pq.Array(userRoles), limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch notifications: %w", err)
+	}
+	if notifs == nil {
+		notifs = []domain.Notification{}
 	}
 	return notifs, nil
 }
@@ -78,7 +82,7 @@ func (r *notificationRepo) CountUnread(ctx context.Context, userID int64, userRo
 		  )
 	`
 	var count int
-	err := r.db.GetContext(ctx, &count, query, userID, userRoles)
+	err := r.db.GetContext(ctx, &count, query, userID, pq.Array(userRoles))
 	if err != nil {
 		return 0, fmt.Errorf("failed to count unread notifications: %w", err)
 	}
@@ -111,7 +115,7 @@ func (r *notificationRepo) MarkAllAsRead(ctx context.Context, userID int64, user
 		      OR (user_id IS NULL AND (role_target IS NULL OR role_target = '' OR role_target = ANY($3)))
 		  )
 	`
-	_, err := r.db.ExecContext(ctx, query, now, userID, userRoles)
+	_, err := r.db.ExecContext(ctx, query, now, userID, pq.Array(userRoles))
 	if err != nil {
 		return fmt.Errorf("failed to mark all notifications as read: %w", err)
 	}
