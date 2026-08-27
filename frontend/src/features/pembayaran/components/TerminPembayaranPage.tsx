@@ -46,31 +46,31 @@ const TERMIN_CONFIGS = [
     name: "Termin 1",
     pct: "25%",
     desc: "Dibayarkan saat progress fisik mencapai 25%.",
-    badgeClass: "bg-blue-50 text-[#0d6efd] border border-blue-200",
+    badgeClass: "bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/80 font-bold",
   },
   {
     name: "Termin 2",
     pct: "50%",
     desc: "Dibayarkan saat progress fisik mencapai 50%.",
-    badgeClass: "bg-cyan-50 text-cyan-600 border border-cyan-200",
+    badgeClass: "bg-cyan-50 dark:bg-cyan-950/70 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/80 font-bold",
   },
   {
     name: "Termin 3",
     pct: "75%",
     desc: "Dibayarkan saat progress fisik mencapai 75%.",
-    badgeClass: "bg-amber-50 text-amber-600 border border-amber-200",
+    badgeClass: "bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 font-bold",
   },
   {
     name: "Termin 4",
     pct: "95%",
     desc: "Dibayarkan saat progress fisik mencapai 95%.",
-    badgeClass: "bg-emerald-50 text-emerald-600 border border-emerald-200",
+    badgeClass: "bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 font-bold",
   },
   {
     name: "Retensi",
     pct: "100%",
     desc: "Retensi 5% dibayarkan setelah tanda tangan FHO.",
-    badgeClass: "bg-slate-100 text-slate-600 border border-slate-200",
+    badgeClass: "bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80 font-bold",
   },
 ];
 
@@ -499,10 +499,10 @@ export const TerminPembayaranPage: React.FC = () => {
                       </td>
                       <td className="py-4 px-4 text-center">
                         <span
-                          className={`inline-block px-2.5 py-1 rounded text-xs font-semibold ${
+                          className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${
                             hasDoc
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-rose-50 text-rose-600 border border-rose-200"
+                              ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                              : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
                           }`}
                         >
                           {hasDoc ? "Sudah upload" : "Belum upload"}
