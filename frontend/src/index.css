@@ -21,6 +21,15 @@
     color: #f1f5f9;
   }
 
+  /* Ensure inputs have proper contrasting text colors */
+  input, textarea, select {
+    color: #0f172a;
+  }
+
+  .dark input, .dark textarea, .dark select {
+    color: #f8fafc;
+  }
+
   /* Soften bold tags if any exist */
   b, strong {
     font-weight: 600;
