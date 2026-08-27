@@ -335,7 +335,6 @@ CREATE INDEX IF NOT EXISTS idx_verifications_current ON verifications(is_current
 -- 000007_seed_346_knmps.up.sql
 -- Seed 346 accurate KNMP locations across coastal fishing villages in Indonesia
 
-DELETE FROM knmps;
 
 INSERT INTO knmps (name, jenis_knmp, lat, long, status, created_at, updated_at) VALUES ('KNMP Kelambir', 'penyangga', '3.698350', '98.852390', 'on_track', NOW(), NOW());
 INSERT INTO knmps (name, jenis_knmp, lat, long, status, created_at, updated_at) VALUES ('KNMP Paluh Sabaji', 'penyangga', '3.679372', '98.903083', 'on_track', NOW(), NOW());
@@ -692,7 +691,6 @@ INSERT INTO knmps (name, jenis_knmp, lat, long, status, created_at, updated_at) 
 ALTER TABLE persiapans ALTER COLUMN knmp_id DROP NOT NULL;
 
 -- Seed contract readiness data (matching staging screenshot)
-DELETE FROM persiapans WHERE jenis = 'kontrak';
 
 INSERT INTO persiapans (knmp_id, user_id, nama, tanggal, jenis, keterangan, created_at, updated_at)
 VALUES
@@ -736,7 +734,6 @@ VALUES
 
 ALTER TABLE pelaksanaans ALTER COLUMN knmp_id DROP NOT NULL;
 
-DELETE FROM pelaksanaans;
 
 INSERT INTO pelaksanaans (knmp_id, user_id, nama, tanggal, keterangan, created_at, updated_at)
 VALUES
@@ -751,7 +748,6 @@ VALUES
 -- >>> START: 000012_seed_8_laporans.up.sql <<<
 -- 000012_seed_8_laporans.up.sql
 
-DELETE FROM laporans;
 
 INSERT INTO laporans (pelaksanaan_id, user_id, nama, tanggal, jenis_laporan, keberapa, cuaca, jumlah_tenaga_kerja, rencana_progres_fisik, realisasi_progres_fisik, status, keterangan, created_at, updated_at)
 VALUES
@@ -769,7 +765,6 @@ VALUES
 -- >>> START: 000013_seed_pembayaran_anggaran.up.sql <<<
 -- 000013_seed_pembayaran_anggaran.up.sql
 
-DELETE FROM pembayarans;
 
 INSERT INTO pembayarans (persiapan_kontrak_id, kategori, name, termin, realisasi_anggaran, realisasi_fisik, norek_pekerja, created_at, updated_at)
 VALUES
@@ -790,7 +785,6 @@ VALUES
 -- >>> START: 000014_seed_termin_pembayaran.up.sql <<<
 -- 000014_seed_termin_pembayaran.up.sql
 
-DELETE FROM pembayarans;
 
 INSERT INTO pembayarans (persiapan_kontrak_id, kategori, name, termin, realisasi_anggaran, realisasi_fisik, norek_pekerja, created_at, updated_at)
 VALUES
@@ -892,7 +886,6 @@ CREATE INDEX IF NOT EXISTS idx_message_reads_user ON message_reads(user_id, mess
 -- >>> START: 000015_seed_absensi_sample.up.sql <<<
 -- 000015_seed_absensi_sample.up.sql
 
-DELETE FROM absensis;
 
 INSERT INTO absensis (pelaksanaan_id, user_id, tipe_absensi, recorded_at, lat, long, status, created_by, created_at, updated_at)
 VALUES
@@ -916,7 +909,6 @@ VALUES
 
 ALTER TABLE issues ALTER COLUMN knmp_id DROP NOT NULL;
 
-DELETE FROM issues;
 
 INSERT INTO issues (id, knmp_id, kategori_issue, tingkat, status, uraian_masalah, created_by, created_at, updated_at)
 VALUES
@@ -933,7 +925,6 @@ VALUES
 SELECT setval('issues_id_seq', (SELECT MAX(id) FROM issues));
 
 -- Seed sample documents for issues to reflect 16 photos & 1 verified
-DELETE FROM documents WHERE documentable_type = 'issue';
 
 INSERT INTO documents (documentable_type, documentable_id, category, file_name, file_path, file_type, size, status, uploaded_by, created_at, updated_at)
 VALUES
@@ -1023,7 +1014,6 @@ ON CONFLICT (user_id, knmp_id) DO NOTHING;
 -- >>> START: 000018_seed_periode_2026.up.sql <<<
 -- 000018_seed_periode_2026.up.sql
 
-DELETE FROM periodes;
 
 INSERT INTO periodes (year, tanggal_mulai, tanggal_akhir, created_at, updated_at)
 VALUES (2026, '2026-01-01', '2026-12-31', NOW(), NOW());
@@ -1033,7 +1023,6 @@ VALUES (2026, '2026-01-01', '2026-12-31', NOW(), NOW());
 -- >>> START: 000019_seed_15_jenis_bangunans.up.sql <<<
 -- 000019_seed_15_jenis_bangunans.up.sql
 
-DELETE FROM jenis_bangunans;
 
 INSERT INTO jenis_bangunans (id, nama, deskripsi, is_active, created_at, updated_at)
 VALUES
