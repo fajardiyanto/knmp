@@ -330,22 +330,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
         </button>
-
-        {onToggle && (
-          <button
-            type="button"
-            onClick={onToggle}
-            className={cn(
-              "flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer",
-              isOpen ? "w-full py-1.5 text-xs gap-1.5" : "w-11 h-8"
-            )}
-            title={isOpen ? "Tutup Sidebar" : "Buka Sidebar"}
-          >
-            <span className="text-[11px] font-bold tracking-widest text-slate-400">
-              {isOpen ? "◀ ◯ ▶" : "▶"}
-            </span>
-          </button>
-        )}
       </div>
     </aside>
     </>
