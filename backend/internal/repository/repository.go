@@ -99,6 +99,7 @@ type LaporanRepository interface {
 	UpdateStatus(ctx context.Context, id int64, status string) error
 	Delete(ctx context.Context, id int64) error
 	GetDetailsByLaporanID(ctx context.Context, laporanID int64) ([]*domain.LaporanJenisBangunan, error)
+	GetMonthlyProjectReportData(ctx context.Context, knmpID int64, month, year int) (*domain.MonthlyProjectReportData, error)
 }
 
 type AbsensiFilter struct {

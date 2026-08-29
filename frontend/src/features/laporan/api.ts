@@ -53,3 +53,11 @@ export function deleteLaporan(id: number): Promise<{ message: string }> {
     method: "DELETE",
   });
 }
+
+export function fetchMonthlyProjectReport(knmpId: number, month?: number, year?: number) {
+  const query = new URLSearchParams();
+  query.append("knmp_id", knmpId.toString());
+  if (month) query.append("month", month.toString());
+  if (year) query.append("year", year.toString());
+  return apiFetch<import("./types").MonthlyProjectReportData>(`/api/v1/laporan/monthly-project-report?${query.toString()}`);
+}

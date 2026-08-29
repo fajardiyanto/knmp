@@ -19,11 +19,14 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  FileSpreadsheet,
+  Printer,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
+import { MonthlyProjectReportModal } from "./MonthlyProjectReportModal";
 
 interface LaporanItem {
   id: number;
@@ -95,6 +98,8 @@ export const LaporanPage: React.FC = () => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMonthlyReportModalOpen, setIsMonthlyReportModalOpen] = useState(false);
+  const [monthlyReportKnmpId, setMonthlyReportKnmpId] = useState<number | undefined>(undefined);
   const [editingItem, setEditingItem] = useState<LaporanItem | null>(null);
   const [formData, setFormData] = useState({
     nama: "",
@@ -491,8 +496,20 @@ export const LaporanPage: React.FC = () => {
         <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1 border-t border-slate-100">
           <button
             type="button"
+            onClick={() => {
+              setMonthlyReportKnmpId(undefined);
+              setIsMonthlyReportModalOpen(true);
+            }}
+            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-bold bg-gradient-to-r from-blue-700 to-indigo-800 text-white rounded-xl hover:from-blue-800 hover:to-indigo-900 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            title="Buka Monthly Project Report Resmi (Kontraktor)"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-blue-200" />
+            <span>Monthly Project Report</span>
+          </button>
+          <button
+            type="button"
             onClick={handleReset}
-            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#0d6efd] text-white rounded-xl hover:bg-[#0b5ed7] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Reset</span>
@@ -677,6 +694,17 @@ export const LaporanPage: React.FC = () => {
                       </td>
                       <td className="py-4 px-5 text-center">
                         <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMonthlyReportKnmpId(item.pelaksanaan_id);
+                              setIsMonthlyReportModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            title="Monthly Project Report"
+                          >
+                            <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
+                          </button>
                           <button
                             type="button"
                             onClick={() => navigate(`/laporan/${item.id}/documents`)}
@@ -1100,6 +1128,13 @@ export const LaporanPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Monthly Project Report Official Document Modal */}
+      <MonthlyProjectReportModal
+        isOpen={isMonthlyReportModalOpen}
+        onClose={() => setIsMonthlyReportModalOpen(false)}
+        initialKnmpId={monthlyReportKnmpId}
+      />
     </div>
   );
 };

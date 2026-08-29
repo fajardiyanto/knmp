@@ -317,3 +317,20 @@ func (h *LaporanHandler) Delete(c *fiber.Ctx) error {
 	}
 	return c.JSON(OKResponse(fiber.Map{"message": "Laporan berhasil dihapus"}))
 }
+
+func (h *LaporanHandler) GetMonthlyProjectReportData(c *fiber.Ctx) error {
+	knmpID, err := strconv.ParseInt(c.Query("knmp_id"), 10, 64)
+	if err != nil || knmpID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse("knmp_id wajib diisi"))
+	}
+
+	month, _ := strconv.Atoi(c.Query("month", "8"))
+	year, _ := strconv.Atoi(c.Query("year", "2026"))
+
+	data, err := h.laporanSvc.GetMonthlyProjectReportData(c.Context(), knmpID, month, year)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse(err.Error()))
+	}
+
+	return c.JSON(OKResponse(data))
+}

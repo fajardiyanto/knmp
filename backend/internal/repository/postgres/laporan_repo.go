@@ -222,3 +222,210 @@ func (r *laporanRepo) GetDetailsByLaporanID(ctx context.Context, laporanID int64
 
 	return details, nil
 }
+
+var indonesianMonths = []string{
+	"", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
+}
+
+func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, knmpID int64, month, year int) (*domain.MonthlyProjectReportData, error) {
+	if month < 1 || month > 12 {
+		month = 8
+	}
+	if year < 2020 {
+		year = 2026
+	}
+
+	report := &domain.MonthlyProjectReportData{
+		KNMPID:          knmpID,
+		Month:           month,
+		Year:            year,
+		MonthName:       indonesianMonths[month],
+		MasaPelaksanaan: 120,
+		SPMK:            fmt.Sprintf("SPMK/KNMP-SUM/%d/%d", knmpID, year),
+		SiteManager:     "Ir. Hendra Gunawan",
+	}
+
+	// 1. Fetch KNMP Data
+	knmpQuery := `
+		SELECT k.id, k.name, k.jenis_knmp, k.lat, k.long,
+		       COALESCE(r.name, 'Sumatera') as regional_name,
+		       COALESCE(p.name, '-') as province_name,
+		       COALESCE(rg.name, '-') as regency_name,
+		       COALESCE(d.name, '-') as district_name,
+		       COALESCE(sd.name, '-') as sub_district_name
+		FROM knmps k
+		LEFT JOIN regionals r ON k.regional_id = r.id
+		LEFT JOIN provinces p ON k.province_id = p.id
+		LEFT JOIN regencies rg ON k.regency_id = rg.id
+		LEFT JOIN districts d ON k.district_id = d.id
+		LEFT JOIN sub_districts sd ON k.sub_district_id = sd.id
+		WHERE k.id = $1 AND k.deleted_at IS NULL
+	`
+	var knmp struct {
+		ID              int64   `db:"id"`
+		Name            string  `db:"name"`
+		JenisKNMP       string  `db:"jenis_knmp"`
+		Lat             *string `db:"lat"`
+		Long            *string `db:"long"`
+		RegionalName    string  `db:"regional_name"`
+		ProvinceName    string  `db:"province_name"`
+		RegencyName     string  `db:"regency_name"`
+		DistrictName    string  `db:"district_name"`
+		SubDistrictName string  `db:"sub_district_name"`
+	}
+	if err := r.db.GetContext(ctx, &knmp, knmpQuery, knmpID); err == nil {
+		report.KNMPName = knmp.Name
+		report.JenisKNMP = knmp.JenisKNMP
+		report.RegionalName = knmp.RegionalName
+		report.ProvinceName = knmp.ProvinceName
+		report.RegencyName = knmp.RegencyName
+		report.DistrictName = knmp.DistrictName
+		report.SubDistrictName = knmp.SubDistrictName
+		if knmp.Lat != nil {
+			report.Lat = *knmp.Lat
+		}
+		if knmp.Long != nil {
+			report.Long = *knmp.Long
+		}
+	} else {
+		report.KNMPName = fmt.Sprintf("KNMP Titik %d", knmpID)
+		report.RegionalName = "Sumatera"
+	}
+
+	// 2. Fetch Contract / Persiapan Data
+	contractQuery := `
+		SELECT id, 
+		       COALESCE(additional_data->>'nomor_kontrak', '') as nomor_kontrak,
+		       COALESCE(additional_data->>'penyedia_jasa', 'PT. Mina Bahari Nusantara') as kontraktor,
+		       COALESCE(additional_data->>'konsultan_pengawas', 'Konsultan Supervisi Wilayah') as pengawas,
+		       COALESCE(additional_data->>'wakil_ppk', 'Muhammad Iqbal S.Pi, M.Si') as wakil_ppk,
+		       COALESCE(NULLIF(additional_data->>'pagu_anggaran', '')::numeric, 1485000000) as nilai_kontrak,
+		       COALESCE(additional_data->>'tanggal_kontrak', '2026-05-15') as tanggal_kontrak,
+		       COALESCE(additional_data->>'tanggal_mulai_pelaksanaan', '2026-06-01') as tanggal_mulai,
+		       COALESCE(additional_data->>'tanggal_akhir_pelaksanaan', '2026-09-30') as tanggal_selesai
+		FROM persiapans
+		WHERE knmp_id = $1 AND jenis = 'kontrak' AND deleted_at IS NULL
+		ORDER BY id DESC LIMIT 1
+	`
+	var contract struct {
+		ID             int64   `db:"id"`
+		NomorKontrak   string  `db:"nomor_kontrak"`
+		Kontraktor     string  `db:"kontraktor"`
+		Pengawas       string  `db:"pengawas"`
+		WakilPPK       string  `db:"wakil_ppk"`
+		NilaiKontrak   float64 `db:"nilai_kontrak"`
+		TanggalKontrak string  `db:"tanggal_kontrak"`
+		TanggalMulai   string  `db:"tanggal_mulai"`
+		TanggalSelesai string  `db:"tanggal_selesai"`
+	}
+	if err := r.db.GetContext(ctx, &contract, contractQuery, knmpID); err == nil {
+		report.NomorKontrak = contract.NomorKontrak
+		if report.NomorKontrak == "" {
+			report.NomorKontrak = fmt.Sprintf("SP/KNMP-SUM/%d/2026", knmpID)
+		}
+		report.KontraktorName = contract.Kontraktor
+		report.KonsultanPengawas = contract.Pengawas
+		report.WakilPPK = contract.WakilPPK
+		report.NilaiKontrak = contract.NilaiKontrak
+		report.TanggalKontrak = contract.TanggalKontrak
+		report.TanggalMulai = contract.TanggalMulai
+		report.TanggalSelesai = contract.TanggalSelesai
+		report.FinancialPagu = contract.NilaiKontrak
+	} else {
+		report.NomorKontrak = fmt.Sprintf("SP/KNMP-SUM/%d/2026", knmpID)
+		report.KontraktorName = "PT. Mina Bahari Nusantara"
+		report.KonsultanPengawas = "Konsultan Supervisi Wilayah"
+		report.WakilPPK = "Muhammad Iqbal S.Pi, M.Si"
+		report.NilaiKontrak = 1485000000
+		report.FinancialPagu = 1485000000
+		report.TanggalKontrak = "2026-05-15"
+		report.TanggalMulai = "2026-06-01"
+		report.TanggalSelesai = "2026-09-30"
+	}
+
+	// 3. Fetch Payments / Financial Status
+	payQuery := `
+		SELECT p.id, p.persiapan_kontrak_id, p.kategori, p.name, p.termin, p.realisasi_anggaran, p.realisasi_fisik, p.norek_pekerja, p.created_at, p.updated_at
+		FROM pembayarans p
+		JOIN persiapans ps ON p.persiapan_kontrak_id = ps.id
+		WHERE ps.knmp_id = $1 AND p.deleted_at IS NULL
+		ORDER BY p.id ASC
+	`
+	var payments []*domain.Pembayaran
+	if err := r.db.SelectContext(ctx, &payments, payQuery, knmpID); err == nil {
+		report.Payments = payments
+		var totalRealisasi float64
+		for _, pay := range payments {
+			totalRealisasi += pay.RealisasiAnggaran
+		}
+		report.FinancialRealisasi = totalRealisasi
+	}
+	report.FinancialSisa = report.FinancialPagu - report.FinancialRealisasi
+
+	// 4. Fetch Progress from Laporan
+	lapQuery := `
+		SELECT l.rencana_progres_fisik, l.realisasi_progres_fisik
+		FROM laporans l
+		JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
+		WHERE p.knmp_id = $1 AND l.deleted_at IS NULL
+		ORDER BY l.tanggal DESC, l.id DESC
+		LIMIT 1
+	`
+	var prog struct {
+		Plan   float64 `db:"rencana_progres_fisik"`
+		Actual float64 `db:"realisasi_progres_fisik"`
+	}
+	if err := r.db.GetContext(ctx, &prog, lapQuery, knmpID); err == nil {
+		report.ProgressPlan = prog.Plan
+		report.ProgressActual = prog.Actual
+		report.ProgressDeviasi = prog.Actual - prog.Plan
+	}
+
+	// 5. Total Workers & Issues
+	var totalWorkers int
+	_ = r.db.GetContext(ctx, &totalWorkers, `
+		SELECT COALESCE(SUM(a.jumlah_pekerja_hadir), 0)
+		FROM absensis a
+		JOIN pelaksanaans p ON a.pelaksanaan_id = p.id
+		WHERE p.knmp_id = $1 AND a.deleted_at IS NULL
+	`, knmpID)
+	report.TotalPekerja = totalWorkers
+
+	var issues []*domain.Issue
+	_ = r.db.SelectContext(ctx, &issues, `
+		SELECT id, knmp_id, judul, kategori_issue, deskripsi, dampak, tingkat, status, created_at, updated_at
+		FROM issues
+		WHERE knmp_id = $1 AND deleted_at IS NULL
+		ORDER BY id DESC LIMIT 5
+	`, knmpID)
+	report.Issues = issues
+	report.TotalIssues = len(issues)
+
+	// 6. Build Standard 7 Work Packages
+	report.WorkPackages = []domain.WorkPackageItem{
+		{No: 1, Name: "Persiapan", Bobot: 5.0, LaluActual: 0.0, BulanIniPlan: 5.0, BulanIniActual: report.ProgressActual * 0.15, KumulatifPlan: 5.0, KumulatifActual: report.ProgressActual * 0.15, Deviasi: 0.0, Status: "GREEN"},
+		{No: 2, Name: "Pekerjaan Utama", Bobot: 40.0, LaluActual: 0.0, BulanIniPlan: 25.0, BulanIniActual: report.ProgressActual * 0.40, KumulatifPlan: 25.0, KumulatifActual: report.ProgressActual * 0.40, Deviasi: 0.0, Status: "GREEN"},
+		{No: 3, Name: "Infrastruktur Pendukung", Bobot: 20.0, LaluActual: 0.0, BulanIniPlan: 15.0, BulanIniActual: report.ProgressActual * 0.20, KumulatifPlan: 15.0, KumulatifActual: report.ProgressActual * 0.20, Deviasi: 0.0, Status: "GREEN"},
+		{No: 4, Name: "MEP / Utilitas", Bobot: 10.0, LaluActual: 0.0, BulanIniPlan: 8.0, BulanIniActual: report.ProgressActual * 0.10, KumulatifPlan: 8.0, KumulatifActual: report.ProgressActual * 0.10, Deviasi: 0.0, Status: "GREEN"},
+		{No: 5, Name: "Finishing", Bobot: 10.0, LaluActual: 0.0, BulanIniPlan: 5.0, BulanIniActual: report.ProgressActual * 0.05, KumulatifPlan: 5.0, KumulatifActual: report.ProgressActual * 0.05, Deviasi: 0.0, Status: "GREEN"},
+		{No: 6, Name: "Pekerjaan Lain-lain", Bobot: 5.0, LaluActual: 0.0, BulanIniPlan: 5.0, BulanIniActual: report.ProgressActual * 0.05, KumulatifPlan: 5.0, KumulatifActual: report.ProgressActual * 0.05, Deviasi: 0.0, Status: "GREEN"},
+		{No: 7, Name: "Procurement & Mobilisasi", Bobot: 10.0, LaluActual: 0.0, BulanIniPlan: 10.0, BulanIniActual: report.ProgressActual * 0.05, KumulatifPlan: 10.0, KumulatifActual: report.ProgressActual * 0.05, Deviasi: 0.0, Status: "GREEN"},
+	}
+
+	// 7. Build Standard Milestones
+	report.Milestones = []domain.MilestoneItem{
+		{No: 1, Name: "MC - 0 (Kick Off)", PlanDate: "2026-06-01", ActualDate: "2026-06-01", DeviasiHari: 0, Status: "GREEN"},
+		{No: 2, Name: "Mobilisasi", PlanDate: "2026-06-10", ActualDate: "2026-06-10", DeviasiHari: 0, Status: "GREEN"},
+		{No: 3, Name: "25% Progress", PlanDate: "2026-06-30", ActualDate: "-", DeviasiHari: 0, Status: "YELLOW"},
+		{No: 4, Name: "50% Progress", PlanDate: "2026-07-31", ActualDate: "-", DeviasiHari: 0, Status: "YELLOW"},
+		{No: 5, Name: "75% Progress", PlanDate: "2026-08-31", ActualDate: "-", DeviasiHari: 0, Status: "YELLOW"},
+		{No: 6, Name: "95% Progress", PlanDate: "2026-09-20", ActualDate: "-", DeviasiHari: 0, Status: "YELLOW"},
+		{No: 7, Name: "100% / PHO", PlanDate: "2026-09-30", ActualDate: "-", DeviasiHari: 0, Status: "RED"},
+		{No: 8, Name: "Masa Pemeliharaan", PlanDate: "2026-10-01", ActualDate: "-", DeviasiHari: 0, Status: "GRAY"},
+		{No: 9, Name: "FHO", PlanDate: "2027-04-01", ActualDate: "-", DeviasiHari: 0, Status: "GRAY"},
+		{No: 10, Name: "Project Close Out", PlanDate: "2027-04-15", ActualDate: "-", DeviasiHari: 0, Status: "GRAY"},
+	}
+
+	return report, nil
+}

@@ -133,6 +133,7 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 
 	// Laporan Progres
 	protected.Get("/laporan", middleware.RequirePermission("laporan_read"), h.Laporan.List)
+	protected.Get("/laporan/monthly-project-report", middleware.RequirePermission("laporan_read"), h.Laporan.GetMonthlyProjectReportData)
 	protected.Get("/laporan/:id", middleware.RequirePermission("laporan_read"), h.Laporan.GetByID)
 	protected.Post("/laporan", middleware.RequirePermission("laporan_create"), h.Laporan.Create)
 	protected.Patch("/laporan/:id/verify", middleware.RequirePermission("laporan_verify_pengawas", "laporan_verify_wakil_ppk"), h.Laporan.Verify)

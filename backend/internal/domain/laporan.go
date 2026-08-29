@@ -50,3 +50,64 @@ type LaporanJenisBangunan struct {
 	JenisBangunanName     *string     `db:"jenis_bangunan_name" json:"jenis_bangunan_name,omitempty"`
 	Documents             []*Document `db:"-" json:"documents,omitempty"`
 }
+
+type MonthlyProjectReportData struct {
+	KNMPID             int64              `json:"knmp_id"`
+	KNMPName           string             `json:"knmp_name"`
+	JenisKNMP          string             `json:"jenis_knmp"`
+	RegionalName       string             `json:"regional_name"`
+	ProvinceName       string             `json:"province_name"`
+	RegencyName        string             `json:"regency_name"`
+	DistrictName       string             `json:"district_name"`
+	SubDistrictName    string             `json:"sub_district_name"`
+	Lat                string             `json:"lat"`
+	Long               string             `json:"long"`
+	NomorKontrak       string             `json:"nomor_kontrak"`
+	SPMK               string             `json:"spmk"`
+	NilaiKontrak       float64            `json:"nilai_kontrak"`
+	TanggalKontrak     string             `json:"tanggal_kontrak"`
+	TanggalMulai       string             `json:"tanggal_mulai"`
+	MasaPelaksanaan    int                `json:"masa_pelaksanaan"`
+	TanggalSelesai     string             `json:"tanggal_selesai"`
+	KontraktorName     string             `json:"kontraktor_name"`
+	KonsultanPengawas  string             `json:"konsultan_pengawas"`
+	WakilPPK           string             `json:"wakil_ppk"`
+	SiteManager        string             `json:"site_manager"`
+	Month              int                `json:"month"`
+	Year               int                `json:"year"`
+	MonthName          string             `json:"month_name"`
+	ProgressPlan       float64            `json:"progress_plan"`
+	ProgressActual     float64            `json:"progress_actual"`
+	ProgressDeviasi    float64            `json:"progress_deviasi"`
+	FinancialPagu      float64            `json:"financial_pagu"`
+	FinancialRealisasi float64            `json:"financial_realisasi"`
+	FinancialSisa      float64            `json:"financial_sisa"`
+	TotalPekerja       int                `json:"total_pekerja"`
+	TotalIssues        int                `json:"total_issues"`
+	WorkPackages       []WorkPackageItem  `json:"work_packages"`
+	Milestones         []MilestoneItem    `json:"milestones"`
+	Issues             []*Issue           `json:"issues"`
+	Payments           []*Pembayaran      `json:"payments"`
+}
+
+type WorkPackageItem struct {
+	No               int     `json:"no"`
+	Name             string  `json:"name"`
+	Bobot            float64 `json:"bobot"`
+	LaluActual       float64 `json:"lalu_actual"`
+	BulanIniPlan     float64 `json:"bulan_ini_plan"`
+	BulanIniActual   float64 `json:"bulan_ini_actual"`
+	KumulatifPlan    float64 `json:"kumulatif_plan"`
+	KumulatifActual  float64 `json:"kumulatif_actual"`
+	Deviasi          float64 `json:"deviasi"`
+	Status           string  `json:"status"`
+}
+
+type MilestoneItem struct {
+	No          int     `json:"no"`
+	Name        string  `json:"name"`
+	PlanDate    string  `json:"plan_date"`
+	ActualDate  string  `json:"actual_date"`
+	DeviasiHari int     `json:"deviasi_hari"`
+	Status      string  `json:"status"`
+}
