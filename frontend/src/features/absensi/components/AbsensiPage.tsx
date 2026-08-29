@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
+import { formatDate } from "../../../lib/utils";
+import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 
 interface AbsensiItem {
   id: number;
@@ -293,34 +295,40 @@ export const AbsensiPage: React.FC = () => {
           </div>
 
           {/* Semua Dokumen Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedDocFilter}
-            onChange={(e) => {
-              setSelectedDocFilter(e.target.value);
+            onChange={(val) => {
+              setSelectedDocFilter(val);
               setPage(1);
             }}
-            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[150px]"
-          >
-            <option value="">Semua Dokumen</option>
-            <option value="sudah">Sudah Upload</option>
-            <option value="belum">Belum Upload</option>
-          </select>
+            options={[
+              { value: "", label: "Semua Dokumen" },
+              { value: "sudah", label: "Sudah Upload" },
+              { value: "belum", label: "Belum Upload" },
+            ]}
+            placeholder="Semua Dokumen"
+            searchPlaceholder="Cari status dokumen..."
+            className="w-full sm:w-auto sm:min-w-[150px]"
+          />
 
           {/* Semua Status Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value);
+            onChange={(val) => {
+              setSelectedStatus(val);
               setPage(1);
             }}
-            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[150px]"
-          >
-            <option value="">Semua Status</option>
-            <option value="menunggu_pengawas">Menunggu Pengawas</option>
-            <option value="menunggu_wakil_ppk">Menunggu Wakil PPK</option>
-            <option value="terverifikasi">Terverifikasi</option>
-            <option value="ditolak_pengawas">Ditolak</option>
-          </select>
+            options={[
+              { value: "", label: "Semua Status" },
+              { value: "menunggu_pengawas", label: "Menunggu Pengawas" },
+              { value: "menunggu_wakil_ppk", label: "Menunggu Wakil PPK" },
+              { value: "terverifikasi", label: "Terverifikasi" },
+              { value: "ditolak_pengawas", label: "Ditolak" },
+            ]}
+            placeholder="Semua Status"
+            searchPlaceholder="Cari status..."
+            className="w-full sm:w-auto sm:min-w-[160px]"
+          />
         </div>
 
         <button

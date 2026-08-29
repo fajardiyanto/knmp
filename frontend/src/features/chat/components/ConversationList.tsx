@@ -235,11 +235,10 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 
             // Expanded Full Row Item
             return (
-              <button
+              <div
                 key={c.id}
-                type="button"
                 onClick={() => onSelect(c)}
-                className={`w-full text-left p-3.5 flex items-center gap-3.5 transition-all cursor-pointer ${
+                className={`group w-full text-left p-3.5 flex items-center gap-3.5 transition-all cursor-pointer ${
                   isActive
                     ? "bg-blue-50/80 dark:bg-blue-950/50 border-l-4 border-blue-600"
                     : "hover:bg-slate-50/80 dark:hover:bg-slate-800/60 border-l-4 border-transparent"
@@ -313,7 +312,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                     </div>
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })
         )}

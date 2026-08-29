@@ -18,6 +18,8 @@ import {
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
 import { formatRupiah } from "../../../lib/utils";
+import { formatDate } from "../../../lib/utils";
+import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 
 interface PembayaranItem {
   id: number;
@@ -309,59 +311,64 @@ export const TerminPembayaranPage: React.FC = () => {
           {/* Kontrak Filter */}
           <div className="space-y-1">
             <label className="block text-xs font-semibold text-slate-600">Kontrak</label>
-            <select
+            <SearchableSelect
               value={selectedKontrak}
-              onChange={(e) => {
-                setSelectedKontrak(e.target.value);
+              onChange={(val) => {
+                setSelectedKontrak(val);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700"
-            >
-              <option value="">Semua Kontrak</option>
-              {kontrakOptions.map((k) => (
-                <option key={k.id} value={k.id}>
-                  {k.nama}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "Semua Kontrak" },
+                ...kontrakOptions.map((k) => ({ value: k.id.toString(), label: k.nama })),
+              ]}
+              placeholder="Semua Kontrak"
+              searchPlaceholder="Cari kontrak..."
+              className="w-full"
+            />
           </div>
 
           {/* Termin Filter */}
           <div className="space-y-1">
             <label className="block text-xs font-semibold text-slate-600">Termin</label>
-            <select
+            <SearchableSelect
               value={selectedTermin}
-              onChange={(e) => {
-                setSelectedTermin(e.target.value);
+              onChange={(val) => {
+                setSelectedTermin(val);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700"
-            >
-              <option value="">Semua Termin</option>
-              <option value="Termin 1">Termin 1</option>
-              <option value="Termin 2">Termin 2</option>
-              <option value="Termin 3">Termin 3</option>
-              <option value="Termin 4">Termin 4</option>
-              <option value="Retensi">Retensi</option>
-            </select>
+              options={[
+                { value: "", label: "Semua Termin" },
+                { value: "Termin 1", label: "Termin 1" },
+                { value: "Termin 2", label: "Termin 2" },
+                { value: "Termin 3", label: "Termin 3" },
+                { value: "Termin 4", label: "Termin 4" },
+                { value: "Retensi", label: "Retensi" },
+              ]}
+              placeholder="Semua Termin"
+              searchPlaceholder="Cari termin..."
+              className="w-full"
+            />
           </div>
 
           {/* Dokumen Filter */}
           <div className="space-y-1">
             <label className="block text-xs font-semibold text-slate-600">Dokumen</label>
             <div className="flex items-center gap-2">
-              <select
+              <SearchableSelect
                 value={selectedDocFilter}
-                onChange={(e) => {
-                  setSelectedDocFilter(e.target.value);
+                onChange={(val) => {
+                  setSelectedDocFilter(val);
                   setPage(1);
                 }}
-                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700"
-              >
-                <option value="">Semua Dokumen</option>
-                <option value="ada">Ada Dokumen</option>
-                <option value="tidak_ada">Tanpa Dokumen</option>
-              </select>
+                options={[
+                  { value: "", label: "Semua Dokumen" },
+                  { value: "ada", label: "Ada Dokumen" },
+                  { value: "tidak_ada", label: "Tanpa Dokumen" },
+                ]}
+                placeholder="Semua Dokumen"
+                searchPlaceholder="Cari status dokumen..."
+                className="w-full"
+              />
 
               <button
                 type="button"

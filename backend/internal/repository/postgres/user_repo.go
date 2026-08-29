@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"knmp-v2-backend/internal/domain"
@@ -21,7 +22,18 @@ func NewUserRepo(db *sqlx.DB) repository.UserRepository {
 
 func (r *userRepo) GetByID(ctx context.Context, id int64) (*domain.User, error) {
 	var user domain.User
-	query := `SELECT id, name, email, email_verified_at, password, remember_token, created_at, updated_at, deleted_at FROM users WHERE id = $1 AND deleted_at IS NULL`
+	query := `
+		SELECT u.id, u.name, u.email, u.email_verified_at, u.password, u.remember_token, u.created_at, u.updated_at, u.deleted_at,
+		       COALESCE(r.name, '') as role_name,
+		       COALESCE(k.name, '') as knmp_name
+		FROM users u
+		LEFT JOIN model_has_roles mhr ON u.id = mhr.model_id
+		LEFT JOIN roles r ON mhr.role_id = r.id
+		LEFT JOIN user_knmps uk ON u.id = uk.user_id
+		LEFT JOIN knmps k ON uk.knmp_id = k.id
+		WHERE u.id = $1 AND u.deleted_at IS NULL
+		LIMIT 1
+	`
 	err := r.db.GetContext(ctx, &user, query, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -34,7 +46,18 @@ func (r *userRepo) GetByID(ctx context.Context, id int64) (*domain.User, error) 
 
 func (r *userRepo) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
-	query := `SELECT id, name, email, email_verified_at, password, remember_token, created_at, updated_at, deleted_at FROM users WHERE email = $1 AND deleted_at IS NULL`
+	query := `
+		SELECT u.id, u.name, u.email, u.email_verified_at, u.password, u.remember_token, u.created_at, u.updated_at, u.deleted_at,
+		       COALESCE(r.name, '') as role_name,
+		       COALESCE(k.name, '') as knmp_name
+		FROM users u
+		LEFT JOIN model_has_roles mhr ON u.id = mhr.model_id
+		LEFT JOIN roles r ON mhr.role_id = r.id
+		LEFT JOIN user_knmps uk ON u.id = uk.user_id
+		LEFT JOIN knmps k ON uk.knmp_id = k.id
+		WHERE u.email = $1 AND u.deleted_at IS NULL
+		LIMIT 1
+	`
 	err := r.db.GetContext(ctx, &user, query, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -126,10 +149,21 @@ func (r *userRepo) GetUserPermissions(ctx context.Context, userID int64) ([]stri
 		JOIN role_has_permissions rhp ON p.id = rhp.permission_id
 		JOIN model_has_roles mhr ON rhp.role_id = mhr.role_id
 		WHERE mhr.model_id = $1
+		UNION
+		SELECT DISTINCT p.name FROM permissions p
+		JOIN model_has_permissions mhp ON p.id = mhp.permission_id
+		WHERE mhp.model_id = $1
 	`
 	err := r.db.SelectContext(ctx, &permissions, query, userID)
 	if err != nil {
-		return nil, err
+		// Fallback if model_has_permissions is not yet queried
+		fallbackQuery := `
+			SELECT DISTINCT p.name FROM permissions p
+			JOIN role_has_permissions rhp ON p.id = rhp.permission_id
+			JOIN model_has_roles mhr ON rhp.role_id = mhr.role_id
+			WHERE mhr.model_id = $1
+		`
+		_ = r.db.SelectContext(ctx, &permissions, fallbackQuery, userID)
 	}
 	return permissions, nil
 }
@@ -172,8 +206,61 @@ func (r *userRepo) AssignKnmps(ctx context.Context, userID int64, knmpIDs []int6
 	return nil
 }
 
+func (r *userRepo) AssignPermissions(ctx context.Context, userID int64, permissions []string) error {
+	// 1. Ensure table model_has_permissions exists
+	_, _ = r.db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS model_has_permissions (
+			permission_id BIGINT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+			model_type VARCHAR(150) NOT NULL DEFAULT 'App\\Models\\User',
+			model_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			PRIMARY KEY (permission_id, model_id, model_type)
+		);
+	`)
+
+	// 2. Remove old direct permissions for this user
+	_, _ = r.db.ExecContext(ctx, `DELETE FROM model_has_permissions WHERE model_id = $1`, userID)
+	if len(permissions) == 0 {
+		return nil
+	}
+
+	for _, permName := range permissions {
+		permName = strings.TrimSpace(permName)
+		if permName == "" {
+			continue
+		}
+		var permID int64
+		err := r.db.GetContext(ctx, &permID, `SELECT id FROM permissions WHERE name = $1`, permName)
+		if err != nil {
+			// Auto create permission if not exists
+			err = r.db.GetContext(ctx, &permID, `
+				INSERT INTO permissions (name, guard_name, created_at, updated_at) 
+				VALUES ($1, 'api', NOW(), NOW())
+				ON CONFLICT (name) DO UPDATE SET updated_at = NOW()
+				RETURNING id
+			`, permName)
+			if err != nil {
+				continue
+			}
+		}
+
+		_, _ = r.db.ExecContext(ctx, `
+			INSERT INTO model_has_permissions (permission_id, model_type, model_id)
+			VALUES ($1, 'App\\Models\\User', $2)
+			ON CONFLICT DO NOTHING
+		`, permID, userID)
+	}
+
+	return nil
+}
+
 func (r *userRepo) ListRoles(ctx context.Context) ([]*domain.Role, error) {
 	var roles []*domain.Role
 	err := r.db.SelectContext(ctx, &roles, `SELECT id, name, guard_name, created_at, updated_at FROM roles ORDER BY id ASC`)
 	return roles, err
+}
+
+func (r *userRepo) ListPermissions(ctx context.Context) ([]*domain.Permission, error) {
+	var list []*domain.Permission
+	err := r.db.SelectContext(ctx, &list, `SELECT id, name, guard_name, created_at, updated_at FROM permissions ORDER BY name ASC`)
+	return list, err
 }

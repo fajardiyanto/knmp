@@ -44,6 +44,10 @@ func Load() *Config {
 	}
 
 	jwtSecret := getEnv("JWT_SECRET", "knmp-v2-super-secret-key-change-in-production")
+	if appEnv == "production" && jwtSecret == "knmp-v2-super-secret-key-change-in-production" {
+		fmt.Println("[SECURITY WARNING] JWT_SECRET is using default insecure key in production environment!")
+	}
+
 	storageDisk := getEnv("STORAGE_DISK", "local")
 	storageLocalDir := getEnv("STORAGE_LOCAL_DIR", "./storage/uploads")
 

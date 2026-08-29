@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"log"
 	"strconv"
 	"time"
@@ -60,7 +61,7 @@ func (h *ChatHandler) ListConversations(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
-	convs, err := h.chatSvc.GetUserConversations(userID)
+	convs, err := h.chatSvc.GetUserConversations(c.Context(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -81,7 +82,7 @@ func (h *ChatHandler) CreatePersonalChat(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	conv, err := h.chatSvc.GetOrCreatePersonalChat(userID, req.UserID)
+	conv, err := h.chatSvc.GetOrCreatePersonalChat(c.Context(), userID, req.UserID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -103,7 +104,7 @@ func (h *ChatHandler) CreateGroupChat(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	conv, err := h.chatSvc.CreateGroupChat(userID, req)
+	conv, err := h.chatSvc.CreateGroupChat(c.Context(), userID, req)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -125,7 +126,7 @@ func (h *ChatHandler) GetConversation(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid conversation ID"})
 	}
 
-	conv, err := h.chatSvc.GetConversationDetails(convID, userID)
+	conv, err := h.chatSvc.GetConversationDetails(c.Context(), convID, userID)
 	if err != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -149,7 +150,7 @@ func (h *ChatHandler) ListMessages(c *fiber.Ctx) error {
 	limit, _ := strconv.Atoi(c.Query("limit", "50"))
 	beforeID, _ := strconv.ParseInt(c.Query("before_id", "0"), 10, 64)
 
-	messages, err := h.chatSvc.GetMessages(convID, userID, limit, beforeID)
+	messages, err := h.chatSvc.GetMessages(c.Context(), convID, userID, limit, beforeID)
 	if err != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -175,7 +176,7 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	msg, err := h.chatSvc.SendMessage(convID, userID, req)
+	msg, err := h.chatSvc.SendMessage(c.Context(), convID, userID, req)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -197,7 +198,7 @@ func (h *ChatHandler) MarkAsRead(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid conversation ID"})
 	}
 
-	if err := h.chatSvc.MarkAsRead(convID, userID); err != nil {
+	if err := h.chatSvc.MarkAsRead(c.Context(), convID, userID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -212,7 +213,7 @@ func (h *ChatHandler) GetUnreadCount(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
-	total, err := h.chatSvc.GetUnreadCount(userID)
+	total, err := h.chatSvc.GetUnreadCount(c.Context(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -221,7 +222,6 @@ func (h *ChatHandler) GetUnreadCount(c *fiber.Ctx) error {
 		"data": fiber.Map{
 			"unread_count": total,
 		},
-		"unread_count": total,
 	})
 }
 
@@ -241,7 +241,7 @@ func (h *ChatHandler) AddMember(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	if err := h.chatSvc.AddGroupMember(convID, userID, req); err != nil {
+	if err := h.chatSvc.AddGroupMember(c.Context(), convID, userID, req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -266,7 +266,7 @@ func (h *ChatHandler) RemoveMember(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
-	if err := h.chatSvc.RemoveGroupMember(convID, userID, targetUserID); err != nil {
+	if err := h.chatSvc.RemoveGroupMember(c.Context(), convID, userID, targetUserID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -291,7 +291,7 @@ func (h *ChatHandler) UpdateGroup(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	if err := h.chatSvc.UpdateGroup(convID, userID, req); err != nil {
+	if err := h.chatSvc.UpdateGroup(c.Context(), convID, userID, req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -307,7 +307,7 @@ func (h *ChatHandler) SearchUsers(c *fiber.Ctx) error {
 	}
 
 	query := c.Query("q", "")
-	users, err := h.chatSvc.SearchUsers(query, userID)
+	users, err := h.chatSvc.SearchUsers(c.Context(), query, userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -376,7 +376,7 @@ func (h *ChatHandler) HandleWebSocket(c *websocket.Conn) {
 		if eventType, ok := clientMsg["type"].(string); ok && eventType == "typing" {
 			if convIDFloat, ok := clientMsg["conversation_id"].(float64); ok {
 				convID := int64(convIDFloat)
-				details, err := h.chatSvc.GetConversationDetails(convID, userID)
+				details, err := h.chatSvc.GetConversationDetails(context.Background(), convID, userID)
 				if err == nil {
 					memberIDs := make([]int64, 0, len(details.Members))
 					for _, m := range details.Members {
@@ -409,7 +409,7 @@ func (h *ChatHandler) DeleteMessage(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid message ID"})
 	}
 
-	if err := h.chatSvc.DeleteMessage(msgID, userID); err != nil {
+	if err := h.chatSvc.DeleteMessage(c.Context(), msgID, userID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -429,7 +429,7 @@ func (h *ChatHandler) DeleteConversation(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid conversation ID"})
 	}
 
-	if err := h.chatSvc.DeleteConversation(convID, userID); err != nil {
+	if err := h.chatSvc.DeleteConversation(c.Context(), convID, userID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 

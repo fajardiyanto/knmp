@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"knmp-v2-backend/internal/domain"
 	"knmp-v2-backend/internal/service"
 )
 
@@ -102,11 +103,10 @@ func RequirePermission(requiredPerms ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userPerms, _ := c.Locals(CtxUserPermsKey).([]string)
 
-		// Superadmin & Admin bypass (case-insensitive)
+		// Superadmin & Admin bypass
 		userRoles, _ := c.Locals(CtxUserRolesKey).([]string)
 		for _, r := range userRoles {
-			lower := strings.ToLower(strings.TrimSpace(r))
-			if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin" {
+			if domain.IsAdminRole(r) {
 				return c.Next()
 			}
 		}

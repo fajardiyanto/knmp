@@ -103,9 +103,16 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     }
   };
 
+  const lastTypingTimeRef = useRef<number>(0);
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value);
-    onTyping?.();
+
+    const now = Date.now();
+    if (onTyping && now - lastTypingTimeRef.current > 2500) {
+      lastTypingTimeRef.current = now;
+      onTyping();
+    }
 
     if (inputRef.current) {
       inputRef.current.style.height = "auto";

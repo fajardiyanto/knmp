@@ -9,6 +9,8 @@ export const useChatSocket = (activeConversationId?: number) => {
   const [typingUsers, setTypingUsers] = useState<Record<number, boolean>>({});
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const retryCountRef = useRef(0);
+
   const connect = useCallback(() => {
     const token = localStorage.getItem("knmp_token") || localStorage.getItem("token");
     if (!token) return;
@@ -24,6 +26,7 @@ export const useChatSocket = (activeConversationId?: number) => {
 
       ws.onopen = () => {
         setIsConnected(true);
+        retryCountRef.current = 0;
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = null;
@@ -100,11 +103,14 @@ export const useChatSocket = (activeConversationId?: number) => {
 
       ws.onclose = () => {
         setIsConnected(false);
-        // Automatic reconnect after 4 seconds
+        // Exponential backoff reconnect: 2s, 4s, 8s, up to 30s (I-09)
         if (!reconnectTimeoutRef.current) {
+          const delay = Math.min(2000 * Math.pow(1.8, retryCountRef.current), 30000);
+          retryCountRef.current += 1;
           reconnectTimeoutRef.current = setTimeout(() => {
+            reconnectTimeoutRef.current = null;
             connect();
-          }, 4000);
+          }, delay);
         }
       };
 

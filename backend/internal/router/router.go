@@ -35,8 +35,14 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	app.Use(recover.New())
 	app.Use(middleware.OTelMiddleware(cfg.OtelServiceName))
 	app.Use(logger.New())
+	// CORS Configuration (C-03)
+	allowOrigins := "http://localhost:5173, http://localhost:3000, http://localhost:8080, http://127.0.0.1:5173, http://127.0.0.1:3000"
+	if cfg.AppEnv == "production" {
+		allowOrigins = "http://localhost:5173, http://localhost:8080"
+	}
+
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
+		AllowOrigins: allowOrigins,
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization, Sec-WebSocket-Key, Sec-WebSocket-Version, Sec-WebSocket-Extensions, Sec-WebSocket-Protocol",
 		AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 	}))
@@ -46,15 +52,16 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 		return c.JSON(fiber.Map{"status": "ok", "env": cfg.AppEnv})
 	})
 
-	// WebSocket Chat Route
-	app.Use("/ws", func(c *fiber.Ctx) error {
-		if websocket.IsWebSocketUpgrade(c) {
-			c.Locals("allowed", true)
-			return c.Next()
-		}
-		return fiber.ErrUpgradeRequired
-	})
+	// WebSocket Chat Route (C-04)
 	if h.Chat != nil {
+		app.Use("/ws/chat", middleware.WSAuthMiddleware(cfg.JWTSecret))
+		app.Use("/ws/chat", func(c *fiber.Ctx) error {
+			if websocket.IsWebSocketUpgrade(c) {
+				c.Locals("allowed", true)
+				return c.Next()
+			}
+			return fiber.ErrUpgradeRequired
+		})
 		app.Get("/ws/chat", websocket.New(h.Chat.HandleWebSocket))
 	}
 
@@ -72,6 +79,7 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	protected.Get("/user", h.Auth.Me)
 	protected.Delete("/auth/logout", h.Auth.Logout)
 	protected.Get("/roles", h.Auth.ListRoles)
+	protected.Get("/permissions", h.Auth.ListPermissions)
 	protected.Get("/users", middleware.RequirePermission("user_read"), h.Auth.ListUsers)
 	protected.Post("/users", middleware.RequirePermission("user_create"), h.Auth.CreateUser)
 	protected.Put("/users/:id", middleware.RequirePermission("user_update"), h.Auth.UpdateUser)

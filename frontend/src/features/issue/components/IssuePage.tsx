@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
+import { formatDate } from "../../../lib/utils";
+import { SearchableSelect } from "../../../components/ui/SearchableSelect";
+import { useAuth } from "../../auth/hooks/useAuth";
 
 interface IssueItem {
   id: number;
@@ -51,6 +54,12 @@ export const IssuePage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showAlert, showConfirm } = useAlert();
+  const { user } = useAuth();
+
+  const isAdminOrPengawas = user?.roles?.some((r) =>
+    ["superadmin", "super admin", "admin_ppk", "admin", "pengawas"].includes(r.toLowerCase())
+  );
+  const defaultUserKnmpId = user?.knmp_ids?.[0]?.toString() || "";
 
   // Filters
   const [search, setSearch] = useState("");
@@ -100,8 +109,14 @@ export const IssuePage: React.FC = () => {
   // Save / Update Mutation
   const saveMutation = useMutation({
     mutationFn: async (payload: typeof formData) => {
+      const finalKnmpId = payload.knmp_id
+        ? Number(payload.knmp_id)
+        : !isAdminOrPengawas && defaultUserKnmpId
+        ? Number(defaultUserKnmpId)
+        : undefined;
+
       const body = {
-        knmp_id: payload.knmp_id ? Number(payload.knmp_id) : undefined,
+        knmp_id: finalKnmpId,
         kategori_issue: payload.kategori_issue,
         tingkat: payload.tingkat,
         uraian_masalah: payload.uraian_masalah,
@@ -127,47 +142,14 @@ export const IssuePage: React.FC = () => {
       setEditingItem(null);
       showAlert({
         title: "Berhasil Disimpan",
-        message: "Data issue kendala proyek berhasil disimpan.",
+        message: "Data issue kendala berhasil disimpan.",
         type: "success",
       });
     },
     onError: (err: any) => {
       showAlert({
         title: "Gagal Menyimpan",
-        message: err.message || "Gagal menyimpan issue.",
-        type: "error",
-      });
-    },
-  });
-
-  // Verify Mutation
-  const verifyMutation = useMutation({
-    mutationFn: async () => {
-      if (!verifTarget) return;
-      return apiFetch(`/api/v1/issue/${verifTarget.id}/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: verifDecision === "approve" ? "approved" : "rejected",
-          note: verifNote,
-        }),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["issue-list"] });
-      setIsVerifModalOpen(false);
-      setVerifTarget(null);
-      setVerifNote("");
-      showAlert({
-        title: "Verifikasi Diproses",
-        message: "Status verifikasi issue berhasil disimpan.",
-        type: "success",
-      });
-    },
-    onError: (err: any) => {
-      showAlert({
-        title: "Gagal Memproses Verifikasi",
-        message: err.message || "Gagal memproses verifikasi.",
+        message: err.message || "Gagal menyimpan data issue.",
         type: "error",
       });
     },
@@ -175,25 +157,58 @@ export const IssuePage: React.FC = () => {
 
   // Delete Mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiFetch(`/api/v1/issue/${id}`, { method: "DELETE" }),
+    mutationFn: async (id: number) => {
+      return apiFetch(`/api/v1/issue/${id}`, { method: "DELETE" });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue-list"] });
       showAlert({
         title: "Berhasil Dihapus",
-        message: "Data issue berhasil dihapus.",
+        message: "Data issue kendala berhasil dihapus.",
         type: "success",
       });
     },
     onError: (err: any) => {
       showAlert({
         title: "Gagal Menghapus",
-        message: err.message || "Gagal menghapus issue.",
+        message: err.message || "Gagal menghapus data issue.",
         type: "error",
       });
     },
   });
 
+  // Verification Mutation
+  const verifyMutation = useMutation({
+    mutationFn: async (payload: { id: number; action: "approve" | "reject"; note: string }) => {
+      return apiFetch(`/api/v1/verification/issue/${payload.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: payload.action,
+          catatan: payload.note,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["issue-list"] });
+      setIsVerifModalOpen(false);
+      setVerifTarget(null);
+      showAlert({
+        title: "Status Diperbarui",
+        message: "Verifikasi issue kendala berhasil diproses.",
+        type: "success",
+      });
+    },
+    onError: (err: any) => {
+      showAlert({
+        title: "Gagal Verifikasi",
+        message: err.message || "Gagal memproses verifikasi issue.",
+        type: "error",
+      });
+    },
+  });
+
+  // Open Handlers
   const handleReset = () => {
     setSearch("");
     setSelectedTingkat("");
@@ -207,7 +222,7 @@ export const IssuePage: React.FC = () => {
   const handleOpenAdd = () => {
     setEditingItem(null);
     setFormData({
-      knmp_id: "",
+      knmp_id: !isAdminOrPengawas && defaultUserKnmpId ? defaultUserKnmpId : "",
       kategori_issue: "K3",
       tingkat: "Lainnya",
       uraian_masalah: "",
@@ -218,7 +233,11 @@ export const IssuePage: React.FC = () => {
   const handleOpenEdit = (item: IssueItem) => {
     setEditingItem(item);
     setFormData({
-      knmp_id: item.knmp_id ? item.knmp_id.toString() : "",
+      knmp_id: item.knmp_id
+        ? item.knmp_id.toString()
+        : !isAdminOrPengawas && defaultUserKnmpId
+        ? defaultUserKnmpId
+        : "",
       kategori_issue: item.kategori_issue,
       tingkat: item.tingkat,
       uraian_masalah: item.uraian_masalah,
@@ -303,82 +322,94 @@ export const IssuePage: React.FC = () => {
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
           </div>
 
-          <select
+          <SearchableSelect
             value={selectedTingkat}
-            onChange={(e) => {
-              setSelectedTingkat(e.target.value);
+            onChange={(val) => {
+              setSelectedTingkat(val);
               setPage(1);
             }}
-            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700"
-          >
-            <option value="">Semua Tingkat</option>
-            <option value="Ringan">Ringan</option>
-            <option value="Sedang">Sedang</option>
-            <option value="Kritis">Kritis</option>
-            <option value="Lainnya">Lainnya</option>
-          </select>
+            options={[
+              { value: "", label: "Semua Tingkat" },
+              { value: "Ringan", label: "Ringan" },
+              { value: "Sedang", label: "Sedang" },
+              { value: "Kritis", label: "Kritis" },
+              { value: "Lainnya", label: "Lainnya" },
+            ]}
+            placeholder="Semua Tingkat"
+            searchPlaceholder="Cari tingkat..."
+            className="w-full"
+          />
 
-          <select
+          <SearchableSelect
             value={selectedKnmp}
-            onChange={(e) => {
-              setSelectedKnmp(e.target.value);
+            onChange={(val) => {
+              setSelectedKnmp(val);
               setPage(1);
             }}
-            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700"
-          >
-            <option value="">Semua KNMP</option>
-            {knmpOptions.map((k) => (
-              <option key={k.id} value={k.id}>
-                {k.name}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: "Semua KNMP" },
+              ...knmpOptions.map((k) => ({ value: k.id.toString(), label: k.name })),
+            ]}
+            placeholder="Semua KNMP"
+            searchPlaceholder="Cari KNMP..."
+            className="w-full"
+          />
 
-          <select
+          <SearchableSelect
             value={selectedKategori}
-            onChange={(e) => {
-              setSelectedKategori(e.target.value);
+            onChange={(val) => {
+              setSelectedKategori(val);
               setPage(1);
             }}
-            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700"
-          >
-            <option value="">Semua Kategori</option>
-            <option value="K3">K3</option>
-            <option value="material terlambat">material terlambat</option>
-            <option value="mutu">mutu</option>
-            <option value="cuaca">cuaca</option>
-          </select>
+            options={[
+              { value: "", label: "Semua Kategori" },
+              { value: "K3", label: "K3" },
+              { value: "material terlambat", label: "material terlambat" },
+              { value: "mutu", label: "mutu" },
+              { value: "cuaca", label: "cuaca" },
+            ]}
+            placeholder="Semua Kategori"
+            searchPlaceholder="Cari kategori..."
+            className="w-full"
+          />
         </div>
 
         {/* Row 2: Verifikasi, Status, Reset, Buat Issue */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pt-1 border-t border-slate-100">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
-            <select
+            <SearchableSelect
               value={selectedVerifikasi}
-              onChange={(e) => {
-                setSelectedVerifikasi(e.target.value);
+              onChange={(val) => {
+                setSelectedVerifikasi(val);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700"
-            >
-              <option value="">Semua Verifikasi</option>
-              <option value="terverifikasi">Terverifikasi</option>
-              <option value="belum_terverifikasi">Belum Terverifikasi</option>
-            </select>
+              options={[
+                { value: "", label: "Semua Verifikasi" },
+                { value: "terverifikasi", label: "Terverifikasi" },
+                { value: "belum_terverifikasi", label: "Belum Terverifikasi" },
+              ]}
+              placeholder="Semua Verifikasi"
+              searchPlaceholder="Cari status verifikasi..."
+              className="w-full"
+            />
 
-            <select
+            <SearchableSelect
               value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value);
+              onChange={(val) => {
+                setSelectedStatus(val);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-700"
-            >
-              <option value="">Semua Status</option>
-              <option value="menunggu_pengawas">Menunggu Pengawas</option>
-              <option value="menunggu_wakil_ppk">Menunggu Wakil PPK</option>
-              <option value="terverifikasi">Terverifikasi</option>
-            </select>
+              options={[
+                { value: "", label: "Semua Status" },
+                { value: "open", label: "Open" },
+                { value: "in_progress", label: "In Progress" },
+                { value: "resolved", label: "Resolved" },
+                { value: "closed", label: "Closed" },
+              ]}
+              placeholder="Semua Status"
+              searchPlaceholder="Cari status..."
+              className="w-full"
+            />
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
@@ -695,18 +726,30 @@ export const IssuePage: React.FC = () => {
                     <label className="block text-xs font-semibold text-slate-800">
                       KNMP
                     </label>
-                    <select
-                      value={formData.knmp_id}
-                      onChange={(e) => setFormData({ ...formData, knmp_id: e.target.value })}
-                      className="w-full px-3.5 py-2.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700"
-                    >
-                      <option value="">Pilih KNMP</option>
-                      {knmpOptions.map((k) => (
-                        <option key={k.id} value={k.id}>
-                          {k.name}
-                        </option>
-                      ))}
-                    </select>
+                    {!isAdminOrPengawas && defaultUserKnmpId ? (
+                      <div className="w-full px-3.5 py-2.5 text-xs border border-slate-200 rounded-lg bg-slate-50 text-slate-700 font-medium flex items-center justify-between">
+                        <span>
+                          {knmpOptions.find((k) => k.id.toString() === (formData.knmp_id || defaultUserKnmpId))?.name ||
+                            `KNMP #${formData.knmp_id || defaultUserKnmpId}`}
+                        </span>
+                        <span className="text-[10px] text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded font-semibold">
+                          Otomatis Terkunci
+                        </span>
+                      </div>
+                    ) : (
+                      <select
+                        value={formData.knmp_id}
+                        onChange={(e) => setFormData({ ...formData, knmp_id: e.target.value })}
+                        className="w-full px-3.5 py-2.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700"
+                      >
+                        <option value="">Pilih KNMP</option>
+                        {knmpOptions.map((k) => (
+                          <option key={k.id} value={k.id}>
+                            {k.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">

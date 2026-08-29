@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -85,6 +86,11 @@ func RunMigrationsAndSeed(db *sqlx.DB, migrationsDir string) error {
 	if userCount == 0 {
 		log.Println("Database is empty, running initial seeders...")
 		seedInitialData(db)
+	} else {
+		// Ensure all KNMP locations have their 2 dedicated users
+		seedKNMPUsers(db)
+		// Ensure contracts and payment milestones are seeded
+		seedKontrakSumatera(db)
 	}
 
 	return nil
@@ -221,5 +227,212 @@ func seedInitialData(db *sqlx.DB) {
 		ON CONFLICT DO NOTHING;
 	`)
 
+	// 7. Seed 2 Users per KNMP
+	seedKNMPUsers(db)
+
+	// 8. Seed Contracts and Payments
+	seedKontrakSumatera(db)
+
 	log.Println("Database seeding completed.")
+}
+
+func seedKNMPUsers(db *sqlx.DB) {
+	ctx := context.Background()
+	userRepo := NewUserRepo(db)
+
+	var knmps []struct {
+		ID   int64  `db:"id"`
+		Name string `db:"name"`
+	}
+	err := db.SelectContext(ctx, &knmps, `SELECT id, name FROM knmps ORDER BY id ASC`)
+	if err != nil || len(knmps) == 0 {
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+	if err != nil {
+		return
+	}
+	defaultPw := string(hashedPassword)
+
+	countCreated := 0
+	for _, k := range knmps {
+		// Check how many users already assigned to this KNMP
+		var existingCount int
+		_ = db.GetContext(ctx, &existingCount, `SELECT COUNT(*) FROM user_knmps WHERE knmp_id = $1`, k.ID)
+		if existingCount >= 2 {
+			continue
+		}
+
+		// User 1
+		email1 := fmt.Sprintf("user1.knmp%d@pertamina.com", k.ID)
+		name1 := fmt.Sprintf("Pelaksana 1 (%s)", k.Name)
+		existing1, _ := userRepo.GetByEmail(ctx, email1)
+		if existing1 == nil {
+			u1 := &domain.User{
+				Name:     name1,
+				Email:    email1,
+				Password: defaultPw,
+			}
+			if err := userRepo.Create(ctx, u1); err == nil {
+				_ = userRepo.AssignRole(ctx, u1.ID, "kontraktor")
+				_ = userRepo.AssignKnmps(ctx, u1.ID, []int64{k.ID})
+				countCreated++
+			}
+		} else {
+			_ = userRepo.AssignKnmps(ctx, existing1.ID, []int64{k.ID})
+		}
+
+		// User 2
+		email2 := fmt.Sprintf("user2.knmp%d@pertamina.com", k.ID)
+		name2 := fmt.Sprintf("Pelaksana 2 (%s)", k.Name)
+		existing2, _ := userRepo.GetByEmail(ctx, email2)
+		if existing2 == nil {
+			u2 := &domain.User{
+				Name:     name2,
+				Email:    email2,
+				Password: defaultPw,
+			}
+			if err := userRepo.Create(ctx, u2); err == nil {
+				_ = userRepo.AssignRole(ctx, u2.ID, "kontraktor")
+				_ = userRepo.AssignKnmps(ctx, u2.ID, []int64{k.ID})
+				countCreated++
+			}
+		} else {
+			_ = userRepo.AssignKnmps(ctx, existing2.ID, []int64{k.ID})
+		}
+	}
+
+	if countCreated > 0 {
+		log.Printf("Seeded %d dedicated field users (2 users per KNMP) with password 'password'.", countCreated)
+	}
+}
+
+func seedKontrakSumatera(db *sqlx.DB) {
+	ctx := context.Background()
+
+	// Check if already seeded
+	var count int
+	_ = db.GetContext(ctx, &count, `SELECT COUNT(*) FROM persiapans WHERE jenis = 'kontrak'`)
+	if count > 5 {
+		return
+	}
+
+	jsonPaths := []string{
+		"data/kontrak_sumatera_parsed.json",
+		"../data/kontrak_sumatera_parsed.json",
+		"../../data/kontrak_sumatera_parsed.json",
+		"d:/spacecode/NGS/pertamina/knmp-v2/data/kontrak_sumatera_parsed.json",
+	}
+
+	var raw []byte
+	var err error
+	for _, p := range jsonPaths {
+		raw, err = os.ReadFile(p)
+		if err == nil {
+			break
+		}
+	}
+	if len(raw) == 0 {
+		return
+	}
+
+	type ContractItem struct {
+		No           int     `json:"no"`
+		NamaPenyedia string  `json:"nama_penyedia"`
+		NamaPaket    string  `json:"nama_paket"`
+		StatusAdmin  string  `json:"status_admin"`
+		NomorSP      string  `json:"nomor_sp"`
+		TglSP        string  `json:"tgl_sp"`
+		NilaiKontrak float64 `json:"nilai_kontrak"`
+		Alamat       string  `json:"alamat"`
+		NPWP         string  `json:"npwp"`
+		NamaDirektur string  `json:"nama_direktur"`
+		Telp         string  `json:"telp"`
+		Email        string  `json:"email"`
+		NamaBank     string  `json:"nama_bank"`
+		Norek        string  `json:"norek"`
+		CabangBank   string  `json:"cabang_bank"`
+		JangkaWaktu  string  `json:"jangka_waktu"`
+		NomorSPMK    string  `json:"nomor_spmk"`
+		TglMulai     string  `json:"tgl_mulai"`
+		TglSelesai   string  `json:"tgl_selesai"`
+		RuangLingkup string  `json:"ruang_lingkup"`
+		JumlahDesa   int     `json:"jumlah_desa"`
+		WakilPPK     string  `json:"wakil_ppk"`
+	}
+
+	var list []ContractItem
+	if err := json.Unmarshal(raw, &list); err != nil {
+		return
+	}
+
+	insertedCount := 0
+	for _, c := range list {
+		var exists bool
+		_ = db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM persiapans WHERE nama = $1 AND jenis = 'kontrak')`, c.NamaPenyedia).Scan(&exists)
+		if exists {
+			continue
+		}
+
+		// Find knmp_id by location match if any
+		var knmpID *int64
+		var foundID int64
+		err := db.GetContext(ctx, &foundID, `SELECT id FROM knmps WHERE $1 ILIKE '%' || name || '%' OR name ILIKE '%' || $2 || '%' LIMIT 1`, c.RuangLingkup, c.NamaPaket)
+		if err == nil && foundID > 0 {
+			knmpID = &foundID
+		}
+
+		addJson, _ := json.Marshal(c)
+		tgl := c.TglSP
+		if tgl == "" {
+			tgl = "2026-08-15"
+		}
+		status := c.StatusAdmin
+		if status == "" {
+			status = "Sudah ttd Kontrak"
+		}
+		ket := fmt.Sprintf("%s [No. SP: %s]", c.NamaPaket, c.NomorSP)
+
+		var persiapanID int64
+		query := `
+			INSERT INTO persiapans (knmp_id, nama, tanggal, jenis, keterangan, status, additional_data, created_at, updated_at)
+			VALUES ($1, $2, $3, 'kontrak', $4, $5, $6, NOW(), NOW())
+			RETURNING id
+		`
+		err = db.QueryRowContext(ctx, query, knmpID, c.NamaPenyedia, tgl, ket, status, string(addJson)).Scan(&persiapanID)
+		if err == nil && persiapanID > 0 {
+			insertedCount++
+			if c.NilaiKontrak > 0 {
+				norekInfo := fmt.Sprintf("%s (%s %s)", c.Norek, c.NamaBank, c.CabangBank)
+				// Seed 5 Payment Termins
+				_, _ = db.ExecContext(ctx, `
+					INSERT INTO pembayarans (persiapan_kontrak_id, name, kategori, termin, realisasi_anggaran, realisasi_fisik, norek_pekerja, created_at, updated_at)
+					VALUES 
+					($1, $2, 'Realisasi Konstruksi', 'Termin 1', $3, 25.00, $4, NOW(), NOW()),
+					($1, $5, 'Realisasi Konstruksi', 'Termin 2', $6, 50.00, $4, NOW(), NOW()),
+					($1, $7, 'Realisasi Konstruksi', 'Termin 3', $8, 75.00, $4, NOW(), NOW()),
+					($1, $9, 'Realisasi Konstruksi', 'Termin 4', $10, 100.00, $4, NOW(), NOW()),
+					($1, $11, 'Jaminan Pemeliharaan', 'Retensi', $12, 100.00, $4, NOW(), NOW())
+				`,
+					persiapanID,
+					fmt.Sprintf("Uang Muka / Termin 1 - %s", c.NamaPenyedia),
+					c.NilaiKontrak*0.25,
+					norekInfo,
+					fmt.Sprintf("Termin 2 (Progress 50%%) - %s", c.NamaPenyedia),
+					c.NilaiKontrak*0.25,
+					fmt.Sprintf("Termin 3 (Progress 75%%) - %s", c.NamaPenyedia),
+					c.NilaiKontrak*0.25,
+					fmt.Sprintf("Termin 4 (Progress 100%%) - %s", c.NamaPenyedia),
+					c.NilaiKontrak*0.20,
+					fmt.Sprintf("Retensi Pemeliharaan (5%%) - %s", c.NamaPenyedia),
+					c.NilaiKontrak*0.05,
+				)
+			}
+		}
+	}
+
+	if insertedCount > 0 {
+		log.Printf("Seeded %d contracts and payment milestones from Data Kontrak Sumatera.xlsx", insertedCount)
+	}
 }

@@ -72,11 +72,12 @@ func (h *AuthHandler) ListUsers(c *fiber.Ctx) error {
 }
 
 type CreateUserRequest struct {
-	Name     string  `json:"name" validate:"required,min=2"`
-	Email    string  `json:"email" validate:"required,email"`
-	Password string  `json:"password" validate:"required,min=6"`
-	Role     string  `json:"role"`
-	KnmpIDs  []int64 `json:"knmp_ids"`
+	Name        string   `json:"name" validate:"required,min=2"`
+	Email       string   `json:"email" validate:"required,email"`
+	Password    string   `json:"password" validate:"required,min=6"`
+	Role        string   `json:"role"`
+	KnmpIDs     []int64  `json:"knmp_ids"`
+	Permissions []string `json:"permissions"`
 }
 
 func (h *AuthHandler) CreateUser(c *fiber.Ctx) error {
@@ -88,7 +89,7 @@ func (h *AuthHandler) CreateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(ValidationErrorResponse("Validasi gagal", err.Error()))
 	}
 
-	user, err := h.authSvc.CreateUser(c.Context(), req.Name, req.Email, req.Password, req.Role, req.KnmpIDs)
+	user, err := h.authSvc.CreateUser(c.Context(), req.Name, req.Email, req.Password, req.Role, req.KnmpIDs, req.Permissions)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse(err.Error()))
 	}
@@ -96,11 +97,12 @@ func (h *AuthHandler) CreateUser(c *fiber.Ctx) error {
 }
 
 type UpdateUserRequest struct {
-	Name     string  `json:"name" validate:"required,min=2"`
-	Email    string  `json:"email" validate:"required,email"`
-	Password string  `json:"password"`
-	Role     string  `json:"role"`
-	KnmpIDs  []int64 `json:"knmp_ids"`
+	Name        string   `json:"name" validate:"required,min=2"`
+	Email       string   `json:"email" validate:"required,email"`
+	Password    string   `json:"password"`
+	Role        string   `json:"role"`
+	KnmpIDs     []int64  `json:"knmp_ids"`
+	Permissions []string `json:"permissions"`
 }
 
 func (h *AuthHandler) UpdateUser(c *fiber.Ctx) error {
@@ -117,7 +119,7 @@ func (h *AuthHandler) UpdateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(ValidationErrorResponse("Validasi gagal", err.Error()))
 	}
 
-	user, err := h.authSvc.UpdateUser(c.Context(), id, req.Name, req.Email, req.Password, req.Role, req.KnmpIDs)
+	user, err := h.authSvc.UpdateUser(c.Context(), id, req.Name, req.Email, req.Password, req.Role, req.KnmpIDs, req.Permissions)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse(err.Error()))
 	}
@@ -142,4 +144,12 @@ func (h *AuthHandler) ListRoles(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse(err.Error()))
 	}
 	return c.JSON(OKResponse(roles))
+}
+
+func (h *AuthHandler) ListPermissions(c *fiber.Ctx) error {
+	permissions, err := h.authSvc.ListPermissions(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse(err.Error()))
+	}
+	return c.JSON(OKResponse(permissions))
 }

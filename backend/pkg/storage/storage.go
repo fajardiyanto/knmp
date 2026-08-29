@@ -40,6 +40,27 @@ func (s *LocalStorage) SaveUploadedFile(file *multipart.FileHeader, subDir strin
 	defer src.Close()
 
 	ext := strings.ToLower(filepath.Ext(file.Filename))
+	
+	// Validate allowed extensions (C-07)
+	allowedExts := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".webp": true,
+		".gif":  true,
+		".pdf":  true,
+		".doc":  true,
+		".docx": true,
+		".xls":  true,
+		".xlsx": true,
+		".csv":  true,
+		".zip":  true,
+		".txt":  true,
+	}
+	if !allowedExts[ext] {
+		return "", "", "", fmt.Errorf("tipe file ekstensi %s tidak diizinkan untuk diunggah", ext)
+	}
+
 	uniqueName := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), uuid.New().String()[:8], ext)
 
 	targetFolder := filepath.Join(s.baseDir, subDir)

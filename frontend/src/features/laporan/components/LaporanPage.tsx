@@ -23,6 +23,7 @@ import {
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
+import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 
 interface LaporanItem {
   id: number;
@@ -316,9 +317,15 @@ export const LaporanPage: React.FC = () => {
 
   // 4 Metric Card Counts
   const totalDataCount = safeLaporanList.length;
-  const docOnlyCount = 36;
-  const imgOnlyCount = 36;
-  const emptyFileCount = 3;
+  const docOnlyCount = safeLaporanList.filter(
+    (d) => d.documents && d.documents.length > 0 && !d.documents.some((m) => m.mime_type?.startsWith("image/"))
+  ).length;
+  const imgOnlyCount = safeLaporanList.filter(
+    (d) => d.documents && d.documents.some((m) => m.mime_type?.startsWith("image/"))
+  ).length;
+  const emptyFileCount = safeLaporanList.filter(
+    (d) => !d.documents || d.documents.length === 0
+  ).length;
 
   // Pagination
   const totalRecords = filteredData.length;
@@ -377,83 +384,107 @@ export const LaporanPage: React.FC = () => {
           </div>
 
           {/* Jenis Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedJenis}
-            onChange={(e) => setSelectedJenis(e.target.value)}
-            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[130px]"
-          >
-            <option value="">Semua Jenis</option>
-            <option value="harian">Harian</option>
-            <option value="mingguan">Mingguan</option>
-            <option value="bulanan">Bulanan</option>
-          </select>
+            onChange={(val) => {
+              setSelectedJenis(val);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "Semua Jenis" },
+              { value: "harian", label: "Harian" },
+              { value: "mingguan", label: "Mingguan" },
+              { value: "bulanan", label: "Bulanan" },
+            ]}
+            placeholder="Semua Jenis"
+            searchPlaceholder="Cari jenis..."
+            className="w-full sm:w-auto sm:min-w-[130px]"
+          />
 
           {/* Jenis Bangunan Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedJB}
-            onChange={(e) => setSelectedJB(e.target.value)}
-            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[170px]"
-          >
-            <option value="">Semua Jenis Bangunan</option>
-            {jbOptions.map((jb) => (
-              <option key={jb.id} value={jb.nama}>
-                {jb.nama}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => {
+              setSelectedJB(val);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "Semua Jenis Bangunan" },
+              ...jbOptions.map((jb) => ({ value: jb.nama, label: jb.nama })),
+            ]}
+            placeholder="Semua Jenis Bangunan"
+            searchPlaceholder="Cari jenis bangunan..."
+            className="w-full sm:w-auto sm:min-w-[170px]"
+          />
 
           {/* User Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedUser}
-            onChange={(e) => setSelectedUser(e.target.value)}
-            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[140px]"
-          >
-            <option value="">Semua User</option>
-            {userOptions.map((u) => (
-              <option key={u.id} value={u.name}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => {
+              setSelectedUser(val);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "Semua User" },
+              ...userOptions.map((u) => ({ value: u.name, label: u.name })),
+            ]}
+            placeholder="Semua User"
+            searchPlaceholder="Cari user..."
+            className="w-full sm:w-auto sm:min-w-[140px]"
+          />
 
           {/* Pelaksanaan Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedPelaksanaan}
-            onChange={(e) => setSelectedPelaksanaan(e.target.value)}
-            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[170px]"
-          >
-            <option value="">Semua Pelaksanaan</option>
-            {pelaksanaanOptions.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nama}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => {
+              setSelectedPelaksanaan(val);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "Semua Pelaksanaan" },
+              ...pelaksanaanOptions.map((p) => ({ value: p.id.toString(), label: p.nama })),
+            ]}
+            placeholder="Semua Pelaksanaan"
+            searchPlaceholder="Cari pelaksanaan..."
+            className="w-full sm:w-auto sm:min-w-[170px]"
+          />
 
           {/* File Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedFileType}
-            onChange={(e) => setSelectedFileType(e.target.value)}
-            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[130px]"
-          >
-            <option value="">Semua File</option>
-            <option value="document">Dokumen</option>
-            <option value="image">Gambar</option>
-            <option value="empty">Tanpa File</option>
-          </select>
+            onChange={(val) => {
+              setSelectedFileType(val);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "Semua File" },
+              { value: "document", label: "Dokumen" },
+              { value: "image", label: "Gambar" },
+              { value: "empty", label: "Tanpa File" },
+            ]}
+            placeholder="Semua File"
+            searchPlaceholder="Cari tipe file..."
+            className="w-full sm:w-auto sm:min-w-[130px]"
+          />
 
           {/* Status Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full xl:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[160px]"
-          >
-            <option value="">Semua Status</option>
-            <option value="baru">Baru</option>
-            <option value="menunggu_pengawas">Menunggu Pengawas</option>
-            <option value="menunggu_wakil_ppk">Menunggu Wakil PPK</option>
-            <option value="terverifikasi">Terverifikasi</option>
-          </select>
+            onChange={(val) => {
+              setSelectedStatus(val);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "Semua Status" },
+              { value: "baru", label: "Baru" },
+              { value: "menunggu_pengawas", label: "Menunggu Pengawas" },
+              { value: "menunggu_wakil_ppk", label: "Menunggu Wakil PPK" },
+              { value: "terverifikasi", label: "Terverifikasi" },
+            ]}
+            placeholder="Semua Status"
+            searchPlaceholder="Cari status..."
+            className="w-full sm:w-auto sm:min-w-[160px]"
+          />
         </div>
 
         {/* Action Buttons */}

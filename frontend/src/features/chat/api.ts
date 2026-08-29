@@ -15,7 +15,7 @@ export const useConversations = () => {
   return useQuery<Conversation[]>({
     queryKey: ["chat-conversations"],
     queryFn: () => apiFetch<Conversation[]>("/api/v1/chat/conversations"),
-    refetchInterval: 10000,
+    refetchInterval: 15000,
   });
 };
 
@@ -32,7 +32,7 @@ export const useMessages = (convId?: number) => {
     queryKey: ["chat-messages", convId],
     queryFn: () => apiFetch<Message[]>(`/api/v1/chat/conversations/${convId}/messages`),
     enabled: !!convId,
-    refetchInterval: 8000,
+    refetchInterval: 15000,
   });
 };
 
@@ -45,7 +45,7 @@ export const useTotalUnreadCount = () => {
       if (res && typeof res.unread_count === "number") return { unread_count: res.unread_count };
       return { unread_count: 0 };
     },
-    refetchInterval: 12000,
+    refetchInterval: 20000,
   });
 };
 

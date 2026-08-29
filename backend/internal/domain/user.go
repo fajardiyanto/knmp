@@ -1,6 +1,31 @@
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+)
+
+const (
+	RoleSuperAdmin   = "superadmin"
+	RoleSuperAdminSp = "super admin"
+	RoleAdminPPK     = "admin_ppk"
+	RoleAdmin        = "admin"
+	RolePengawas     = "pengawas"
+	RoleWakilPPK     = "wakil_ppk"
+	RolePelaksana    = "pelaksana"
+	RoleUser         = "user"
+)
+
+// IsAdminRole checks if the role string represents an admin level role
+func IsAdminRole(role string) bool {
+	lower := strings.ToLower(strings.TrimSpace(role))
+	switch lower {
+	case RoleSuperAdmin, RoleSuperAdminSp, RoleAdminPPK, RoleAdmin:
+		return true
+	default:
+		return false
+	}
+}
 
 type User struct {
 	ID              int64      `db:"id" json:"id"`

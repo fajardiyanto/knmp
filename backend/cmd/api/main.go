@@ -35,7 +35,7 @@ func main() {
 		log.Fatalf("Fatal database error: %v", err)
 	}
 	defer db.Close()
-	log.Printf("Successfully connected to PostgreSQL at %s", cfg.DatabaseURL)
+	log.Printf("Successfully connected to PostgreSQL database (env: %s)", cfg.AppEnv)
 
 	// Run Migrations and Seeders automatically
 	migrationPaths := []string{"migrations", "./migrations", "/app/migrations", "backend/migrations"}

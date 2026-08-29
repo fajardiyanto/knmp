@@ -71,11 +71,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isSuper = user.roles?.some(
       (r) =>
         r.toLowerCase() === "superadmin" ||
-        r.toLowerCase() === "super admin" ||
-        r.toLowerCase() === "admin_ppk" ||
-        r.toLowerCase() === "admin"
+        r.toLowerCase() === "super admin"
     );
     if (isSuper) return true;
+    if (user.permissions?.includes("*")) return true;
     return user.permissions?.includes(permission) || false;
   };
 

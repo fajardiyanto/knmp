@@ -17,7 +17,9 @@ type UserRepository interface {
 	GetUserKnmpIDs(ctx context.Context, userID int64) ([]int64, error)
 	AssignRole(ctx context.Context, userID int64, roleName string) error
 	AssignKnmps(ctx context.Context, userID int64, knmpIDs []int64) error
+	AssignPermissions(ctx context.Context, userID int64, permissions []string) error
 	ListRoles(ctx context.Context) ([]*domain.Role, error)
+	ListPermissions(ctx context.Context) ([]*domain.Permission, error)
 }
 
 type GeoRepository interface {
@@ -156,4 +158,27 @@ type VerificationRepository interface {
 	ListVerifications(ctx context.Context, verifiableType string, verifiableID int64) ([]*domain.Verification, error)
 	CreateVerification(ctx context.Context, v *domain.Verification) error
 	SupersedeActiveVerifications(ctx context.Context, verifiableType string, verifiableID int64) error
+}
+
+type ChatRepository interface {
+	GetUserConversations(ctx context.Context, userID int64) ([]domain.Conversation, error)
+	FindPersonalConversation(ctx context.Context, user1, user2 int64) (*domain.Conversation, error)
+	CreateConversation(ctx context.Context, conv *domain.Conversation, memberUserIDs []int64, adminUserID int64) (*domain.Conversation, error)
+	GetConversationByID(ctx context.Context, convID int64) (*domain.Conversation, error)
+	GetConversationMembers(ctx context.Context, convID int64) ([]domain.ConversationMember, error)
+	GetConversationMemberUserIDs(ctx context.Context, convID int64) ([]int64, error)
+	IsUserMember(ctx context.Context, convID, userID int64) (bool, string, error)
+	GetMessages(ctx context.Context, convID int64, limit int, beforeID int64) ([]domain.Message, error)
+	GetMessageByID(ctx context.Context, msgID int64) (*domain.Message, error)
+	CreateMessage(ctx context.Context, msg *domain.Message) (*domain.Message, error)
+	MarkConversationAsRead(ctx context.Context, convID, userID int64) error
+	GetUnreadCountTotal(ctx context.Context, userID int64) (int, error)
+	AddGroupMember(ctx context.Context, convID, userID int64, role string) error
+	RemoveGroupMember(ctx context.Context, convID, userID int64) error
+	UpdateGroup(ctx context.Context, convID int64, name string, description *string) error
+	SoftDeleteMessage(ctx context.Context, msgID int64) error
+	SoftDeleteConversation(ctx context.Context, convID int64) error
+	GetLatestMessageForConversation(ctx context.Context, convID int64) (*domain.Message, error)
+	SearchUsers(ctx context.Context, query string, excludeUserID int64, limit int) ([]domain.User, error)
+	GetUserByID(ctx context.Context, userID int64) (*domain.User, error)
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"knmp-v2-backend/internal/domain"
@@ -186,7 +187,23 @@ func (h *KnmpHandler) Widget(c *fiber.Ctx) error {
 }
 
 func (h *KnmpHandler) Map(c *fiber.Ctx) error {
-	points, err := h.knmpSvc.ListMap(c.Context())
+	filter := repository.KnmpFilter{}
+	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
+	isGlobal := false
+	for _, r := range userRoles {
+		lower := strings.ToLower(r)
+		if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin" || lower == "pengawas" || lower == "ppk" || lower == "wakil_ppk" || lower == "wakil ppk" {
+			isGlobal = true
+			break
+		}
+	}
+	if !isGlobal {
+		if userKnmpIDs, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(userKnmpIDs) > 0 {
+			filter.UserKnmpIDs = userKnmpIDs
+		}
+	}
+
+	points, err := h.knmpSvc.List(c.Context(), filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse(err.Error()))
 	}

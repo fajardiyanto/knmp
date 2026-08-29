@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -34,6 +33,24 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
+func superAdminPermissions() []string {
+	return []string{
+		"knmp_read", "knmp_create", "knmp_update", "knmp_delete",
+		"kontrak_read", "kontrak_create", "kontrak_update", "kontrak_delete",
+		"lapangan_read", "lapangan_create", "lapangan_update", "lapangan_delete",
+		"pelaksanaan_read", "pelaksanaan_create", "pelaksanaan_update", "pelaksanaan_delete",
+		"laporan_read", "laporan_create", "laporan_update", "laporan_delete", "laporan_verify",
+		"absensi_read", "absensi_create", "absensi_update", "absensi_delete", "absensi_verify",
+		"issue_read", "issue_create", "issue_update", "issue_delete", "issue_verify",
+		"pembayaran_read", "pembayaran_create", "pembayaran_update", "pembayaran_delete",
+		"user_read", "user_create", "user_update", "user_delete",
+		"periode_read", "periode_create", "periode_update", "periode_delete",
+		"jenis_bangunan_read", "jenis_bangunan_create", "jenis_bangunan_update", "jenis_bangunan_delete",
+		"document_read", "document_create", "document_verify", "document_delete",
+		"*",
+	}
+}
+
 func (s *AuthService) Login(ctx context.Context, email, password string) (string, *domain.User, error) {
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
@@ -50,34 +67,28 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	}
 
 	// Populate roles, permissions, and KNMP IDs
-	roles, _ := s.userRepo.GetUserRoles(ctx, user.ID)
-	permissions, _ := s.userRepo.GetUserPermissions(ctx, user.ID)
-	knmpIDs, _ := s.userRepo.GetUserKnmpIDs(ctx, user.ID)
+	roles, err := s.userRepo.GetUserRoles(ctx, user.ID)
+	if err != nil {
+		return "", nil, fmt.Errorf("fetch user roles: %w", err)
+	}
+	permissions, err := s.userRepo.GetUserPermissions(ctx, user.ID)
+	if err != nil {
+		return "", nil, fmt.Errorf("fetch user permissions: %w", err)
+	}
+	knmpIDs, err := s.userRepo.GetUserKnmpIDs(ctx, user.ID)
+	if err != nil {
+		return "", nil, fmt.Errorf("fetch user knmp ids: %w", err)
+	}
 
 	isSuperOrAdmin := false
 	for _, r := range roles {
-		lower := strings.ToLower(r)
-		if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin" {
+		if domain.IsAdminRole(r) {
 			isSuperOrAdmin = true
 			break
 		}
 	}
 	if isSuperOrAdmin {
-		permissions = append(permissions,
-			"knmp_read", "knmp_create", "knmp_update", "knmp_delete",
-			"kontrak_read", "kontrak_create", "kontrak_update", "kontrak_delete",
-			"lapangan_read", "lapangan_create", "lapangan_update", "lapangan_delete",
-			"pelaksanaan_read", "pelaksanaan_create", "pelaksanaan_update", "pelaksanaan_delete",
-			"laporan_read", "laporan_create", "laporan_update", "laporan_delete", "laporan_verify",
-			"absensi_read", "absensi_create", "absensi_update", "absensi_delete", "absensi_verify",
-			"issue_read", "issue_create", "issue_update", "issue_delete", "issue_verify",
-			"pembayaran_read", "pembayaran_create", "pembayaran_update", "pembayaran_delete",
-			"user_read", "user_create", "user_update", "user_delete",
-			"periode_read", "periode_create", "periode_update", "periode_delete",
-			"jenis_bangunan_read", "jenis_bangunan_create", "jenis_bangunan_update", "jenis_bangunan_delete",
-			"document_read", "document_create", "document_verify", "document_delete",
-			"*",
-		)
+		permissions = append(permissions, superAdminPermissions()...)
 	}
 
 	user.Roles = roles
@@ -112,34 +123,28 @@ func (s *AuthService) GetUserProfile(ctx context.Context, userID int64) (*domain
 		return nil, errors.New("user tidak ditemukan")
 	}
 
-	roles, _ := s.userRepo.GetUserRoles(ctx, user.ID)
-	permissions, _ := s.userRepo.GetUserPermissions(ctx, user.ID)
-	knmpIDs, _ := s.userRepo.GetUserKnmpIDs(ctx, user.ID)
+	roles, err := s.userRepo.GetUserRoles(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch user roles: %w", err)
+	}
+	permissions, err := s.userRepo.GetUserPermissions(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch user permissions: %w", err)
+	}
+	knmpIDs, err := s.userRepo.GetUserKnmpIDs(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch user knmp ids: %w", err)
+	}
 
 	isSuperOrAdmin := false
 	for _, r := range roles {
-		lower := strings.ToLower(r)
-		if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin" {
+		if domain.IsAdminRole(r) {
 			isSuperOrAdmin = true
 			break
 		}
 	}
 	if isSuperOrAdmin {
-		permissions = append(permissions,
-			"knmp_read", "knmp_create", "knmp_update", "knmp_delete",
-			"kontrak_read", "kontrak_create", "kontrak_update", "kontrak_delete",
-			"lapangan_read", "lapangan_create", "lapangan_update", "lapangan_delete",
-			"pelaksanaan_read", "pelaksanaan_create", "pelaksanaan_update", "pelaksanaan_delete",
-			"laporan_read", "laporan_create", "laporan_update", "laporan_delete", "laporan_verify",
-			"absensi_read", "absensi_create", "absensi_update", "absensi_delete", "absensi_verify",
-			"issue_read", "issue_create", "issue_update", "issue_delete", "issue_verify",
-			"pembayaran_read", "pembayaran_create", "pembayaran_update", "pembayaran_delete",
-			"user_read", "user_create", "user_update", "user_delete",
-			"periode_read", "periode_create", "periode_update", "periode_delete",
-			"jenis_bangunan_read", "jenis_bangunan_create", "jenis_bangunan_update", "jenis_bangunan_delete",
-			"document_read", "document_create", "document_verify", "document_delete",
-			"*",
-		)
+		permissions = append(permissions, superAdminPermissions()...)
 	}
 
 	user.Roles = roles
@@ -162,7 +167,7 @@ func (s *AuthService) ListUsers(ctx context.Context, search string) ([]*domain.U
 	return users, nil
 }
 
-func (s *AuthService) CreateUser(ctx context.Context, name, email, password, role string, knmpIDs []int64) (*domain.User, error) {
+func (s *AuthService) CreateUser(ctx context.Context, name, email, password, role string, knmpIDs []int64, permissions []string) (*domain.User, error) {
 	existing, _ := s.userRepo.GetByEmail(ctx, email)
 	if existing != nil {
 		return nil, errors.New("email sudah terdaftar")
@@ -189,11 +194,14 @@ func (s *AuthService) CreateUser(ctx context.Context, name, email, password, rol
 	if len(knmpIDs) > 0 {
 		_ = s.userRepo.AssignKnmps(ctx, user.ID, knmpIDs)
 	}
+	if len(permissions) > 0 {
+		_ = s.userRepo.AssignPermissions(ctx, user.ID, permissions)
+	}
 
 	return s.GetUserProfile(ctx, user.ID)
 }
 
-func (s *AuthService) UpdateUser(ctx context.Context, id int64, name, email, password, role string, knmpIDs []int64) (*domain.User, error) {
+func (s *AuthService) UpdateUser(ctx context.Context, id int64, name, email, password, role string, knmpIDs []int64, permissions []string) (*domain.User, error) {
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil || user == nil {
 		return nil, errors.New("user tidak ditemukan")
@@ -221,6 +229,9 @@ func (s *AuthService) UpdateUser(ctx context.Context, id int64, name, email, pas
 	if knmpIDs != nil {
 		_ = s.userRepo.AssignKnmps(ctx, user.ID, knmpIDs)
 	}
+	if permissions != nil {
+		_ = s.userRepo.AssignPermissions(ctx, user.ID, permissions)
+	}
 
 	return s.GetUserProfile(ctx, user.ID)
 }
@@ -231,4 +242,8 @@ func (s *AuthService) DeleteUser(ctx context.Context, id int64) error {
 
 func (s *AuthService) ListRoles(ctx context.Context) ([]*domain.Role, error) {
 	return s.userRepo.ListRoles(ctx)
+}
+
+func (s *AuthService) ListPermissions(ctx context.Context) ([]*domain.Permission, error) {
+	return s.userRepo.ListPermissions(ctx)
 }

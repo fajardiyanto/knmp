@@ -20,6 +20,8 @@ import {
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
+import { SearchableSelect } from "../../../components/ui/SearchableSelect";
+import { useAuth } from "../../auth/hooks/useAuth";
 
 interface PersiapanItem {
   id: number;
@@ -54,6 +56,12 @@ export const MobilizationPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showAlert, showConfirm } = useAlert();
+  const { user } = useAuth();
+
+  const isAdminOrPengawas = user?.roles?.some((r) =>
+    ["superadmin", "super admin", "admin_ppk", "admin", "pengawas"].includes(r.toLowerCase())
+  );
+  const defaultUserKnmpId = user?.knmp_ids?.[0]?.toString() || "";
 
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
@@ -103,11 +111,17 @@ export const MobilizationPage: React.FC = () => {
   // Save / Update Mutation
   const saveMutation = useMutation({
     mutationFn: async (payload: typeof formData) => {
+      const finalKnmpId = payload.knmp_id
+        ? Number(payload.knmp_id)
+        : !isAdminOrPengawas && defaultUserKnmpId
+        ? Number(defaultUserKnmpId)
+        : undefined;
+
       const body = {
         nama: payload.nama,
         tanggal: payload.tanggal,
         jenis: "lapangan",
-        knmp_id: payload.knmp_id ? Number(payload.knmp_id) : undefined,
+        knmp_id: finalKnmpId,
         keterangan: payload.keterangan || undefined,
       };
 
@@ -178,7 +192,7 @@ export const MobilizationPage: React.FC = () => {
     setFormData({
       nama: "",
       tanggal: new Date().toISOString().split("T")[0],
-      knmp_id: "",
+      knmp_id: !isAdminOrPengawas && defaultUserKnmpId ? defaultUserKnmpId : "",
       keterangan: "",
     });
     setIsModalOpen(true);
@@ -189,7 +203,11 @@ export const MobilizationPage: React.FC = () => {
     setFormData({
       nama: item.nama,
       tanggal: item.tanggal?.split("T")[0] || item.tanggal,
-      knmp_id: item.knmp_id ? item.knmp_id.toString() : "",
+      knmp_id: item.knmp_id
+        ? item.knmp_id.toString()
+        : !isAdminOrPengawas && defaultUserKnmpId
+        ? defaultUserKnmpId
+        : "",
       keterangan: item.keterangan || "",
     });
     setIsModalOpen(true);
@@ -263,44 +281,54 @@ export const MobilizationPage: React.FC = () => {
           </div>
 
           {/* User Filter Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedUser}
-            onChange={(e) => setSelectedUser(e.target.value)}
-            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[140px]"
-          >
-            <option value="">Semua User</option>
-            {userOptions.map((u) => (
-              <option key={u.id} value={u.name}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => {
+              setSelectedUser(val);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "Semua User" },
+              ...userOptions.map((u) => ({ value: u.name, label: u.name })),
+            ]}
+            placeholder="Semua User"
+            searchPlaceholder="Cari user..."
+            className="w-full sm:w-auto sm:min-w-[150px]"
+          />
 
           {/* KNMP Filter Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedKnmp}
-            onChange={(e) => setSelectedKnmp(e.target.value)}
-            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[150px]"
-          >
-            <option value="">Semua KNMP</option>
-            {knmpOptions.map((k) => (
-              <option key={k.id} value={k.name}>
-                {k.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => {
+              setSelectedKnmp(val);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "Semua KNMP" },
+              ...knmpOptions.map((k) => ({ value: k.name, label: k.name })),
+            ]}
+            placeholder="Semua KNMP"
+            searchPlaceholder="Cari KNMP..."
+            className="w-full sm:w-auto sm:min-w-[170px]"
+          />
 
           {/* File Filter Dropdown */}
-          <select
+          <SearchableSelect
             value={selectedFileType}
-            onChange={(e) => setSelectedFileType(e.target.value)}
-            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[130px]"
-          >
-            <option value="">Semua File</option>
-            <option value="document">Dokumen</option>
-            <option value="image">Gambar</option>
-            <option value="empty">Tanpa File</option>
-          </select>
+            onChange={(val) => {
+              setSelectedFileType(val);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "Semua File" },
+              { value: "document", label: "Dokumen" },
+              { value: "image", label: "Gambar" },
+              { value: "empty", label: "Tanpa File" },
+            ]}
+            placeholder="Semua File"
+            searchPlaceholder="Cari tipe file..."
+            className="w-full sm:w-auto sm:min-w-[130px]"
+          />
         </div>
 
         {/* Action Buttons: Reset & Tambah Data */}
@@ -626,8 +654,8 @@ export const MobilizationPage: React.FC = () => {
                     <input
                       type="text"
                       disabled
-                      value="SuperAdmin"
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg bg-slate-100/70 text-slate-600 cursor-not-allowed"
+                      value={user?.name || "User"}
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg bg-slate-100/70 text-slate-600 cursor-not-allowed font-medium"
                     />
                   </div>
 
@@ -635,18 +663,30 @@ export const MobilizationPage: React.FC = () => {
                     <label className="block text-xs font-bold text-slate-800">
                       KNMP <span className="text-rose-500">*</span>
                     </label>
-                    <select
-                      value={formData.knmp_id}
-                      onChange={(e) => setFormData({ ...formData, knmp_id: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700"
-                    >
-                      <option value="">Pilih KNMP</option>
-                      {knmpOptions.map((k) => (
-                        <option key={k.id} value={k.id}>
-                          {k.name}
-                        </option>
-                      ))}
-                    </select>
+                    {!isAdminOrPengawas && defaultUserKnmpId ? (
+                      <div className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg bg-slate-50 text-slate-700 font-medium flex items-center justify-between">
+                        <span>
+                          {knmpOptions.find((k) => k.id.toString() === (formData.knmp_id || defaultUserKnmpId))?.name ||
+                            `KNMP #${formData.knmp_id || defaultUserKnmpId}`}
+                        </span>
+                        <span className="text-[10px] text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded font-semibold">
+                          Otomatis Terkunci
+                        </span>
+                      </div>
+                    ) : (
+                      <select
+                        value={formData.knmp_id}
+                        onChange={(e) => setFormData({ ...formData, knmp_id: e.target.value })}
+                        className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700"
+                      >
+                        <option value="">Pilih KNMP</option>
+                        {knmpOptions.map((k) => (
+                          <option key={k.id} value={k.id}>
+                            {k.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
 

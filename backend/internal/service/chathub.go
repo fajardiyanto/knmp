@@ -54,33 +54,61 @@ func (h *chatHub) Unregister(userID int64, conn *websocket.Conn) {
 }
 
 func (h *chatHub) BroadcastToUsers(userIDs []int64, event domain.WSEvent) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
 	if event.Timestamp.IsZero() {
 		event.Timestamp = time.Now()
 	}
 
+	var deadConns []struct {
+		uid  int64
+		conn *websocket.Conn
+	}
+
+	h.mu.RLock()
 	for _, uid := range userIDs {
 		if conns, exists := h.clients[uid]; exists {
 			for conn := range conns {
-				_ = conn.WriteJSON(event)
+				if err := conn.WriteJSON(event); err != nil {
+					deadConns = append(deadConns, struct {
+						uid  int64
+						conn *websocket.Conn
+					}{uid: uid, conn: conn})
+				}
 			}
+		}
+	}
+	h.mu.RUnlock()
+
+	// Clean up dead connections outside read lock
+	if len(deadConns) > 0 {
+		for _, d := range deadConns {
+			h.Unregister(d.uid, d.conn)
+			_ = d.conn.Close()
 		}
 	}
 }
 
 func (h *chatHub) BroadcastToUser(userID int64, event domain.WSEvent) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
 	if event.Timestamp.IsZero() {
 		event.Timestamp = time.Now()
 	}
 
+	var deadConns []*websocket.Conn
+
+	h.mu.RLock()
 	if conns, exists := h.clients[userID]; exists {
 		for conn := range conns {
-			_ = conn.WriteJSON(event)
+			if err := conn.WriteJSON(event); err != nil {
+				deadConns = append(deadConns, conn)
+			}
+		}
+	}
+	h.mu.RUnlock()
+
+	// Clean up dead connections outside read lock
+	if len(deadConns) > 0 {
+		for _, conn := range deadConns {
+			h.Unregister(userID, conn)
+			_ = conn.Close()
 		}
 	}
 }

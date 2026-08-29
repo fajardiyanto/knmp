@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
 	"knmp-v2-backend/internal/config"
 	"knmp-v2-backend/internal/domain"
@@ -173,5 +174,71 @@ func main() {
 		log.Println("Seeded sample KNMP project locations")
 	}
 
+	// 7. Seed 2 Users per KNMP
+	seedKNMPUsers(db)
+
 	fmt.Println("Database seed completed successfully!")
 }
+
+func seedKNMPUsers(db *sqlx.DB) {
+	ctx := context.Background()
+	userRepo := postgres.NewUserRepo(db)
+
+	var knmps []struct {
+		ID   int64  `db:"id"`
+		Name string `db:"name"`
+	}
+	err := db.SelectContext(ctx, &knmps, `SELECT id, name FROM knmps ORDER BY id ASC`)
+	if err != nil || len(knmps) == 0 {
+		return
+	}
+
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+	defaultPw := string(hashedPassword)
+
+	countCreated := 0
+	for _, k := range knmps {
+		// User 1
+		email1 := fmt.Sprintf("user1.knmp%d@pertamina.com", k.ID)
+		name1 := fmt.Sprintf("Pelaksana 1 (%s)", k.Name)
+		existing1, _ := userRepo.GetByEmail(ctx, email1)
+		if existing1 == nil {
+			u1 := &domain.User{
+				Name:     name1,
+				Email:    email1,
+				Password: defaultPw,
+			}
+			if err := userRepo.Create(ctx, u1); err == nil {
+				_ = userRepo.AssignRole(ctx, u1.ID, "kontraktor")
+				_ = userRepo.AssignKnmps(ctx, u1.ID, []int64{k.ID})
+				countCreated++
+			}
+		} else {
+			_ = userRepo.AssignKnmps(ctx, existing1.ID, []int64{k.ID})
+		}
+
+		// User 2
+		email2 := fmt.Sprintf("user2.knmp%d@pertamina.com", k.ID)
+		name2 := fmt.Sprintf("Pelaksana 2 (%s)", k.Name)
+		existing2, _ := userRepo.GetByEmail(ctx, email2)
+		if existing2 == nil {
+			u2 := &domain.User{
+				Name:     name2,
+				Email:    email2,
+				Password: defaultPw,
+			}
+			if err := userRepo.Create(ctx, u2); err == nil {
+				_ = userRepo.AssignRole(ctx, u2.ID, "kontraktor")
+				_ = userRepo.AssignKnmps(ctx, u2.ID, []int64{k.ID})
+				countCreated++
+			}
+		} else {
+			_ = userRepo.AssignKnmps(ctx, existing2.ID, []int64{k.ID})
+		}
+	}
+
+	if countCreated > 0 {
+		log.Printf("Seeded %d dedicated field users (2 users per KNMP).", countCreated)
+	}
+}
+

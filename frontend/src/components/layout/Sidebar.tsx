@@ -62,12 +62,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: "UTAMA",
       items: [
-        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, show: true },
+        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, show: hasPermission("dashboard") },
         {
           name: "Chat",
           href: "/chat",
           icon: MessageSquare,
-          show: true,
+          show: hasPermission("chat"),
           badge: unreadTotal,
         },
         { name: "Lokasi KNMP", href: "/knmp", icon: MapPin, show: hasPermission("knmp_read") },
@@ -82,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: FileSignature,
           show: hasPermission("kontrak_read"),
         },
-        { name: "PCM", href: "/pcm", icon: Users2, show: hasPermission("kontrak_read") },
+        { name: "PCM", href: "/pcm", icon: Users2, show: hasPermission("pcm_read") || hasPermission("kontrak_read") },
         {
           name: "Mobilization Report",
           href: "/persiapan_lapangan",
@@ -96,16 +96,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           show: hasPermission("pelaksanaan_read"),
         },
         { name: "Laporan", href: "/laporan", icon: FileText, show: hasPermission("laporan_read") },
-        { name: "PHO", href: "/pho", icon: CheckCircle2, show: true },
-        { name: "Pemeliharaan", href: "/pemeliharaan", icon: Wrench, show: true },
-        { name: "FHO", href: "/fho", icon: ShieldCheck, show: true },
+        { name: "PHO", href: "/pho", icon: CheckCircle2, show: hasPermission("pho_read") },
+        { name: "Pemeliharaan", href: "/pemeliharaan", icon: Wrench, show: hasPermission("pemeliharaan_read") },
+        { name: "FHO", href: "/fho", icon: ShieldCheck, show: hasPermission("fho_read") },
       ],
     },
     {
       title: "KEUANGAN",
       items: [
-        { name: "Total Anggaran", href: "/pembayaran/summary", icon: DollarSign, show: true },
-        { name: "Termin Pembayaran", href: "/pembayaran/termin", icon: CreditCard, show: true },
+        {
+          name: "Total Anggaran",
+          href: "/pembayaran/summary",
+          icon: DollarSign,
+          show: hasPermission("anggaran_read") || hasPermission("pembayaran_read"),
+        },
+        {
+          name: "Termin Pembayaran",
+          href: "/pembayaran/termin",
+          icon: CreditCard,
+          show: hasPermission("termin_read") || hasPermission("pembayaran_read"),
+        },
       ],
     },
     {
@@ -113,19 +123,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { name: "Absensi", href: "/absensi", icon: CalendarCheck, show: hasPermission("absensi_read") },
         { name: "Issue", href: "/issue", icon: AlertTriangle, show: hasPermission("issue_read") },
-        { name: "Pemeliharaan", href: "/pemeliharaan", icon: Wrench, show: true },
       ],
     },
     {
       title: "USER",
       items: [
-        { name: "Users", href: "/user", icon: Users, show: !!isSuperOrAdmin || hasPermission("user_read") },
-        { name: "Periode", href: "/periode", icon: Calendar, show: !!isSuperOrAdmin || hasPermission("periode_read") },
+        { name: "Users", href: "/user", icon: Users, show: hasPermission("user_read") },
+        { name: "Periode", href: "/periode", icon: Calendar, show: hasPermission("periode_read") },
         {
           name: "Jenis Bangunan",
           href: "/jenis-bangunan",
           icon: Building2,
-          show: !!isSuperOrAdmin || hasPermission("jenis_bangunan_read"),
+          show: hasPermission("jenis_bangunan_read"),
         },
       ],
     },
