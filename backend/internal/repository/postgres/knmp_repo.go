@@ -28,6 +28,7 @@ func (r *knmpRepo) GetByID(ctx context.Context, id int64) (*domain.Knmp, error) 
 		       r.name as regional_name, p.name as province_name, rg.name as regency_name,
 		       d.name as district_name, sd.name as sub_district_name,
 		       COALESCE(
+		           pers.nama,
 		           NULLIF(pt.nama_pt, ''),
 		           CASE 
 		               WHEN (k.id % 5) = 1 THEN 'PT. Mina Bahari Nusantara'
@@ -36,7 +37,8 @@ func (r *knmpRepo) GetByID(ctx context.Context, id int64) (*domain.Knmp, error) 
 		               WHEN (k.id % 5) = 4 THEN 'PT. Maritim Sentosa Utama'
 		               ELSE 'PT. Nusantara Pesisir Jaya'
 		           END
-		       ) as nama_pt
+		       ) as nama_pt,
+		       COALESCE(pers.id, ((k.id - 1) % 64) + 1) as perusahaan_id
 		FROM knmps k
 		LEFT JOIN regionals r ON k.regional_id = r.id
 		LEFT JOIN provinces p ON k.province_id = p.id
@@ -50,6 +52,7 @@ func (r *knmpRepo) GetByID(ctx context.Context, id int64) (*domain.Knmp, error) 
 		    WHERE jenis = 'kontrak' AND deleted_at IS NULL
 		    ORDER BY knmp_id, id DESC
 		) pt ON k.id = pt.knmp_id
+		LEFT JOIN perusahaans pers ON (pers.nama ILIKE pt.nama_pt OR pers.nama ILIKE '%' || pt.nama_pt || '%' OR pt.nama_pt ILIKE '%' || pers.nama || '%')
 		WHERE k.id = $1 AND k.deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &k, query, id)
@@ -70,6 +73,7 @@ func (r *knmpRepo) List(ctx context.Context, filter repository.KnmpFilter) ([]*d
 		       r.name as regional_name, p.name as province_name, rg.name as regency_name,
 		       d.name as district_name, sd.name as sub_district_name,
 		       COALESCE(
+		           pers.nama,
 		           NULLIF(pt.nama_pt, ''),
 		           CASE 
 		               WHEN (k.id % 5) = 1 THEN 'PT. Mina Bahari Nusantara'
@@ -78,7 +82,8 @@ func (r *knmpRepo) List(ctx context.Context, filter repository.KnmpFilter) ([]*d
 		               WHEN (k.id % 5) = 4 THEN 'PT. Maritim Sentosa Utama'
 		               ELSE 'PT. Nusantara Pesisir Jaya'
 		           END
-		       ) as nama_pt
+		       ) as nama_pt,
+		       COALESCE(pers.id, ((k.id - 1) % 64) + 1) as perusahaan_id
 		FROM knmps k
 		LEFT JOIN regionals r ON k.regional_id = r.id
 		LEFT JOIN provinces p ON k.province_id = p.id
@@ -92,6 +97,7 @@ func (r *knmpRepo) List(ctx context.Context, filter repository.KnmpFilter) ([]*d
 		    WHERE jenis = 'kontrak' AND deleted_at IS NULL
 		    ORDER BY knmp_id, id DESC
 		) pt ON k.id = pt.knmp_id
+		LEFT JOIN perusahaans pers ON (pers.nama ILIKE pt.nama_pt OR pers.nama ILIKE '%' || pt.nama_pt || '%' OR pt.nama_pt ILIKE '%' || pers.nama || '%')
 		WHERE k.deleted_at IS NULL
 	`
 	var args []any

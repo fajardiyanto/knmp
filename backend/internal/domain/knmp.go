@@ -18,13 +18,13 @@ type Knmp struct {
 	UpdatedAt     time.Time  `db:"updated_at" json:"updated_at"`
 	DeletedAt     *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 
-	// Relational details
 	RegionalName    *string `db:"regional_name" json:"regional_name,omitempty"`
 	ProvinceName    *string `db:"province_name" json:"province_name,omitempty"`
 	RegencyName     *string `db:"regency_name" json:"regency_name,omitempty"`
 	DistrictName    *string `db:"district_name" json:"district_name,omitempty"`
 	SubDistrictName *string `db:"sub_district_name" json:"sub_district_name,omitempty"`
 	NamaPT          *string `db:"nama_pt" json:"nama_pt,omitempty"`
+	PerusahaanID    *int64  `db:"perusahaan_id" json:"perusahaan_id,omitempty"`
 }
 
 type Periode struct {

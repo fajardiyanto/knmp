@@ -31,6 +31,7 @@ interface KnmpItem {
   district_name?: string;
   sub_district_name?: string;
   nama_pt?: string;
+  perusahaan_id?: number;
   lat?: string;
   long?: string;
   status: string;
@@ -55,6 +56,7 @@ export const KnmpPage: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [selectedCompanyIdForModal, setSelectedCompanyIdForModal] = useState<number | null>(null);
   const [selectedCompanyForModal, setSelectedCompanyForModal] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<KnmpItem | null>(null);
   const [formData, setFormData] = useState({
@@ -436,6 +438,7 @@ export const KnmpPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
+                          setSelectedCompanyIdForModal(item.perusahaan_id || null);
                           setSelectedCompanyForModal(item.nama_pt || "PT. Mina Bahari Nusantara");
                           setIsCompanyModalOpen(true);
                         }}
@@ -697,7 +700,12 @@ export const KnmpPage: React.FC = () => {
       {/* Company Legal Profile Detail Modal */}
       <CompanyDetailModal
         isOpen={isCompanyModalOpen}
-        onClose={() => setIsCompanyModalOpen(false)}
+        onClose={() => {
+          setIsCompanyModalOpen(false);
+          setSelectedCompanyIdForModal(null);
+          setSelectedCompanyForModal(null);
+        }}
+        perusahaanId={selectedCompanyIdForModal || undefined}
         namaPerusahaan={selectedCompanyForModal || undefined}
       />
 

@@ -39,21 +39,27 @@ export interface PerusahaanDetail {
 interface CompanyDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
+  perusahaanId?: number;
   namaPerusahaan?: string;
 }
 
 export const CompanyDetailModal: React.FC<CompanyDetailModalProps> = ({
   isOpen,
   onClose,
+  perusahaanId,
   namaPerusahaan,
 }) => {
   const { data: company, isLoading } = useQuery<PerusahaanDetail>({
-    queryKey: ["perusahaan-detail", namaPerusahaan],
-    queryFn: () =>
-      apiFetch<PerusahaanDetail>(
+    queryKey: ["perusahaan-detail", perusahaanId, namaPerusahaan],
+    queryFn: () => {
+      if (perusahaanId && perusahaanId > 0) {
+        return apiFetch<PerusahaanDetail>(`/api/v1/perusahaan/${perusahaanId}`);
+      }
+      return apiFetch<PerusahaanDetail>(
         `/api/v1/perusahaan/by-nama?nama=${encodeURIComponent(namaPerusahaan || "")}`
-      ),
-    enabled: isOpen && !!namaPerusahaan,
+      );
+    },
+    enabled: isOpen && (!!perusahaanId || !!namaPerusahaan),
   });
 
   if (!isOpen) return null;
