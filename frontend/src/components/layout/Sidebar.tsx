@@ -58,11 +58,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return lower.includes("super") || lower.includes("admin");
   });
 
+  const isManagement = user?.roles?.some((r) => {
+    const lower = r.toLowerCase();
+    return (
+      lower.includes("super") ||
+      lower.includes("admin") ||
+      lower.includes("ppk") ||
+      lower.includes("pengawas")
+    );
+  });
+
   const groups: NavGroup[] = [
     {
       title: "UTAMA",
       items: [
-        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, show: hasPermission("dashboard") },
+        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, show: isManagement || hasPermission("dashboard") },
         {
           name: "Chat",
           href: "/chat",

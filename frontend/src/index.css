@@ -236,7 +236,130 @@ html.dark .text-emerald-900 {
 }
 html.dark .text-emerald-700 {
   color: #6ee7b7 !important;
+}/* ==========================================================================
+   Printable Document & Official Report Sheet Immunity
+   (Official document sheets MUST always retain authentic crisp white paper & high-contrast styling)
+   ========================================================================== */
+.printable-report-canvas,
+.printable-report-canvas * {
+  color-scheme: light !important;
 }
 
+html.dark .printable-report-canvas {
+  background-color: #ffffff !important;
+  color: #020617 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
 
+html.dark .printable-report-canvas div,
+html.dark .printable-report-canvas section,
+html.dark .printable-report-canvas span,
+html.dark .printable-report-canvas p,
+html.dark .printable-report-canvas table,
+html.dark .printable-report-canvas td,
+html.dark .printable-report-canvas th {
+  color-scheme: light !important;
+}
 
+html.dark .printable-report-canvas .bg-white {
+  background-color: #ffffff !important;
+}
+
+html.dark .printable-report-canvas .bg-slate-50,
+html.dark .printable-report-canvas .bg-slate-50\/20,
+html.dark .printable-report-canvas .bg-slate-50\/40,
+html.dark .printable-report-canvas .bg-slate-50\/50,
+html.dark .printable-report-canvas .bg-slate-50\/60,
+html.dark .printable-report-canvas .bg-slate-50\/70,
+html.dark .printable-report-canvas .bg-slate-50\/80,
+html.dark .printable-report-canvas .bg-slate-50\/90 {
+  background-color: #f8fafc !important;
+}
+
+html.dark .printable-report-canvas .bg-slate-100,
+html.dark .printable-report-canvas .bg-slate-100\/40,
+html.dark .printable-report-canvas .bg-slate-100\/60,
+html.dark .printable-report-canvas .bg-slate-100\/80 {
+  background-color: #f1f5f9 !important;
+}
+
+html.dark .printable-report-canvas .bg-slate-200,
+html.dark .printable-report-canvas .bg-slate-200\/80 {
+  background-color: #e2e8f0 !important;
+}
+
+html.dark .printable-report-canvas .text-slate-900,
+html.dark .printable-report-canvas .text-slate-950 {
+  color: #0f172a !important;
+}
+
+html.dark .printable-report-canvas .text-slate-800 {
+  color: #1e293b !important;
+}
+
+html.dark .printable-report-canvas .text-slate-700 {
+  color: #334155 !important;
+}
+
+html.dark .printable-report-canvas .text-slate-600 {
+  color: #475569 !important;
+}
+
+html.dark .printable-report-canvas .text-slate-500 {
+  color: #64748b !important;
+}
+
+html.dark .printable-report-canvas .border-slate-900 {
+  border-color: #0f172a !important;
+}
+
+html.dark .printable-report-canvas .border-slate-300 {
+  border-color: #cbd5e1 !important;
+}
+
+html.dark .printable-report-canvas .border-slate-200 {
+  border-color: #e2e8f0 !important;
+}
+
+html.dark .printable-report-canvas .border-slate-100 {
+  border-color: #f1f5f9 !important;
+}
+
+html.dark .printable-report-canvas .text-\[\#002060\] {
+  color: #002060 !important;
+}
+
+html.dark .printable-report-canvas .bg-\[\#002060\] {
+  background-color: #002060 !important;
+  color: #ffffff !important;
+}
+
+html.dark .printable-report-canvas .text-\[\#c00000\] {
+  color: #c00000 !important;
+}
+
+html.dark .printable-report-canvas .bg-\[\#c00000\] {
+  background-color: #c00000 !important;
+  color: #ffffff !important;
+}
+
+html.dark .printable-report-canvas input,
+html.dark .printable-report-canvas textarea,
+html.dark .printable-report-canvas select {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.dark .printable-report-canvas table thead {
+  background-color: #f8fafc !important;
+  color: #1e293b !important;
+}
+
+html.dark .printable-report-canvas table thead th {
+  color: #0f172a !important;
+}
+
+html.dark .printable-report-canvas table tbody tr:hover {
+  background-color: rgba(241, 245, 249, 0.6) !important;
+}

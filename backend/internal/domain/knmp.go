@@ -24,6 +24,7 @@ type Knmp struct {
 	RegencyName     *string `db:"regency_name" json:"regency_name,omitempty"`
 	DistrictName    *string `db:"district_name" json:"district_name,omitempty"`
 	SubDistrictName *string `db:"sub_district_name" json:"sub_district_name,omitempty"`
+	NamaPT          *string `db:"nama_pt" json:"nama_pt,omitempty"`
 }
 
 type Periode struct {

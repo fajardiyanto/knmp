@@ -100,12 +100,12 @@ func main() {
 		Password string
 		Role     string
 	}{
-		{"SuperAdmin", "superadmin@gmail.com", "superadmin", "superadmin"},
-		{"Admin PPK", "admin_ppk@gmail.com", "admin_ppk", "admin_ppk"},
-		{"Kontraktor", "kontraktor@gmail.com", "kontraktor", "kontraktor"},
-		{"Pengawas", "pengawas@gmail.com", "pengawas", "pengawas"},
-		{"Wakil PPK", "wakil_ppk@gmail.com", "wakil_ppk", "wakil_ppk"},
-		{"PPK", "ppk@gmail.com", "ppk", "ppk"},
+		{"SuperAdmin", "superadmin@gmail.com", "password", "superadmin"},
+		{"Admin PPK", "admin_ppk@gmail.com", "password", "admin_ppk"},
+		{"Kontraktor", "kontraktor@gmail.com", "password", "kontraktor"},
+		{"Pengawas", "pengawas@gmail.com", "password", "pengawas"},
+		{"Wakil PPK", "wakil_ppk@gmail.com", "password", "wakil_ppk"},
+		{"PPK", "ppk@gmail.com", "password", "ppk"},
 	}
 
 	userRepo := postgres.NewUserRepo(db)

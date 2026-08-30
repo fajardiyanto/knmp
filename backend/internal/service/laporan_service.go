@@ -231,6 +231,6 @@ func (s *LaporanService) Unverify(ctx context.Context, id int64, step string, no
 	return s.verifRepo.CreateVerification(ctx, v)
 }
 
-func (s *LaporanService) GetMonthlyProjectReportData(ctx context.Context, knmpID int64, month, year int) (*domain.MonthlyProjectReportData, error) {
-	return s.laporanRepo.GetMonthlyProjectReportData(ctx, knmpID, month, year)
+func (s *LaporanService) GetMonthlyProjectReportData(ctx context.Context, filter repository.ProjectReportFilter) (*domain.MonthlyProjectReportData, error) {
+	return s.laporanRepo.GetMonthlyProjectReportData(ctx, filter)
 }

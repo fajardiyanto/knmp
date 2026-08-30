@@ -63,10 +63,18 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     }
   }, [isOpen]);
 
-  // Filtered options based on search query
-  const filteredOptions = options.filter((opt) =>
-    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filtered options based on search query (case-insensitive, trimmed, multi-word matching)
+  const normalizedSearch = (searchTerm || "").trim().toLowerCase();
+  const searchWords = normalizedSearch ? normalizedSearch.split(/\s+/).filter(Boolean) : [];
+
+  const filteredOptions = (options || []).filter((opt) => {
+    if (!opt) return false;
+    if (searchWords.length === 0) return true;
+    const label = String(opt.label || "").toLowerCase();
+    const value = String(opt.value || "").toLowerCase();
+    // Every typed word should match either in the label or value
+    return searchWords.every((word) => label.includes(word) || value.includes(word));
+  });
 
   const handleSelect = (val: string) => {
     onChange(val);

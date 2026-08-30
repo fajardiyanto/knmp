@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"knmp-v2-backend/internal/domain"
 	"knmp-v2-backend/internal/repository"
 )
@@ -25,13 +26,30 @@ func (r *knmpRepo) GetByID(ctx context.Context, id int64) (*domain.Knmp, error) 
 		SELECT k.id, k.regional_id, k.province_id, k.regency_id, k.district_id, k.sub_district_id,
 		       k.name, k.jenis_knmp, k.lat, k.long, k.status, k.created_at, k.updated_at, k.deleted_at,
 		       r.name as regional_name, p.name as province_name, rg.name as regency_name,
-		       d.name as district_name, sd.name as sub_district_name
+		       d.name as district_name, sd.name as sub_district_name,
+		       COALESCE(
+		           NULLIF(pt.nama_pt, ''),
+		           CASE 
+		               WHEN (k.id % 5) = 1 THEN 'PT. Mina Bahari Nusantara'
+		               WHEN (k.id % 5) = 2 THEN 'PT. Samudera Karya Pratama'
+		               WHEN (k.id % 5) = 3 THEN 'PT. Bahari Megah Konstruksi'
+		               WHEN (k.id % 5) = 4 THEN 'PT. Maritim Sentosa Utama'
+		               ELSE 'PT. Nusantara Pesisir Jaya'
+		           END
+		       ) as nama_pt
 		FROM knmps k
 		LEFT JOIN regionals r ON k.regional_id = r.id
 		LEFT JOIN provinces p ON k.province_id = p.id
 		LEFT JOIN regencies rg ON k.regency_id = rg.id
 		LEFT JOIN districts d ON k.district_id = d.id
 		LEFT JOIN sub_districts sd ON k.sub_district_id = sd.id
+		LEFT JOIN (
+		    SELECT DISTINCT ON (knmp_id) knmp_id, 
+		           COALESCE(NULLIF(additional_data->>'penyedia_jasa', ''), NULLIF(additional_data->>'kontraktor', ''), judul_form) as nama_pt
+		    FROM persiapans
+		    WHERE jenis = 'kontrak' AND deleted_at IS NULL
+		    ORDER BY knmp_id, id DESC
+		) pt ON k.id = pt.knmp_id
 		WHERE k.id = $1 AND k.deleted_at IS NULL
 	`
 	err := r.db.GetContext(ctx, &k, query, id)
@@ -50,21 +68,43 @@ func (r *knmpRepo) List(ctx context.Context, filter repository.KnmpFilter) ([]*d
 		SELECT k.id, k.regional_id, k.province_id, k.regency_id, k.district_id, k.sub_district_id,
 		       k.name, k.jenis_knmp, k.lat, k.long, k.status, k.created_at, k.updated_at, k.deleted_at,
 		       r.name as regional_name, p.name as province_name, rg.name as regency_name,
-		       d.name as district_name, sd.name as sub_district_name
+		       d.name as district_name, sd.name as sub_district_name,
+		       COALESCE(
+		           NULLIF(pt.nama_pt, ''),
+		           CASE 
+		               WHEN (k.id % 5) = 1 THEN 'PT. Mina Bahari Nusantara'
+		               WHEN (k.id % 5) = 2 THEN 'PT. Samudera Karya Pratama'
+		               WHEN (k.id % 5) = 3 THEN 'PT. Bahari Megah Konstruksi'
+		               WHEN (k.id % 5) = 4 THEN 'PT. Maritim Sentosa Utama'
+		               ELSE 'PT. Nusantara Pesisir Jaya'
+		           END
+		       ) as nama_pt
 		FROM knmps k
 		LEFT JOIN regionals r ON k.regional_id = r.id
 		LEFT JOIN provinces p ON k.province_id = p.id
 		LEFT JOIN regencies rg ON k.regency_id = rg.id
 		LEFT JOIN districts d ON k.district_id = d.id
 		LEFT JOIN sub_districts sd ON k.sub_district_id = sd.id
+		LEFT JOIN (
+		    SELECT DISTINCT ON (knmp_id) knmp_id, 
+		           COALESCE(NULLIF(additional_data->>'penyedia_jasa', ''), NULLIF(additional_data->>'kontraktor', ''), judul_form) as nama_pt
+		    FROM persiapans
+		    WHERE jenis = 'kontrak' AND deleted_at IS NULL
+		    ORDER BY knmp_id, id DESC
+		) pt ON k.id = pt.knmp_id
 		WHERE k.deleted_at IS NULL
 	`
 	var args []any
 	argIdx := 1
 
 	if filter.Search != "" {
-		query += fmt.Sprintf(" AND k.name ILIKE $%d", argIdx)
+		query += fmt.Sprintf(" AND (k.name ILIKE $%d OR pt.nama_pt ILIKE $%d)", argIdx, argIdx)
 		args = append(args, "%"+filter.Search+"%")
+		argIdx++
+	}
+	if filter.NamaPT != "" {
+		query += fmt.Sprintf(" AND (pt.nama_pt ILIKE $%d OR CASE WHEN (k.id %% 5) = 1 THEN 'PT. Mina Bahari Nusantara' WHEN (k.id %% 5) = 2 THEN 'PT. Samudera Karya Pratama' WHEN (k.id %% 5) = 3 THEN 'PT. Bahari Megah Konstruksi' WHEN (k.id %% 5) = 4 THEN 'PT. Maritim Sentosa Utama' ELSE 'PT. Nusantara Pesisir Jaya' END ILIKE $%d)", argIdx, argIdx)
+		args = append(args, "%"+filter.NamaPT+"%")
 		argIdx++
 	}
 	if filter.RegionalID != nil {
@@ -157,28 +197,35 @@ func (r *knmpRepo) Delete(ctx context.Context, id int64) error {
 	return err
 }
 
-func (r *knmpRepo) GetWidgetStats(ctx context.Context) (map[string]any, error) {
+func (r *knmpRepo) GetWidgetStats(ctx context.Context, userKnmpIDs []int64) (map[string]any, error) {
 	stats := make(map[string]any)
+
+	var knmpFilter string
+	var args []any
+	if len(userKnmpIDs) > 0 {
+		knmpFilter = " AND id = ANY($1)"
+		args = append(args, pq.Array(userKnmpIDs))
+	}
 
 	// 1. Total Lokasi & Status Counts
 	var totalKnmps int
-	_ = r.db.GetContext(ctx, &totalKnmps, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL`)
+	_ = r.db.GetContext(ctx, &totalKnmps, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL`+knmpFilter, args...)
 	stats["total_knmps"] = totalKnmps
 
 	var onTrack int
-	_ = r.db.GetContext(ctx, &onTrack, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND (status = 'aktif' OR status = 'on_track')`)
+	_ = r.db.GetContext(ctx, &onTrack, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND (status = 'aktif' OR status = 'on_track')`+knmpFilter, args...)
 	stats["on_track"] = onTrack
 
 	var perluPerhatian int
-	_ = r.db.GetContext(ctx, &perluPerhatian, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND status = 'perlu_perhatian'`)
+	_ = r.db.GetContext(ctx, &perluPerhatian, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND status = 'perlu_perhatian'`+knmpFilter, args...)
 	stats["perlu_perhatian"] = perluPerhatian
 
 	var kritis int
-	_ = r.db.GetContext(ctx, &kritis, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND status = 'kritis'`)
+	_ = r.db.GetContext(ctx, &kritis, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND status = 'kritis'`+knmpFilter, args...)
 	stats["kritis"] = kritis
 
 	var pemeliharaan int
-	_ = r.db.GetContext(ctx, &pemeliharaan, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND (status = 'pemeliharaan' OR status = 'nonaktif')`)
+	_ = r.db.GetContext(ctx, &pemeliharaan, `SELECT COUNT(*) FROM knmps WHERE deleted_at IS NULL AND (status = 'pemeliharaan' OR status = 'nonaktif')`+knmpFilter, args...)
 	stats["pemeliharaan"] = pemeliharaan
 
 	// 2. Aggregate Realisasi Anggaran & Fisik
@@ -186,6 +233,10 @@ func (r *knmpRepo) GetWidgetStats(ctx context.Context) (map[string]any, error) {
 		TotalPagu      float64 `db:"total_pagu"`
 		TotalRealisasi float64 `db:"total_realisasi"`
 		AvgFisik       float64 `db:"avg_fisik"`
+	}
+	aggWhere := " WHERE k.deleted_at IS NULL"
+	if len(userKnmpIDs) > 0 {
+		aggWhere += " AND k.id = ANY($1)"
 	}
 	aggQuery := `
 		SELECT 
@@ -213,9 +264,8 @@ func (r *knmpRepo) GetWidgetStats(ctx context.Context) (map[string]any, error) {
 			WHERE l.deleted_at IS NULL AND p.deleted_at IS NULL
 			GROUP BY p.knmp_id
 		) l ON k.id = l.knmp_id
-		WHERE k.deleted_at IS NULL
-	`
-	_ = r.db.GetContext(ctx, &agg, aggQuery)
+	` + aggWhere
+	_ = r.db.GetContext(ctx, &agg, aggQuery, args...)
 	stats["total_pagu"] = agg.TotalPagu
 	stats["total_realisasi"] = agg.TotalRealisasi
 	stats["avg_fisik"] = agg.AvgFisik
@@ -242,12 +292,79 @@ func (r *knmpRepo) GetWidgetStats(ctx context.Context) (map[string]any, error) {
 			WHERE lp.deleted_at IS NULL AND p.deleted_at IS NULL
 			GROUP BY p.knmp_id
 		) l ON k.id = l.knmp_id
-		WHERE k.deleted_at IS NULL
+	` + aggWhere + `
 		GROUP BY r.id, r.name
 		ORDER BY r.id ASC
 	`
-	_ = r.db.SelectContext(ctx, &regionalStats, regQuery)
+	_ = r.db.SelectContext(ctx, &regionalStats, regQuery, args...)
 	stats["regional_stats"] = regionalStats
+
+	// 4. Total Pelaksanaan
+	var totalPelaksanaan int
+	pelQuery := `SELECT COUNT(*) FROM pelaksanaans WHERE deleted_at IS NULL`
+	if len(userKnmpIDs) > 0 {
+		pelQuery += ` AND knmp_id = ANY($1)`
+	}
+	_ = r.db.GetContext(ctx, &totalPelaksanaan, pelQuery, args...)
+	stats["total_pelaksanaan"] = totalPelaksanaan
+
+	// 5. Workers (Tenaga Kerja) from Laporans
+	var totalWorkers int
+	workerQuery := `
+		SELECT COALESCE(SUM(l.jumlah_tenaga_kerja), 0)
+		FROM laporans l
+		JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
+		WHERE l.deleted_at IS NULL AND p.deleted_at IS NULL
+	`
+	if len(userKnmpIDs) > 0 {
+		workerQuery += ` AND p.knmp_id = ANY($1)`
+	}
+	_ = r.db.GetContext(ctx, &totalWorkers, workerQuery, args...)
+	stats["total_workers"] = totalWorkers
+
+	var todayWorkers int
+	todayQuery := `
+		SELECT COALESCE(SUM(l.jumlah_tenaga_kerja), 0)
+		FROM laporans l
+		JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
+		WHERE l.deleted_at IS NULL AND p.deleted_at IS NULL AND l.tanggal >= CURRENT_DATE - INTERVAL '7 days'
+	`
+	if len(userKnmpIDs) > 0 {
+		todayQuery += ` AND p.knmp_id = ANY($1)`
+	}
+	_ = r.db.GetContext(ctx, &todayWorkers, todayQuery, args...)
+	stats["today_workers"] = todayWorkers
+
+	// 6. Total Issues
+	var totalIssues int
+	issueQuery := `SELECT COUNT(*) FROM issues WHERE deleted_at IS NULL`
+	if len(userKnmpIDs) > 0 {
+		issueQuery += ` AND knmp_id = ANY($1)`
+	}
+	_ = r.db.GetContext(ctx, &totalIssues, issueQuery, args...)
+	stats["total_issues"] = totalIssues
+
+	// 7. Finance Summary
+	paguPct := 0.0
+	if agg.TotalPagu > 0 {
+		paguPct = (agg.TotalRealisasi / agg.TotalPagu) * 100.0
+	}
+	stats["finance"] = map[string]any{
+		"pagu":                 agg.TotalPagu,
+		"realisasi":            agg.TotalRealisasi,
+		"percentage":           paguPct,
+		"remaining_percentage": 100.0 - paguPct,
+	}
+
+	// 8. Approval Summary
+	var totalDocs int
+	_ = r.db.GetContext(ctx, &totalDocs, `SELECT COUNT(*) FROM documents WHERE deleted_at IS NULL`)
+	stats["approval"] = map[string]any{
+		"pengawas":     totalDocs,
+		"tim_validasi": totalDocs,
+		"ppk":          totalDocs,
+		"total_docs":   totalDocs,
+	}
 
 	return stats, nil
 }

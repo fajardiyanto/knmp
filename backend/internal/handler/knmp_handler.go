@@ -23,8 +23,12 @@ func NewKnmpHandler(knmpSvc *service.KnmpService) *KnmpHandler {
 func (h *KnmpHandler) List(c *fiber.Ctx) error {
 	filter := repository.KnmpFilter{
 		Search:    c.Query("search"),
+		NamaPT:    c.Query("nama_pt"),
 		JenisKnmp: c.Query("jenis_knmp"),
 		Status:    c.Query("status"),
+	}
+	if filter.NamaPT == "" {
+		filter.NamaPT = c.Query("penyedia")
 	}
 
 	if regID, err := strconv.ParseInt(c.Query("regional_id"), 10, 64); err == nil {
@@ -179,7 +183,23 @@ func (h *KnmpHandler) Delete(c *fiber.Ctx) error {
 }
 
 func (h *KnmpHandler) Widget(c *fiber.Ctx) error {
-	stats, err := h.knmpSvc.GetWidgetStats(c.Context())
+	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
+	isGlobal := false
+	for _, r := range userRoles {
+		lower := strings.ToLower(r)
+		if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin" || lower == "ppk" || lower == "wakil_ppk" || lower == "wakil ppk" {
+			isGlobal = true
+			break
+		}
+	}
+	var userKnmpIDs []int64
+	if !isGlobal {
+		if ids, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(ids) > 0 {
+			userKnmpIDs = ids
+		}
+	}
+
+	stats, err := h.knmpSvc.GetWidgetStats(c.Context(), userKnmpIDs)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse(err.Error()))
 	}

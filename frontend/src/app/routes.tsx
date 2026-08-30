@@ -33,11 +33,26 @@ import {
 import { ChatPage } from "../features/chat/components/ChatPage";
 import { useAuth } from "../features/auth/hooks/useAuth";
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredPermission?: string }> = ({
-  children,
-  requiredPermission,
-}) => {
-  const { user, isLoading, hasPermission } = useAuth();
+const RootRedirect: React.FC = () => {
+  const { user } = useAuth();
+  const isManagement = user?.roles?.some((r) => {
+    const lower = r.toLowerCase();
+    return (
+      lower.includes("super") ||
+      lower.includes("admin") ||
+      lower.includes("ppk") ||
+      lower.includes("pengawas")
+    );
+  });
+  return <Navigate to={isManagement ? "/dashboard" : "/pelaksanaan"} replace />;
+};
+
+const ProtectedRoute: React.FC<{
+  children: React.ReactNode;
+  requiredPermission?: string;
+  requiredRoles?: string[];
+}> = ({ children, requiredPermission, requiredRoles }) => {
+  const { user, isLoading, hasPermission, hasRole } = useAuth();
 
   if (isLoading) {
     return (
@@ -54,9 +69,31 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredPermission?:
     return <Navigate to="/login" replace />;
   }
 
+  if (requiredRoles && requiredRoles.length > 0) {
+    const isAllowed = requiredRoles.some((r) => hasRole(r));
+    if (!isAllowed) {
+      return (
+        <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm max-w-lg mx-auto my-12 shadow-sm space-y-3">
+          <div className="font-bold text-base">Akses Ditolak (403 Forbidden)</div>
+          <p className="text-slate-600 dark:text-slate-400 text-xs">
+            Halaman Dashboard Eksekutif hanya dapat diakses oleh Manajemen, PPK, dan Pengawas.
+          </p>
+          <div className="pt-2">
+            <a
+              href="/pelaksanaan"
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-all inline-block"
+            >
+              Buka Menu Pelaksanaan
+            </a>
+          </div>
+        </div>
+      );
+    }
+  }
+
   if (requiredPermission && !hasPermission(requiredPermission)) {
     return (
-      <div className="p-8 text-center bg-white rounded-xl border border-red-200 text-red-600 text-sm">
+      <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm max-w-lg mx-auto my-12">
         Akses Ditolak: Anda tidak memiliki izin untuk mengakses halaman ini.
       </div>
     );
@@ -78,10 +115,17 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<RootRedirect />} />
 
         {/* Dashboard */}
-        <Route path="dashboard" element={<DashboardPage />} />
+        <Route
+          path="dashboard"
+          element={
+            <ProtectedRoute requiredRoles={["superadmin", "super admin", "admin_ppk", "admin", "pengawas", "wakil_ppk", "wakil ppk", "ppk"]}>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Chat & Messaging */}
         <Route path="chat" element={<ChatPage />} />

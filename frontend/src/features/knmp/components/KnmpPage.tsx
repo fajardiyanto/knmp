@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   AlertOctagon,
   Wrench,
+  Building2,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -28,6 +29,7 @@ interface KnmpItem {
   regency_name?: string;
   district_name?: string;
   sub_district_name?: string;
+  nama_pt?: string;
   lat?: string;
   long?: string;
   status: string;
@@ -40,6 +42,7 @@ export const KnmpPage: React.FC = () => {
   const { showAlert, showConfirm } = useAlert();
 
   const [search, setSearch] = useState("");
+  const [selectedPenyedia, setSelectedPenyedia] = useState("");
   const [selectedRegional, setSelectedRegional] = useState("");
   const [selectedProvinsi, setSelectedProvinsi] = useState("");
   const [selectedKabupaten, setSelectedKabupaten] = useState("");
@@ -61,17 +64,25 @@ export const KnmpPage: React.FC = () => {
 
   // 1. Fetch All Locations
   const { data: allKnmp = [], isLoading } = useQuery<KnmpItem[]>({
-    queryKey: ["knmps", search, selectedRegional, selectedProvinsi, selectedKabupaten],
+    queryKey: ["knmps", search, selectedPenyedia, selectedRegional, selectedProvinsi, selectedKabupaten],
     queryFn: () =>
       apiFetch<KnmpItem[]>(`/api/v1/knmp?search=${encodeURIComponent(search)}`),
   });
 
+  // Extract distinct PT / Penyedia list
+  const penyediaList = Array.from(
+    new Set(allKnmp.map((k) => k.nama_pt).filter(Boolean) as string[])
+  ).sort();
+
   // Client-side filtering & pagination
   const filteredData = allKnmp.filter((k) => {
-    if (search && !k.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !k.name.toLowerCase().includes(search.toLowerCase()) && !k.nama_pt?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (selectedPenyedia && k.nama_pt !== selectedPenyedia) return false;
     if (selectedRegional && k.regional_name !== selectedRegional) return false;
     if (selectedProvinsi && k.province_name !== selectedProvinsi) return false;
     if (selectedKabupaten && k.regency_name !== selectedKabupaten) return false;
+    if (selectedKecamatan && k.district_name !== selectedKecamatan) return false;
+    if (selectedKelurahan && k.sub_district_name !== selectedKelurahan) return false;
     return true;
   });
 
@@ -88,6 +99,7 @@ export const KnmpPage: React.FC = () => {
 
   const handleReset = () => {
     setSearch("");
+    setSelectedPenyedia("");
     setSelectedRegional("");
     setSelectedProvinsi("");
     setSelectedKabupaten("");
@@ -195,6 +207,23 @@ export const KnmpPage: React.FC = () => {
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
           </div>
+
+          {/* Penyedia / PT Dropdown */}
+          <select
+            value={selectedPenyedia}
+            onChange={(e) => {
+              setSelectedPenyedia(e.target.value);
+              setPage(1);
+            }}
+            className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-700 dark:text-slate-200 sm:min-w-[170px]"
+          >
+            <option value="">Semua Penyedia (PT)</option>
+            {penyediaList.map((pt) => (
+              <option key={pt} value={pt}>
+                {pt}
+              </option>
+            ))}
+          </select>
 
           {/* Regional Dropdown */}
           <select
@@ -365,6 +394,7 @@ export const KnmpPage: React.FC = () => {
               <tr>
                 <th className="py-4 px-4 text-center w-14">No</th>
                 <th className="py-4 px-5">Nama KNMP</th>
+                <th className="py-4 px-5">Penyedia / Kontraktor</th>
                 <th className="py-4 px-5">Regional</th>
                 <th className="py-4 px-5">Provinsi</th>
                 <th className="py-4 px-5">Kabupaten/Kota</th>
@@ -380,13 +410,13 @@ export const KnmpPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {isLoading ? (
                 <tr>
-                  <td colSpan={12} className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">
+                  <td colSpan={13} className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">
                     Memuat data KNMP...
                   </td>
                 </tr>
               ) : currentData.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">
+                  <td colSpan={13} className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">
                     Tidak ada data KNMP ditemukan
                   </td>
                 </tr>
@@ -398,6 +428,12 @@ export const KnmpPage: React.FC = () => {
                     </td>
                     <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-100 text-[14.5px]">
                       {item.name}
+                    </td>
+                    <td className="py-4 px-5 text-[13.5px] font-semibold text-indigo-700 dark:text-indigo-300">
+                      <div className="flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        <span>{item.nama_pt || "PT. Mina Bahari Nusantara"}</span>
+                      </div>
                     </td>
                     <td className="py-4 px-5 text-[13.5px]">{item.regional_name || "Sumatera"}</td>
                     <td className="py-4 px-5 text-[13.5px]">{item.province_name || "SUMATERA UTARA"}</td>

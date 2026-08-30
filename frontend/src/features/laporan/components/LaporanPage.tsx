@@ -21,12 +21,14 @@ import {
   ChevronsRight,
   FileSpreadsheet,
   Printer,
+  Sparkles,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 import { MonthlyProjectReportModal } from "./MonthlyProjectReportModal";
+import { ExecutiveProjectReportModalV2 } from "./ExecutiveProjectReportModalV2";
 
 interface LaporanItem {
   id: number;
@@ -99,6 +101,7 @@ export const LaporanPage: React.FC = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMonthlyReportModalOpen, setIsMonthlyReportModalOpen] = useState(false);
+  const [isExecutiveReportV2Open, setIsExecutiveReportV2Open] = useState(false);
   const [monthlyReportKnmpId, setMonthlyReportKnmpId] = useState<number | undefined>(undefined);
   const [editingItem, setEditingItem] = useState<LaporanItem | null>(null);
   const [formData, setFormData] = useState({
@@ -500,11 +503,22 @@ export const LaporanPage: React.FC = () => {
               setMonthlyReportKnmpId(undefined);
               setIsMonthlyReportModalOpen(true);
             }}
-            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-bold bg-gradient-to-r from-blue-700 to-indigo-800 text-white rounded-xl hover:from-blue-800 hover:to-indigo-900 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-            title="Buka Monthly Project Report Resmi (Kontraktor)"
+            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            title="Buka Laporan Proyek Terpadu Resmi (Format Klasik)"
           >
-            <FileSpreadsheet className="w-4 h-4 text-blue-200" />
-            <span>Monthly Project Report</span>
+            <FileSpreadsheet className="w-4 h-4 text-white" />
+            <span>Laporan Proyek Terpadu</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMonthlyReportKnmpId(undefined);
+              setIsExecutiveReportV2Open(true);
+            }}
+            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl transition-all flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20 cursor-pointer"
+            title="Buka Laporan Proyek Terpadu v2.0 Executive (Dashboard Analytics & Dokumen Cetak)"
+          >
+            <span>Laporan Proyek Terpadu v2</span>
           </button>
           <button
             type="button"
@@ -651,8 +665,8 @@ export const LaporanPage: React.FC = () => {
                         {item.jenis_bangunan_details && item.jenis_bangunan_details.length > 0
                           ? item.jenis_bangunan_details.map((d) => d.jenis_bangunan_name || `Gedung ${d.jenis_bangunan_id}`).join(", ")
                           : item.keterangan?.includes("Gedung") || item.keterangan?.includes("Bangunan")
-                          ? item.keterangan
-                          : "Gedung 34"}
+                            ? item.keterangan
+                            : "Gedung 34"}
                       </td>
                       <td className="py-4 px-4 text-center text-slate-600 font-normal">
                         {item.keberapa || "-"}
@@ -701,7 +715,7 @@ export const LaporanPage: React.FC = () => {
                               setIsMonthlyReportModalOpen(true);
                             }}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                            title="Monthly Project Report"
+                            title="Laporan Proyek Terpadu"
                           >
                             <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
                           </button>
@@ -805,11 +819,10 @@ export const LaporanPage: React.FC = () => {
                   key={p}
                   type="button"
                   onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-xl font-bold text-xs transition-colors ${
-                    page === p
+                  className={`w-8 h-8 rounded-xl font-bold text-xs transition-colors ${page === p
                       ? "bg-[#0d6efd] text-white shadow-xs"
                       : "border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  }`}
+                    }`}
                 >
                   {p}
                 </button>
@@ -822,11 +835,10 @@ export const LaporanPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setPage(totalPages)}
-                  className={`w-8 h-8 rounded-xl font-bold text-xs transition-colors ${
-                    page === totalPages
+                  className={`w-8 h-8 rounded-xl font-bold text-xs transition-colors ${page === totalPages
                       ? "bg-[#0d6efd] text-white shadow-xs"
                       : "border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  }`}
+                    }`}
                 >
                   {totalPages}
                 </button>
@@ -1129,10 +1141,17 @@ export const LaporanPage: React.FC = () => {
         </div>
       )}
 
-      {/* Monthly Project Report Official Document Modal */}
+      {/* Monthly Project Report Official Document Modal (v1) */}
       <MonthlyProjectReportModal
         isOpen={isMonthlyReportModalOpen}
         onClose={() => setIsMonthlyReportModalOpen(false)}
+        initialKnmpId={monthlyReportKnmpId}
+      />
+
+      {/* Executive Project Report Dual-Mode Modal (v2) */}
+      <ExecutiveProjectReportModalV2
+        isOpen={isExecutiveReportV2Open}
+        onClose={() => setIsExecutiveReportV2Open(false)}
         initialKnmpId={monthlyReportKnmpId}
       />
     </div>

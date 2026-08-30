@@ -9,6 +9,17 @@
 .env.*
 !.env.example
 *.env
+.env.remote
+CREDENTIALS.md
+credentials.md
+*credential*
+*credentials*
+*creds*
+*.creds
+creds/
+credentials/
+*.secret
+*.secrets
 *.pem
 *.key
 *.cert

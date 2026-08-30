@@ -32,8 +32,30 @@ func (h *LaporanHandler) List(c *fiber.Ctx) error {
 	if pelID, err := strconv.ParseInt(c.Query("pelaksanaan_id"), 10, 64); err == nil {
 		filter.PelaksanaanID = &pelID
 	}
+	if knmpID, err := strconv.ParseInt(c.Query("knmp_id"), 10, 64); err == nil {
+		filter.KNMPID = &knmpID
+	}
 	if jbID, err := strconv.ParseInt(c.Query("jenis_bangunan_id"), 10, 64); err == nil {
 		filter.JenisBangunanID = &jbID
+	}
+
+	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
+	isGlobal := false
+	for _, r := range userRoles {
+		if r == "superadmin" || r == "admin_ppk" || r == "ppk" {
+			isGlobal = true
+			break
+		}
+	}
+
+	if !isGlobal {
+		userID, _ := c.Locals(middleware.CtxUserIDKey).(int64)
+		if userID > 0 {
+			filter.UserID = &userID
+		}
+		if userKnmpIDs, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(userKnmpIDs) > 0 {
+			filter.UserKnmpIDs = userKnmpIDs
+		}
 	}
 
 	list, err := h.laporanSvc.List(c.Context(), filter)
@@ -324,10 +346,26 @@ func (h *LaporanHandler) GetMonthlyProjectReportData(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse("knmp_id wajib diisi"))
 	}
 
+	periodType := c.Query("period_type", "bulanan")
+	date := c.Query("date")
+	week, _ := strconv.Atoi(c.Query("week", "0"))
 	month, _ := strconv.Atoi(c.Query("month", "8"))
 	year, _ := strconv.Atoi(c.Query("year", "2026"))
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
 
-	data, err := h.laporanSvc.GetMonthlyProjectReportData(c.Context(), knmpID, month, year)
+	filter := repository.ProjectReportFilter{
+		KNMPID:     knmpID,
+		PeriodType: periodType,
+		Date:       date,
+		Week:       week,
+		Month:      month,
+		Year:       year,
+		StartDate:  startDate,
+		EndDate:    endDate,
+	}
+
+	data, err := h.laporanSvc.GetMonthlyProjectReportData(c.Context(), filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse(err.Error()))
 	}

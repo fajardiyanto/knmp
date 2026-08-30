@@ -48,6 +48,9 @@ interface IssueItem {
 interface KnmpOption {
   id: number;
   name: string;
+  regency_name?: string;
+  province_name?: string;
+  district_name?: string;
 }
 
 export const IssuePage: React.FC = () => {
@@ -348,10 +351,13 @@ export const IssuePage: React.FC = () => {
             }}
             options={[
               { value: "", label: "Semua KNMP" },
-              ...knmpOptions.map((k) => ({ value: k.id.toString(), label: k.name })),
+              ...knmpOptions.map((k) => ({
+                value: k.id.toString(),
+                label: k.regency_name ? `${k.name} (${k.regency_name})` : k.name,
+              })),
             ]}
             placeholder="Semua KNMP"
-            searchPlaceholder="Cari KNMP..."
+            searchPlaceholder="Cari KNMP / Wilayah..."
             className="w-full"
           />
 

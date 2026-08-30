@@ -32,6 +32,7 @@ type GeoRepository interface {
 
 type KnmpFilter struct {
 	Search        string
+	NamaPT        string
 	RegionalID    *int64
 	ProvinceID    *int64
 	RegencyID     *int64
@@ -50,7 +51,7 @@ type KnmpRepository interface {
 	Create(ctx context.Context, knmp *domain.Knmp) error
 	Update(ctx context.Context, knmp *domain.Knmp) error
 	Delete(ctx context.Context, id int64) error
-	GetWidgetStats(ctx context.Context) (map[string]any, error)
+	GetWidgetStats(ctx context.Context, userKnmpIDs []int64) (map[string]any, error)
 	ListMap(ctx context.Context) ([]*domain.Knmp, error)
 	ListPeriodes(ctx context.Context) ([]*domain.Periode, error)
 	CreatePeriode(ctx context.Context, p *domain.Periode) error
@@ -85,10 +86,24 @@ type PelaksanaanRepository interface {
 
 type LaporanFilter struct {
 	PelaksanaanID   *int64
+	KNMPID          *int64
+	UserKnmpIDs     []int64
+	UserID          *int64
 	JenisBangunanID *int64
 	Status          string
 	JenisLaporan    string
 	Search          string
+}
+
+type ProjectReportFilter struct {
+	KNMPID     int64
+	PeriodType string // "harian", "mingguan", "bulanan", "custom"
+	Date       string // "YYYY-MM-DD"
+	Week       int
+	Month      int
+	Year       int
+	StartDate  string
+	EndDate    string
 }
 
 type LaporanRepository interface {
@@ -99,7 +114,7 @@ type LaporanRepository interface {
 	UpdateStatus(ctx context.Context, id int64, status string) error
 	Delete(ctx context.Context, id int64) error
 	GetDetailsByLaporanID(ctx context.Context, laporanID int64) ([]*domain.LaporanJenisBangunan, error)
-	GetMonthlyProjectReportData(ctx context.Context, knmpID int64, month, year int) (*domain.MonthlyProjectReportData, error)
+	GetMonthlyProjectReportData(ctx context.Context, filter ProjectReportFilter) (*domain.MonthlyProjectReportData, error)
 }
 
 type AbsensiFilter struct {

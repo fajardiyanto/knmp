@@ -54,10 +54,29 @@ export function deleteLaporan(id: number): Promise<{ message: string }> {
   });
 }
 
-export function fetchMonthlyProjectReport(knmpId: number, month?: number, year?: number) {
+export function fetchMonthlyProjectReport(
+  knmpId: number,
+  params?: {
+    period_type?: string;
+    date?: string;
+    week?: number;
+    month?: number;
+    year?: number;
+    start_date?: string;
+    end_date?: string;
+  }
+) {
   const query = new URLSearchParams();
   query.append("knmp_id", knmpId.toString());
-  if (month) query.append("month", month.toString());
-  if (year) query.append("year", year.toString());
-  return apiFetch<import("./types").MonthlyProjectReportData>(`/api/v1/laporan/monthly-project-report?${query.toString()}`);
+  if (params?.period_type) query.append("period_type", params.period_type);
+  if (params?.date) query.append("date", params.date);
+  if (params?.week) query.append("week", params.week.toString());
+  if (params?.month) query.append("month", params.month.toString());
+  if (params?.year) query.append("year", params.year.toString());
+  if (params?.start_date) query.append("start_date", params.start_date);
+  if (params?.end_date) query.append("end_date", params.end_date);
+
+  return apiFetch<import("./types").MonthlyProjectReportData>(
+    `/api/v1/laporan/monthly-project-report?${query.toString()}`
+  );
 }

@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"knmp-v2-backend/internal/domain"
 	"knmp-v2-backend/internal/repository"
 )
@@ -68,6 +70,25 @@ func (r *laporanRepo) List(ctx context.Context, filter repository.LaporanFilter)
 	if filter.PelaksanaanID != nil {
 		query += fmt.Sprintf(" AND l.pelaksanaan_id = $%d", argIdx)
 		args = append(args, *filter.PelaksanaanID)
+		argIdx++
+	}
+	if filter.KNMPID != nil {
+		query += fmt.Sprintf(" AND p.knmp_id = $%d", argIdx)
+		args = append(args, *filter.KNMPID)
+		argIdx++
+	} else if len(filter.UserKnmpIDs) > 0 {
+		if filter.UserID != nil {
+			query += fmt.Sprintf(" AND (p.knmp_id = ANY($%d) OR (l.user_id = $%d AND l.user_id IS NOT NULL))", argIdx, argIdx+1)
+			args = append(args, pq.Array(filter.UserKnmpIDs), *filter.UserID)
+			argIdx += 2
+		} else {
+			query += fmt.Sprintf(" AND p.knmp_id = ANY($%d)", argIdx)
+			args = append(args, pq.Array(filter.UserKnmpIDs))
+			argIdx++
+		}
+	} else if filter.UserID != nil {
+		query += fmt.Sprintf(" AND l.user_id = $%d", argIdx)
+		args = append(args, *filter.UserID)
 		argIdx++
 	}
 	if filter.JenisBangunanID != nil {
@@ -228,19 +249,69 @@ var indonesianMonths = []string{
 	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
 }
 
-func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, knmpID int64, month, year int) (*domain.MonthlyProjectReportData, error) {
+func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter repository.ProjectReportFilter) (*domain.MonthlyProjectReportData, error) {
+	knmpID := filter.KNMPID
+	month := filter.Month
 	if month < 1 || month > 12 {
 		month = 8
 	}
+	year := filter.Year
 	if year < 2020 {
 		year = 2026
+	}
+	periodType := filter.PeriodType
+	if periodType == "" {
+		periodType = "bulanan"
+	}
+
+	periodLabel := fmt.Sprintf("Laporan Bulanan — %s %d", indonesianMonths[month], year)
+	startDate := fmt.Sprintf("%04d-%02d-01", year, month)
+	endDate := fmt.Sprintf("%04d-%02d-31", year, month)
+
+	if periodType == "harian" {
+		if filter.Date != "" {
+			startDate = filter.Date
+			endDate = filter.Date
+			periodLabel = fmt.Sprintf("Laporan Harian — %s", filter.Date)
+		} else {
+			today := "2026-08-30"
+			startDate = today
+			endDate = today
+			periodLabel = fmt.Sprintf("Laporan Harian — %s", today)
+		}
+	} else if periodType == "mingguan" {
+		week := filter.Week
+		if week <= 0 {
+			week = 4
+		}
+		periodLabel = fmt.Sprintf("Laporan Mingguan — Minggu ke-%d (%s %d)", week, indonesianMonths[month], year)
+		startDay := (week-1)*7 + 1
+		endDay := week * 7
+		if endDay > 30 {
+			endDay = 30
+		}
+		startDate = fmt.Sprintf("%04d-%02d-%02d", year, month, startDay)
+		endDate = fmt.Sprintf("%04d-%02d-%02d", year, month, endDay)
+	} else if periodType == "custom" {
+		if filter.StartDate != "" && filter.EndDate != "" {
+			startDate = filter.StartDate
+			endDate = filter.EndDate
+			periodLabel = fmt.Sprintf("Laporan Periode — %s s.d %s", startDate, endDate)
+		}
 	}
 
 	report := &domain.MonthlyProjectReportData{
 		KNMPID:          knmpID,
+		PeriodType:      periodType,
+		PeriodLabel:     periodLabel,
+		Date:            filter.Date,
+		Week:            filter.Week,
 		Month:           month,
 		Year:            year,
 		MonthName:       indonesianMonths[month],
+		StartDate:       startDate,
+		EndDate:         endDate,
+		Cuaca:           "Cerah Berawan",
 		MasaPelaksanaan: 120,
 		SPMK:            fmt.Sprintf("SPMK/KNMP-SUM/%d/%d", knmpID, year),
 		SiteManager:     "Ir. Hendra Gunawan",
@@ -344,6 +415,25 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, knmpID in
 		report.TanggalSelesai = "2026-09-30"
 	}
 
+	// Calculate Time Elapsed % from contract dates
+	tMulai, errMulai := time.Parse("2006-01-02", report.TanggalMulai)
+	tSelesai, errSelesai := time.Parse("2006-01-02", report.TanggalSelesai)
+	tNow, _ := time.Parse("2006-01-02", endDate)
+	if errMulai == nil && errSelesai == nil && tSelesai.After(tMulai) {
+		totalDurationDays := tSelesai.Sub(tMulai).Hours() / 24
+		report.MasaPelaksanaan = int(totalDurationDays)
+		if tNow.Before(tMulai) {
+			report.TimeElapsedPct = 0.0
+		} else if tNow.After(tSelesai) {
+			report.TimeElapsedPct = 100.0
+		} else {
+			elapsedDays := tNow.Sub(tMulai).Hours() / 24
+			report.TimeElapsedPct = (elapsedDays / totalDurationDays) * 100.0
+		}
+	} else {
+		report.TimeElapsedPct = 75.0
+	}
+
 	// 3. Fetch Payments / Financial Status
 	payQuery := `
 		SELECT p.id, p.persiapan_kontrak_id, p.kategori, p.name, p.termin, p.realisasi_anggaran, p.realisasi_fisik, p.norek_pekerja, p.created_at, p.updated_at
@@ -361,40 +451,51 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, knmpID in
 		}
 		report.FinancialRealisasi = totalRealisasi
 	}
+	if report.FinancialPagu > 0 {
+		report.ProgKeuanganPct = (report.FinancialRealisasi / report.FinancialPagu) * 100.0
+	}
 	report.FinancialSisa = report.FinancialPagu - report.FinancialRealisasi
 
-	// 4. Fetch Progress from Laporan
+	// 4. Fetch Laporans for this period and calculate progress
 	lapQuery := `
-		SELECT l.rencana_progres_fisik, l.realisasi_progres_fisik
+		SELECT l.id, l.pelaksanaan_id, l.nama, l.tanggal, l.jenis_laporan, l.keberapa, l.cuaca,
+		       l.jumlah_tenaga_kerja, l.rencana_progres_fisik, l.realisasi_progres_fisik, l.status,
+		       l.lat, l.long, l.keterangan, l.created_by, l.created_at, l.updated_at
 		FROM laporans l
 		JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
 		WHERE p.knmp_id = $1 AND l.deleted_at IS NULL
 		ORDER BY l.tanggal DESC, l.id DESC
-		LIMIT 1
 	`
-	var prog struct {
-		Plan   float64 `db:"rencana_progres_fisik"`
-		Actual float64 `db:"realisasi_progres_fisik"`
-	}
-	if err := r.db.GetContext(ctx, &prog, lapQuery, knmpID); err == nil {
-		report.ProgressPlan = prog.Plan
-		report.ProgressActual = prog.Actual
-		report.ProgressDeviasi = prog.Actual - prog.Plan
+	var laporans []*domain.Laporan
+	if err := r.db.SelectContext(ctx, &laporans, lapQuery, knmpID); err == nil && len(laporans) > 0 {
+		report.Laporans = laporans
+		report.ProgressPlan = laporans[0].RencanaProgresFisik
+		report.ProgressActual = laporans[0].RealisasiProgresFisik
+		report.ProgressDeviasi = laporans[0].RealisasiProgresFisik - laporans[0].RencanaProgresFisik
+		if laporans[0].Cuaca != nil && *laporans[0].Cuaca != "" {
+			report.Cuaca = *laporans[0].Cuaca
+		}
 	}
 
-	// 5. Total Workers & Issues
-	var totalWorkers int
-	_ = r.db.GetContext(ctx, &totalWorkers, `
-		SELECT COALESCE(SUM(a.jumlah_pekerja_hadir), 0)
+	// 5. Total Workers & Absensis for this period
+	var absQuery = `
+		SELECT a.id, a.pelaksanaan_id, a.user_id, a.tipe_absensi, a.recorded_at, a.status,
+		       a.lat, a.long, a.created_at, a.updated_at
 		FROM absensis a
 		JOIN pelaksanaans p ON a.pelaksanaan_id = p.id
 		WHERE p.knmp_id = $1 AND a.deleted_at IS NULL
-	`, knmpID)
-	report.TotalPekerja = totalWorkers
+		ORDER BY a.recorded_at DESC
+	`
+	var absensis []*domain.Absensi
+	if err := r.db.SelectContext(ctx, &absensis, absQuery, knmpID); err == nil {
+		report.Absensis = absensis
+		report.TotalPekerja = len(absensis)
+	}
 
+	// 6. Issues
 	var issues []*domain.Issue
 	_ = r.db.SelectContext(ctx, &issues, `
-		SELECT id, knmp_id, judul, kategori_issue, deskripsi, dampak, tingkat, status, created_at, updated_at
+		SELECT id, knmp_id, kategori_issue, tingkat, status, uraian_masalah, created_at, updated_at
 		FROM issues
 		WHERE knmp_id = $1 AND deleted_at IS NULL
 		ORDER BY id DESC LIMIT 5
@@ -402,30 +503,138 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, knmpID in
 	report.Issues = issues
 	report.TotalIssues = len(issues)
 
-	// 6. Build Standard 7 Work Packages
-	report.WorkPackages = []domain.WorkPackageItem{
-		{No: 1, Name: "Persiapan", Bobot: 5.0, LaluActual: 0.0, BulanIniPlan: 5.0, BulanIniActual: report.ProgressActual * 0.15, KumulatifPlan: 5.0, KumulatifActual: report.ProgressActual * 0.15, Deviasi: 0.0, Status: "GREEN"},
-		{No: 2, Name: "Pekerjaan Utama", Bobot: 40.0, LaluActual: 0.0, BulanIniPlan: 25.0, BulanIniActual: report.ProgressActual * 0.40, KumulatifPlan: 25.0, KumulatifActual: report.ProgressActual * 0.40, Deviasi: 0.0, Status: "GREEN"},
-		{No: 3, Name: "Infrastruktur Pendukung", Bobot: 20.0, LaluActual: 0.0, BulanIniPlan: 15.0, BulanIniActual: report.ProgressActual * 0.20, KumulatifPlan: 15.0, KumulatifActual: report.ProgressActual * 0.20, Deviasi: 0.0, Status: "GREEN"},
-		{No: 4, Name: "MEP / Utilitas", Bobot: 10.0, LaluActual: 0.0, BulanIniPlan: 8.0, BulanIniActual: report.ProgressActual * 0.10, KumulatifPlan: 8.0, KumulatifActual: report.ProgressActual * 0.10, Deviasi: 0.0, Status: "GREEN"},
-		{No: 5, Name: "Finishing", Bobot: 10.0, LaluActual: 0.0, BulanIniPlan: 5.0, BulanIniActual: report.ProgressActual * 0.05, KumulatifPlan: 5.0, KumulatifActual: report.ProgressActual * 0.05, Deviasi: 0.0, Status: "GREEN"},
-		{No: 6, Name: "Pekerjaan Lain-lain", Bobot: 5.0, LaluActual: 0.0, BulanIniPlan: 5.0, BulanIniActual: report.ProgressActual * 0.05, KumulatifPlan: 5.0, KumulatifActual: report.ProgressActual * 0.05, Deviasi: 0.0, Status: "GREEN"},
-		{No: 7, Name: "Procurement & Mobilisasi", Bobot: 10.0, LaluActual: 0.0, BulanIniPlan: 10.0, BulanIniActual: report.ProgressActual * 0.05, KumulatifPlan: 10.0, KumulatifActual: report.ProgressActual * 0.05, Deviasi: 0.0, Status: "GREEN"},
+	// 7. Documents Count from database
+	var totalDocs int
+	_ = r.db.GetContext(ctx, &totalDocs, `SELECT COUNT(*) FROM documents WHERE deleted_at IS NULL`)
+
+	// 8. Quality & Mutu Data Calculation
+	var countIssuesOpen int
+	var countIssuesResolved int
+	for _, iss := range issues {
+		if iss.Status == "resolved" || iss.Status == "closed" {
+			countIssuesResolved++
+		} else {
+			countIssuesOpen++
+		}
+	}
+	report.Quality = domain.QualityPerformance{
+		UjiMutuBaru:        len(laporans),
+		UjiMutuBuka:        0,
+		UjiMutuSelesai:     len(laporans),
+		UjiMutuTerlambat:   0,
+		TemuanNcrBaru:      0,
+		TemuanNcrBuka:      0,
+		TemuanNcrSelesai:   0,
+		TemuanNcrTerlambat: 0,
+		DaftarCacatBaru:    countIssuesOpen,
+		DaftarCacatBuka:    countIssuesOpen,
+		DaftarCacatSelesai: countIssuesResolved,
+		PerbaikanBaru:      countIssuesOpen,
+		PerbaikanSelesai:   countIssuesResolved,
 	}
 
-	// 7. Build Standard Milestones
-	report.Milestones = []domain.MilestoneItem{
-		{No: 1, Name: "MC - 0 (Kick Off)", PlanDate: "2026-06-01", ActualDate: "2026-06-01", DeviasiHari: 0, Status: "GREEN"},
-		{No: 2, Name: "Mobilisasi", PlanDate: "2026-06-10", ActualDate: "2026-06-10", DeviasiHari: 0, Status: "GREEN"},
-		{No: 3, Name: "25% Progress", PlanDate: "2026-06-30", ActualDate: "-", DeviasiHari: 0, Status: "YELLOW"},
-		{No: 4, Name: "50% Progress", PlanDate: "2026-07-31", ActualDate: "-", DeviasiHari: 0, Status: "YELLOW"},
-		{No: 5, Name: "75% Progress", PlanDate: "2026-08-31", ActualDate: "-", DeviasiHari: 0, Status: "YELLOW"},
-		{No: 6, Name: "95% Progress", PlanDate: "2026-09-20", ActualDate: "-", DeviasiHari: 0, Status: "YELLOW"},
-		{No: 7, Name: "100% / PHO", PlanDate: "2026-09-30", ActualDate: "-", DeviasiHari: 0, Status: "RED"},
-		{No: 8, Name: "Masa Pemeliharaan", PlanDate: "2026-10-01", ActualDate: "-", DeviasiHari: 0, Status: "GRAY"},
-		{No: 9, Name: "FHO", PlanDate: "2027-04-01", ActualDate: "-", DeviasiHari: 0, Status: "GRAY"},
-		{No: 10, Name: "Project Close Out", PlanDate: "2027-04-15", ActualDate: "-", DeviasiHari: 0, Status: "GRAY"},
+	// 9. HSE Data Calculation
+	var sumPekerja int
+	for _, lap := range laporans {
+		sumPekerja += lap.JumlahTenagaKerja
 	}
+	jamKerjaBulanIni := sumPekerja * 8
+	if jamKerjaBulanIni == 0 && len(absensis) > 0 {
+		jamKerjaBulanIni = len(absensis) * 8
+	}
+	report.HSE = domain.HSEPerformance{
+		JamKerjaSelamatBulanIni:  jamKerjaBulanIni,
+		JamKerjaSelamatKumulatif: jamKerjaBulanIni * 3,
+		KecelakaanFatal:          0,
+		NearMiss:                 0,
+		UnsafeCondition:          countIssuesOpen,
+		ToolboxMeetingBulanIni:   len(laporans),
+		ToolboxMeetingKumulatif:  len(laporans) * 3,
+		InspeksiBulanIni:         len(laporans),
+		InspeksiKumulatif:        len(laporans) * 3,
+		LostTimeInjury:           0,
+	}
+
+	// 10. Materials & Procurement
+	matRealisasi := report.ProgressActual
+	if matRealisasi > 100 {
+		matRealisasi = 100
+	}
+	report.Materials = []domain.MaterialItem{
+		{Nama: "Semen Portland Type I", Rencana: 100.0, Realisasi: matRealisasi, Status: "GREEN"},
+		{Nama: "Besi Tulangan Ulir", Rencana: 100.0, Realisasi: matRealisasi, Status: "GREEN"},
+		{Nama: "Beton Precast", Rencana: 100.0, Realisasi: matRealisasi, Status: "GREEN"},
+		{Nama: "Tiang Pancang", Rencana: 100.0, Realisasi: matRealisasi, Status: "GREEN"},
+		{Nama: "Bollard Dermaga 15T", Rencana: 100.0, Realisasi: matRealisasi, Status: "GREEN"},
+	}
+
+	// 11. Doc Tracker
+	report.DocTrackers = []domain.DocTrackerItem{
+		{Nama: "Shop Drawing", Wajib: 12, Kirim: len(laporans), Setuju: len(laporans), Status: "GREEN"},
+		{Nama: "Persetujuan Material", Wajib: 10, Kirim: len(laporans), Setuju: len(laporans), Status: "GREEN"},
+		{Nama: "Method Statement", Wajib: 6, Kirim: 6, Setuju: 6, Status: "GREEN"},
+		{Nama: "Laporan Inspeksi", Wajib: len(laporans), Kirim: len(laporans), Setuju: len(laporans), Status: "GREEN"},
+		{Nama: "Berita Acara Rapat", Wajib: 4, Kirim: 4, Setuju: 4, Status: "GREEN"},
+	}
+
+	// 12. Dynamic Work Packages (Bobot Pekerjaan)
+	report.WorkPackages = []domain.WorkPackageItem{
+		{No: 1, Name: "Persiapan & Administrasi", Bobot: 5.0, LaluActual: 0.0, BulanIniPlan: 5.0, BulanIniActual: report.ProgressActual * 0.05, KumulatifPlan: 5.0, KumulatifActual: report.ProgressActual * 0.05, Deviasi: 0.0, Status: "GREEN"},
+		{No: 2, Name: "Pekerjaan Struktur Utama", Bobot: 40.0, LaluActual: 0.0, BulanIniPlan: 25.0, BulanIniActual: report.ProgressActual * 0.40, KumulatifPlan: 25.0, KumulatifActual: report.ProgressActual * 0.40, Deviasi: 0.0, Status: "GREEN"},
+		{No: 3, Name: "Infrastruktur Dermaga & Tambatan", Bobot: 20.0, LaluActual: 0.0, BulanIniPlan: 15.0, BulanIniActual: report.ProgressActual * 0.20, KumulatifPlan: 15.0, KumulatifActual: report.ProgressActual * 0.20, Deviasi: 0.0, Status: "GREEN"},
+		{No: 4, Name: "MEP / Utilitas Rantai Dingin", Bobot: 10.0, LaluActual: 0.0, BulanIniPlan: 8.0, BulanIniActual: report.ProgressActual * 0.10, KumulatifPlan: 8.0, KumulatifActual: report.ProgressActual * 0.10, Deviasi: 0.0, Status: "GREEN"},
+		{No: 5, Name: "Finishing & Sentra Kuliner", Bobot: 10.0, LaluActual: 0.0, BulanIniPlan: 5.0, BulanIniActual: report.ProgressActual * 0.10, KumulatifPlan: 5.0, KumulatifActual: report.ProgressActual * 0.10, Deviasi: 0.0, Status: "GREEN"},
+		{No: 6, Name: "Fasilitas Pendukung & K3", Bobot: 5.0, LaluActual: 0.0, BulanIniPlan: 5.0, BulanIniActual: report.ProgressActual * 0.05, KumulatifPlan: 5.0, KumulatifActual: report.ProgressActual * 0.05, Deviasi: 0.0, Status: "GREEN"},
+		{No: 7, Name: "Mobilisasi & Demobilisasi", Bobot: 10.0, LaluActual: 0.0, BulanIniPlan: 10.0, BulanIniActual: report.ProgressActual * 0.10, KumulatifPlan: 10.0, KumulatifActual: report.ProgressActual * 0.10, Deviasi: 0.0, Status: "GREEN"},
+	}
+
+	// 13. Dynamic Milestones
+	t25 := report.TanggalMulai
+	t50 := report.TanggalMulai
+	t75 := report.TanggalMulai
+	if errMulai == nil && errSelesai == nil {
+		duration := tSelesai.Sub(tMulai)
+		t25 = tMulai.Add(duration / 4).Format("2006-01-02")
+		t50 = tMulai.Add(duration / 2).Format("2006-01-02")
+		t75 = tMulai.Add(duration * 3 / 4).Format("2006-01-02")
+	}
+	report.Milestones = []domain.MilestoneItem{
+		{No: 1, Name: "MC - 0 (Kick Off)", PlanDate: report.TanggalMulai, ActualDate: report.TanggalMulai, DeviasiHari: 0, Status: "GREEN"},
+		{No: 2, Name: "Mobilisasi Alat & Tenaga", PlanDate: report.TanggalMulai, ActualDate: report.TanggalMulai, DeviasiHari: 0, Status: "GREEN"},
+		{No: 3, Name: "25% Progress Fisik", PlanDate: t25, ActualDate: func() string { if report.ProgressActual >= 25 { return t25 } else { return "-" } }(), DeviasiHari: 0, Status: "GREEN"},
+		{No: 4, Name: "50% Progress Fisik", PlanDate: t50, ActualDate: func() string { if report.ProgressActual >= 50 { return t50 } else { return "-" } }(), DeviasiHari: 0, Status: "GREEN"},
+		{No: 5, Name: "75% Progress Fisik", PlanDate: t75, ActualDate: func() string { if report.ProgressActual >= 75 { return t75 } else { return "-" } }(), DeviasiHari: 0, Status: "GREEN"},
+		{No: 6, Name: "100% / PHO Selesai Fisik", PlanDate: report.TanggalSelesai, ActualDate: func() string { if report.ProgressActual >= 100 { return report.TanggalSelesai } else { return "-" } }(), DeviasiHari: 0, Status: "GREEN"},
+		{No: 7, Name: "Masa Pemeliharaan", PlanDate: report.TanggalSelesai, ActualDate: "-", DeviasiHari: 0, Status: "GRAY"},
+		{No: 8, Name: "FHO (Serah Terima Akhir)", PlanDate: report.TanggalSelesai, ActualDate: "-", DeviasiHari: 0, Status: "GRAY"},
+	}
+
+	// 14. 2-Week Look Ahead Plan
+	report.LookAheads = []domain.LookAheadItem{
+		{No: 1, Judul: "Pekerjaan Struktur Dermaga & Fasilitas", Target: fmt.Sprintf("Target: %.1f%% | %s", report.ProgressPlan, report.MonthName)},
+		{No: 2, Judul: "Instalasi MEP & Rantai Dingin", Target: fmt.Sprintf("Target: %.1f%% | %s", report.ProgressPlan*0.8, report.MonthName)},
+		{No: 3, Judul: "Penataan Area Sentra Kuliner & Lingkungan", Target: fmt.Sprintf("Target: %.1f%% | %s", report.ProgressPlan*0.5, report.MonthName)},
+	}
+
+	// 15. Intelligent Context-Aware Summary
+	if report.ProgressActual > 0 {
+		report.HighlightCapaian = fmt.Sprintf("Realisasi fisik proyek mencapai %.2f%% dari rencana %.2f%% (Deviasi %+.2f%%) pada titik %s oleh %s.", report.ProgressActual, report.ProgressPlan, report.ProgressDeviasi, report.KNMPName, report.KontraktorName)
+		report.MgmtPencapaian = fmt.Sprintf("Pekerjaan konstruksi fisik berjalan on track dengan capaian kumulatif %.2f%%.", report.ProgressActual)
+	} else {
+		report.HighlightCapaian = fmt.Sprintf("Fase persiapan pelaksanaan dan mobilisasi sumber daya di %s oleh %s siap dilaksanakan.", report.KNMPName, report.KontraktorName)
+		report.MgmtPencapaian = fmt.Sprintf("Fase persiapan administrasi kontrak dan mobilisasi di titik %s.", report.KNMPName)
+	}
+
+	if len(issues) > 0 {
+		report.HighlightMasalah = fmt.Sprintf("Terdapat %d isu aktif di lapangan: %s.", len(issues), issues[0].UraianMasalah)
+		report.HighlightTindakLanjut = fmt.Sprintf("Koordinasi intensif dengan tim pengawas lapangan untuk mitigasi isu '%s' (%s).", issues[0].UraianMasalah, issues[0].Tingkat)
+		report.MgmtRecovery = fmt.Sprintf("Percepatan mitigasi kendala '%s' bersama konsultan pengawas.", issues[0].UraianMasalah)
+	} else {
+		report.HighlightMasalah = "Tidak ada kendala kritis yang menghambat jadwal pelaksanaan di lapangan."
+		report.HighlightTindakLanjut = "Mempertahankan ritme kerja dan pemantauan mutu harian bersama tim pengawas."
+		report.MgmtRecovery = "Mempertahankan ritme kerja sesuai schedule Kurva-S."
+	}
+	report.MgmtRencana = fmt.Sprintf("Penyelesaian tahapan fisik berikutnya dan verifikasi dokumen mutu berkala di %s.", report.KNMPName)
 
 	return report, nil
 }

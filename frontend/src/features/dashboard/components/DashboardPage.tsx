@@ -261,7 +261,7 @@ export const DashboardPage: React.FC = () => {
           }
 
           const popupContent = `
-            <div style="font-family: inherit; font-size: 12px; color: #1e293b; min-width: 220px; padding: 4px;">
+            <div style="font-family: inherit; font-size: 12px; color: #1e293b; min-width: 230px; padding: 4px;">
               <div style="font-weight: 700; font-size: 13.5px; margin-bottom: 6px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                 <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">${m.name}</span>
                 <span class="${colorBadge}" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; border-width: 1px; white-space: nowrap; font-weight: 600;">${colorLabel}</span>
@@ -300,11 +300,16 @@ export const DashboardPage: React.FC = () => {
             className: "custom-leaflet-popup",
           });
 
+          // Saat mouse hover pada titik, buka modal kecil (popup)
+          marker.on("mouseover", function () {
+            this.openPopup();
+          });
+
           marker.addTo(map);
         }
       });
 
-      // Bind popup open listener for detail button click
+      // Bind listener klik tombol detail di dalam modal kecil popup
       map.off("popupopen");
       map.on("popupopen", (e) => {
         const popupEl = e.popup.getElement();
@@ -314,8 +319,12 @@ export const DashboardPage: React.FC = () => {
             const knmpId = Number(btn.getAttribute("data-knmp-id"));
             const target = safePoints.find((p) => p.id === knmpId);
             if (target) {
-              const cleanKey = target.name.toLowerCase().replace(/^knmp\s+/i, "").replace(/[^a-z0-9]/g, "");
-              const extra = (knmpDetailsMap as Record<string, any>)[cleanKey] || {};
+              let extra: any = {};
+              if (Array.isArray(knmpDetailsMap)) {
+                extra = knmpDetailsMap.find(
+                  (d: any) => d.no === target.id || d.knmp_id === target.id || d.name?.toLowerCase() === target.name?.toLowerCase()
+                ) || {};
+              }
               setSelectedDetailKnmp({ ...target, extra });
               setIsDetailModalOpen(true);
             }

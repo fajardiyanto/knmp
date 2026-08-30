@@ -45,6 +45,9 @@ interface PersiapanItem {
 interface KnmpOption {
   id: number;
   name: string;
+  regency_name?: string;
+  province_name?: string;
+  district_name?: string;
 }
 
 interface UserOption {
@@ -305,10 +308,13 @@ export const MobilizationPage: React.FC = () => {
             }}
             options={[
               { value: "", label: "Semua KNMP" },
-              ...knmpOptions.map((k) => ({ value: k.name, label: k.name })),
+              ...knmpOptions.map((k) => ({
+                value: k.name,
+                label: k.regency_name ? `${k.name} (${k.regency_name})` : k.name,
+              })),
             ]}
             placeholder="Semua KNMP"
-            searchPlaceholder="Cari KNMP..."
+            searchPlaceholder="Cari KNMP / Wilayah..."
             className="w-full sm:w-auto sm:min-w-[170px]"
           />
 

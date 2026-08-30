@@ -94,8 +94,8 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	geo.Get("/districts/:districtId/sub-districts", h.Knmp.ListSubDistricts)
 
 	// Master KNMP, Periode, Jenis Bangunan
-	protected.Get("/knmp/widget", h.Knmp.Widget)
-	protected.Get("/knmp/map", h.Knmp.Map)
+	protected.Get("/knmp/widget", middleware.RequireRole("superadmin", "super admin", "admin_ppk", "admin", "pengawas", "ppk", "wakil_ppk", "wakil ppk"), h.Knmp.Widget)
+	protected.Get("/knmp/map", middleware.RequireRole("superadmin", "super admin", "admin_ppk", "admin", "pengawas", "ppk", "wakil_ppk", "wakil ppk"), h.Knmp.Map)
 	protected.Get("/knmp", middleware.RequirePermission("knmp_read"), h.Knmp.List)
 	protected.Get("/knmp/:id", middleware.RequirePermission("knmp_read"), h.Knmp.GetByID)
 	protected.Post("/knmp", middleware.RequirePermission("knmp_create"), h.Knmp.Create)

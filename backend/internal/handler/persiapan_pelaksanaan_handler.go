@@ -23,6 +23,20 @@ func (h *PersiapanHandler) List(c *fiber.Ctx) error {
 	var knmpID *int64
 	if id, err := strconv.ParseInt(c.Query("knmp_id"), 10, 64); err == nil {
 		knmpID = &id
+	} else {
+		userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
+		isGlobal := false
+		for _, r := range userRoles {
+			if r == "superadmin" || r == "admin_ppk" || r == "ppk" {
+				isGlobal = true
+				break
+			}
+		}
+		if !isGlobal {
+			if userKnmpIDs, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(userKnmpIDs) > 0 {
+				knmpID = &userKnmpIDs[0]
+			}
+		}
 	}
 
 	list, err := h.persiapanSvc.List(c.Context(), jenis, knmpID)
@@ -221,6 +235,20 @@ func (h *PelaksanaanHandler) List(c *fiber.Ctx) error {
 	var knmpID *int64
 	if id, err := strconv.ParseInt(c.Query("knmp_id"), 10, 64); err == nil {
 		knmpID = &id
+	} else {
+		userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
+		isGlobal := false
+		for _, r := range userRoles {
+			if r == "superadmin" || r == "admin_ppk" || r == "ppk" {
+				isGlobal = true
+				break
+			}
+		}
+		if !isGlobal {
+			if userKnmpIDs, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(userKnmpIDs) > 0 {
+				knmpID = &userKnmpIDs[0]
+			}
+		}
 	}
 
 	list, err := h.pelaksanaanSvc.List(c.Context(), knmpID)

@@ -68,17 +68,77 @@ export interface MonthlyProjectReportData {
   konsultan_pengawas: string;
   wakil_ppk: string;
   site_manager: string;
+  period_type?: "harian" | "mingguan" | "bulanan" | "custom";
+  period_label?: string;
+  date?: string;
+  week?: number;
   month: number;
   year: number;
   month_name: string;
+  start_date?: string;
+  end_date?: string;
+  cuaca?: string;
   progress_plan: number;
   progress_actual: number;
   progress_deviasi: number;
+  time_elapsed_pct?: number;
+  prog_keuangan_pct?: number;
   financial_pagu: number;
   financial_realisasi: number;
   financial_sisa: number;
   total_pekerja: number;
   total_issues: number;
+  highlight_capaian?: string;
+  highlight_masalah?: string;
+  highlight_tindak_lanjut?: string;
+  mgmt_pencapaian?: string;
+  mgmt_recovery?: string;
+  mgmt_rencana?: string;
+  quality?: {
+    uji_mutu_baru: number;
+    uji_mutu_buka: number;
+    uji_mutu_selesai: number;
+    uji_mutu_terlambat: number;
+    temuan_ncr_baru: number;
+    temuan_ncr_buka: number;
+    temuan_ncr_selesai: number;
+    temuan_ncr_terlambat: number;
+    daftar_cacat_baru: number;
+    daftar_cacat_buka: number;
+    daftar_cacat_selesai: number;
+    perbaikan_baru: number;
+    perbaikan_selesai: number;
+  };
+  hse?: {
+    jam_kerja_selamat_bulan_ini: number;
+    jam_kerja_selamat_kumulatif: number;
+    kecelakaan_fatal: number;
+    near_miss: number;
+    unsafe_condition: number;
+    toolbox_meeting_bulan_ini: number;
+    toolbox_meeting_kumulatif: number;
+    inspeksi_bulan_ini: number;
+    inspeksi_kumulatif: number;
+    lost_time_injury: number;
+  };
+  materials?: Array<{
+    nama: string;
+    rencana: number;
+    realisasi: number;
+    status: string;
+  }>;
+  doc_trackers?: Array<{
+    nama: string;
+    wajib: number;
+    kirim: number;
+    setuju: number;
+    status: string;
+  }>;
+  look_aheads?: Array<{
+    no: number;
+    judul: string;
+    target: string;
+  }>;
   work_packages: WorkPackageItem[];
   milestones: MilestoneItem[];
   issues?: Array<{
@@ -95,6 +155,24 @@ export interface MonthlyProjectReportData {
     termin: string;
     realisasi_anggaran: number;
     realisasi_fisik: number;
+  }>;
+  laporans?: Array<{
+    id: number;
+    nama: string;
+    tanggal: string;
+    jenis_laporan: string;
+    keberapa?: number;
+    cuaca?: string;
+    jumlah_tenaga_kerja: number;
+    rencana_progres_fisik: number;
+    realisasi_progres_fisik: number;
+    keterangan?: string;
+  }>;
+  absensis?: Array<{
+    id: number;
+    tipe_absensi: string;
+    recorded_at: string;
+    status: string;
   }>;
 }
 

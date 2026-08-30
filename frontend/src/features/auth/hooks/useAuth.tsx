@@ -48,7 +48,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem("knmp_token", res.token);
       localStorage.setItem("knmp_user", JSON.stringify(res.user));
       setUser(res.user);
-      navigate("/dashboard");
+
+      const isManagement = res.user.roles?.some((r) => {
+        const lower = r.toLowerCase();
+        return (
+          lower.includes("super") ||
+          lower.includes("admin") ||
+          lower.includes("ppk") ||
+          lower.includes("pengawas")
+        );
+      });
+
+      if (isManagement) {
+        navigate("/dashboard");
+      } else {
+        navigate("/pelaksanaan");
+      }
     } finally {
       setIsLoading(false);
     }

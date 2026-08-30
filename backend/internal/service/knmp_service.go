@@ -38,8 +38,8 @@ func (s *KnmpService) Delete(ctx context.Context, id int64) error {
 	return s.knmpRepo.Delete(ctx, id)
 }
 
-func (s *KnmpService) GetWidgetStats(ctx context.Context) (map[string]any, error) {
-	return s.knmpRepo.GetWidgetStats(ctx)
+func (s *KnmpService) GetWidgetStats(ctx context.Context, userKnmpIDs []int64) (map[string]any, error) {
+	return s.knmpRepo.GetWidgetStats(ctx, userKnmpIDs)
 }
 
 func (s *KnmpService) ListMap(ctx context.Context) ([]*domain.Knmp, error) {
