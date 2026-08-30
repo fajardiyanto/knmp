@@ -15,7 +15,7 @@ import {
   FileCheck,
   ImageIcon,
 } from "lucide-react";
-import { apiFetch } from "../../../lib/api-client";
+import { apiFetch, getFileUrl } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 
@@ -72,6 +72,7 @@ export const UploadDokumenLaporanPage: React.FC = () => {
   const [customUploadFile, setCustomUploadFile] = useState<File | null>(null);
 
   const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string; isImage: boolean } | null>(null);
 
   // 1. Fetch Laporan Detail
   const { data: laporan, isLoading } = useQuery<LaporanDetail>({
@@ -396,54 +397,70 @@ export const UploadDokumenLaporanPage: React.FC = () => {
                     <td className="py-4 px-5">
                       <div className="space-y-2">
                         {/* If files uploaded, show each file box */}
-                        {matchingDocs.map((doc) => (
-                          <div
-                            key={doc.id}
-                            className="flex items-center justify-between p-2 bg-emerald-50/80 border border-emerald-200 rounded-xl text-xs"
-                          >
-                            <div className="flex items-center gap-2 truncate pr-2">
-                              <ImageIcon className="w-4 h-4 text-emerald-600 shrink-0" />
-                              <span className="font-mono text-emerald-950 font-medium truncate">
-                                {doc.file_name}
-                              </span>
+                        {matchingDocs.map((doc) => {
+                          const fileUrl = getFileUrl(doc.file_url || `/uploads/${doc.file_path}`);
+                          const isImage = Boolean(
+                            doc.file_name.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i) ||
+                              doc.mime_type?.startsWith("image") ||
+                              doc.file_path.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i)
+                          );
+
+                          return (
+                            <div
+                              key={doc.id}
+                              className="flex items-center justify-between p-2 bg-emerald-50/80 border border-emerald-200 rounded-xl text-xs"
+                            >
+                              <div className="flex items-center gap-2 truncate pr-2">
+                                <ImageIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span className="font-mono text-emerald-950 font-medium truncate">
+                                  {doc.file_name}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPreviewDoc({
+                                      url: fileUrl,
+                                      name: doc.file_name,
+                                      isImage,
+                                    });
+                                  }}
+                                  className="p-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition-colors shadow-2xs cursor-pointer"
+                                  title="Lihat Preview Berkas"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <a
+                                  href={fileUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  download={doc.file_name}
+                                  className="p-1.5 bg-[#0d6efd] hover:bg-[#0b5ed7] text-white rounded-lg transition-colors shadow-2xs inline-flex items-center justify-center cursor-pointer"
+                                  title="Unduh Berkas / Buka Tab Baru"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    showConfirm({
+                                      title: "Hapus Berkas",
+                                      message: "Apakah Anda yakin ingin menghapus file ini?",
+                                      confirmText: "Hapus",
+                                      isDestructive: true,
+                                      onConfirm: () => deleteDocMutation.mutate(doc.id),
+                                    });
+                                  }}
+                                  className="p-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors shadow-2xs cursor-pointer"
+                                  title="Hapus Berkas"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <a
-                                href={doc.file_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="p-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors shadow-2xs"
-                                title="Lihat Berkas"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </a>
-                              <a
-                                href={doc.file_url}
-                                download
-                                className="p-1.5 bg-[#0d6efd] hover:bg-[#0b5ed7] text-white rounded-lg transition-colors shadow-2xs"
-                                title="Download Berkas"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                              </a>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  showConfirm({
-                                    title: "Hapus Berkas",
-                                    message: "Apakah Anda yakin ingin menghapus file ini?",
-                                    confirmText: "Hapus",
-                                    isDestructive: true,
-                                    onConfirm: () => deleteDocMutation.mutate(doc.id),
-                                  });
-                                }}
-                                className="p-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors shadow-2xs"
-                                title="Hapus Berkas"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
 
                         {/* If single file and not uploaded yet */}
                         {!def.isMulti && !hasDocs && (
@@ -711,6 +728,87 @@ export const UploadDokumenLaporanPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. In-App Document & Image Lightbox Modal */}
+      {previewDoc && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex flex-col items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={() => setPreviewDoc(null)}
+        >
+          {/* Top Bar Header */}
+          <div
+            className="w-full max-w-5xl flex items-center justify-between text-white pb-3 mb-2 border-b border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 truncate pr-4">
+              <FileText className="w-5 h-5 text-blue-400 shrink-0" />
+              <span className="font-semibold text-sm truncate">{previewDoc.name}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href={previewDoc.url}
+                target="_blank"
+                rel="noreferrer"
+                download={previewDoc.name}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+                title="Buka / Download"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Unduh File</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setPreviewDoc(null)}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 hover:text-white transition-colors cursor-pointer"
+                title="Tutup Preview"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Content Body */}
+          <div
+            className="w-full max-w-5xl flex-1 max-h-[82vh] flex items-center justify-center overflow-hidden rounded-2xl bg-slate-900/90 border border-white/10 p-2 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {previewDoc.isImage ? (
+              <img
+                src={previewDoc.url}
+                alt={previewDoc.name}
+                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-lg"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                }}
+              />
+            ) : previewDoc.name.match(/\.pdf$/i) ? (
+              <iframe
+                src={previewDoc.url}
+                title={previewDoc.name}
+                className="w-full h-[78vh] rounded-lg border-0 bg-white"
+              />
+            ) : (
+              <div className="text-center p-8 text-white space-y-4">
+                <FileCheck className="w-16 h-16 text-blue-400 mx-auto" />
+                <div>
+                  <h4 className="font-bold text-base">{previewDoc.name}</h4>
+                  <p className="text-xs text-slate-300 mt-1">
+                    Format file ini tidak mendukung preview langsung di browser.
+                  </p>
+                </div>
+                <a
+                  href={previewDoc.url}
+                  download={previewDoc.name}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md"
+                >
+                  <Download className="w-4 h-4" />
+                  Unduh Berkas Sekarang
+                </a>
+              </div>
+            )}
           </div>
         </div>
       )}

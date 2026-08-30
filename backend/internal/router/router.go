@@ -53,6 +53,9 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 		return c.JSON(fiber.Map{"status": "ok", "env": cfg.AppEnv})
 	})
 
+	// Static uploads directory
+	app.Static("/uploads", "./uploads")
+
 	// WebSocket Chat Route (C-04)
 	if h.Chat != nil {
 		app.Use("/ws/chat", middleware.WSAuthMiddleware(cfg.JWTSecret))
