@@ -29,35 +29,40 @@ Modul ini bertanggung jawab atas pelaporan progres konstruksi, deviasi rencana v
 
 ## 2. Struktur Frontend (`src/features/laporan/`)
 
-* `components/LaporanPage.tsx`: Halaman utama tabel laporan, metrik card (Total, Dokumen, Gambar, Tanpa File), filter bar multi-kriteria, tombol verifikasi, dan tombol pembuka generator laporan.
-* `components/MonthlyProjectReportModal.tsx`: Modal kanvas dokumen resmi yang memuat:
-  1. **Toolbar Navigasi**: Period Type (`harian`, `mingguan`, `bulanan`, `custom`), Orientasi (`landscape` / `portrait`), Mode Edit Teks Narasi (`isEditMode`), Interactive Zoom (`50%`–`200%` dengan tombol reset `100%`), tombol Refresh, dan Cetak PDF.
-  2. **14 Bagian Dokumen Resmi**:
-     - *Seksi 1*: Identitas Proyek & Kontrak
-     - *Seksi 2*: Highlight Bulan Ini (Capaian, Kendala, Tindak Lanjut)
-     - *Seksi 3*: Time vs Progress (Kurva Waktu)
-     - *Seksi 4*: Progress Fisik Pekerjaan (Bobot, Rencana %, Realisasi %, Deviasi, RAG Status)
-     - *Seksi 5*: Pengendalian Tahapan (Milestone Konstruksi)
-     - *Seksi 6*: Kinerja Mutu & Kualitas (Uji Lab, Temuan NCR, Punch List)
-     - *Seksi 7*: Kinerja K3 & Keselamatan (Toolbox Meeting, Inspeksi, Jam Kerja Selamat)
-     - *Seksi 8*: Status Material & Pengadaan (Semen, Precast, Tiang Pancang, Bollard)
-     - *Seksi 9*: Dokumen & Persetujuan (Shop Drawing, Material Approval, Method Statement)
-     - *Seksi 10*: Register Kendala & Risiko
-     - *Seksi 11*: Status Keuangan & Pembayaran Termin
-     - *Seksi 12*: Rencana Kerja 2 Minggu Kedepan
-     - *Seksi 13*: Ringkasan Manajemen
-     - *Seksi 14*: Lembar Pengesahan (Tanda tangan Kontraktor, Pengawas, PPK)
-  3. **Document Sheet Immunity**: Kanvas `.printable-report-canvas` selalu berupa kertas putih bersih (*crisp white paper*) di Dark Mode maupun Light Mode, dengan teks hitam pekat kontras tinggi dan layout cetak A4/A3.
+* `components/ExecutiveProjectReportModalV2.tsx`: Modal eksekutif dual-mode (Bento Analytics Dashboard & Dokumen Cetak A4/A3) yang menampilkan metrik KPI, Kurva-S kumulatif, milestones, 7 paket pekerjaan, quality/K3, dan **lampiran dokumen/foto geotagging lapangan**.
+* `docs/DATA_DICTIONARY_LAPORAN_V1_V2.md`: Kamus data lengkap dan silsilah data (*data lineage*) untuk seluruh field pada Laporan V1 dan V2.
 
 ---
 
-## 3. SOP Menambah / Memodifikasi Bagian Laporan
+## 3. Kamus Sumber Data & Silsilah Data (V1 & V2)
+
+Lihat dokumentasi lengkap di: [`docs/DATA_DICTIONARY_LAPORAN_V1_V2.md`](file:///d:/spacecode/NGS/pertamina/knmp-v2/docs/DATA_DICTIONARY_LAPORAN_V1_V2.md).
+
+1. **Progres Fisik & Deviasi**:
+   - `realisasi_progres_fisik` vs `rencana_progres_fisik` dari tabel `laporans`.
+   - Deviasi: `realisasi - rencana` (+ = surplus hijau, - = defisit merah).
+2. **Pagu & Realisasi Keuangan**:
+   - Nilai Pagu dari tabel `persiapans` / `perusahaans` (pagu master Rp 1.485.000.000).
+   - Realisasi Keuangan: $\sum \text{realisasi\_anggaran}$ dari tabel `pembayarans`.
+3. **Durasi Waktu & Kalender**:
+   - Dihitung dari `tanggal_mulai_pelaksanaan` s.d `tanggal_akhir_pelaksanaan` pada tabel `persiapans`.
+   - % Waktu Terpakai: $\frac{\text{Hari Berjalan}}{\text{Total Durasi Kontrak}} \times 100\%$.
+4. **Kinerja K3 & HSE**:
+   - Jam Kerja Selamat: `jumlah_tenaga_kerja * 8 jam kerja` dari tabel `laporans`.
+   - Toolbox meeting & Inspeksi: frekuensi pengawasan K3 site.
+5. **Dokumen Lampiran & Foto Fisik**:
+   - Query dari tabel `documents` (`documentable_type = 'laporan'`, `documentable_id = laporan.id`).
+   - Kategori: `status_k3_doc`, `ceklis_mutu_doc`, `laporan_pdf_doc`, `foto_kegiatan`, `foto_kegiatan_tambahan`.
+
+---
+
+## 4. SOP Menambah / Memodifikasi Bagian Laporan
 
 1. **Menambah Field Data Laporan**:
    - Tambahkan field pada `domain.MonthlyProjectReportData` di Golang (`backend/internal/domain/laporan.go`).
    - Query data terkait pada `laporan_repo.go` di method `GetMonthlyProjectReportData`.
    - Update interface TypeScript di `frontend/src/features/laporan/types.ts`.
-   - Render pada `MonthlyProjectReportModal.tsx` di seksi yang bersangkutan.
+   - Render pada `ExecutiveProjectReportModalV2.tsx` dan `MonthlyProjectReportModal.tsx`.
 2. **Menjaga Kerapian Cetak**:
    - Selalu berikan alternatif kelas lebar grid (`orientation === "portrait" ? "col-span-12" : "col-span-6"`).
    - Pastikan styling menggunakan font compact (`text-[8px]` s/d `text-[10px]`) dan `border-slate-900` untuk keterbacaan cetak optimal.
