@@ -771,39 +771,75 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                       })}
                     </div>
 
-                    {/* Photo Gallery Grid */}
-                    {data.documents.some((d) => d.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) || d.file_type?.startsWith("image") || d.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i)) && (
-                      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-3">
-                          Dokumentasi Foto Fisik Lapangan
-                        </h4>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                          {data.documents
-                            .filter((d) => d.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) || d.file_type?.startsWith("image") || d.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i))
-                            .map((photo) => {
-                              const photoUrl = getFileUrl(photo.file_url || photo.file_path);
-                              return (
-                                <div
-                                  key={photo.id}
-                                  onClick={() => setSelectedImage(photoUrl)}
-                                  className="group relative aspect-4/3 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-xs"
-                                >
-                                  <img
-                                    src={photoUrl}
-                                    alt={photo.file_name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                    loading="lazy"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-end">
-                                    <p className="text-[10px] text-white font-semibold truncate">{photo.file_name}</p>
-                                    <span className="text-[9px] text-slate-300 capitalize">{photo.category.replace(/_/g, " ")}</span>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                    {/* Photo Gallery Grid Grouped by Date */}
+                    {(() => {
+                      const photos = data.documents.filter(
+                        (d) =>
+                          d.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) ||
+                          d.file_type?.startsWith("image") ||
+                          d.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i)
+                      );
+
+                      if (photos.length === 0) return null;
+
+                      // Group photos by formatted date
+                      const photosByDate = photos.reduce((acc, photo) => {
+                        const rawDate = photo.uploaded_at || photo.created_at || data?.date || data?.start_date || "";
+                        const dateKey = rawDate ? formatDate(rawDate) : "Dokumentasi Lapangan";
+                        if (!acc[dateKey]) acc[dateKey] = [];
+                        acc[dateKey].push(photo);
+                        return acc;
+                      }, {} as Record<string, typeof photos>);
+
+                      return (
+                        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                              Dokumentasi Foto Fisik Lapangan (Berdasarkan Tanggal)
+                            </h4>
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                              {photos.length} Foto
+                            </span>
+                          </div>
+
+                          {Object.entries(photosByDate).map(([dateLabel, groupPhotos]) => (
+                            <div key={dateLabel} className="space-y-2.5">
+                              <div className="flex items-center gap-2">
+                                <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
+                                  📅 {dateLabel}
+                                </span>
+                                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+                              </div>
+
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                                {groupPhotos.map((photo) => {
+                                  const photoUrl = getFileUrl(photo.file_url || photo.file_path);
+                                  return (
+                                    <div
+                                      key={photo.id}
+                                      onClick={() => setSelectedImage(photoUrl)}
+                                      className="group relative aspect-4/3 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-xs hover:shadow-md transition-all"
+                                    >
+                                      <img
+                                        src={photoUrl}
+                                        alt={photo.file_name}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        loading="lazy"
+                                      />
+                                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-end">
+                                        <p className="text-[10.5px] text-white font-bold truncate">{photo.file_name}</p>
+                                        <span className="text-[9.5px] text-slate-300 capitalize">{photo.category.replace(/_/g, " ")}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">

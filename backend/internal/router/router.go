@@ -54,7 +54,12 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	})
 
 	// Static uploads directory
-	app.Static("/uploads", "./uploads")
+	uploadDir := "./storage/uploads"
+	if cfg.StorageLocalDir != "" {
+		uploadDir = cfg.StorageLocalDir
+	}
+	app.Static("/uploads", uploadDir)
+	app.Static("/storage/uploads", uploadDir)
 
 	// WebSocket Chat Route (C-04)
 	if h.Chat != nil {
