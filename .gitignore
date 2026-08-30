@@ -91,11 +91,9 @@ lerna-debug.log*
 # ------------------------------------------------------------------------------
 # 4. Storage, Database & Docker Volumes
 # ------------------------------------------------------------------------------
-/data/
-/backend/data/
+data/
+backend/data/
 !backend/db/data/
-!frontend/src/features/dashboard/data/
-!frontend/src/**/data/
 postgres_data/
 minio_data/
 redis_data/

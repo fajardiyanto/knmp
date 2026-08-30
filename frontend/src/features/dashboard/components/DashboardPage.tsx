@@ -37,7 +37,6 @@ import { Card } from "../../../components/ui/Card";
 import { formatCurrency } from "../../../lib/utils";
 import { useTheme } from "../../../context/ThemeContext";
 import { useAuth } from "../../auth/hooks/useAuth";
-import knmpDetailsMap from "../data/knmp_sumatera_details.json";
 
 Chart.register(...registerables);
 
@@ -319,13 +318,7 @@ export const DashboardPage: React.FC = () => {
             const knmpId = Number(btn.getAttribute("data-knmp-id"));
             const target = safePoints.find((p) => p.id === knmpId);
             if (target) {
-              let extra: any = {};
-              if (Array.isArray(knmpDetailsMap)) {
-                extra = knmpDetailsMap.find(
-                  (d: any) => d.no === target.id || d.knmp_id === target.id || d.name?.toLowerCase() === target.name?.toLowerCase()
-                ) || {};
-              }
-              setSelectedDetailKnmp({ ...target, extra });
+              setSelectedDetailKnmp(target);
               setIsDetailModalOpen(true);
             }
           });
@@ -971,25 +964,25 @@ export const DashboardPage: React.FC = () => {
                       <tr className="border-b border-slate-200/50 dark:border-slate-700/50">
                         <td className="py-2 text-slate-500 dark:text-slate-400 font-medium">Provinsi</td>
                         <td className="py-2 text-right font-semibold text-slate-800 dark:text-slate-100">
-                          {selectedDetailKnmp.province_name || selectedDetailKnmp.extra?.provinsi || "-"}
+                          {selectedDetailKnmp.province_name || "-"}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-200/50 dark:border-slate-700/50">
                         <td className="py-2 text-slate-500 dark:text-slate-400 font-medium">Kabupaten / Kota</td>
                         <td className="py-2 text-right font-semibold text-slate-800 dark:text-slate-100">
-                          {selectedDetailKnmp.regency_name || selectedDetailKnmp.extra?.kabupaten || "-"}
+                          {selectedDetailKnmp.regency_name || "-"}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-200/50 dark:border-slate-700/50">
                         <td className="py-2 text-slate-500 dark:text-slate-400 font-medium">Kecamatan</td>
                         <td className="py-2 text-right font-semibold text-slate-800 dark:text-slate-100">
-                          {selectedDetailKnmp.district_name || selectedDetailKnmp.extra?.kecamatan || "-"}
+                          {selectedDetailKnmp.district_name || "-"}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-200/50 dark:border-slate-700/50">
                         <td className="py-2 text-slate-500 dark:text-slate-400 font-medium">Desa / Kelurahan</td>
                         <td className="py-2 text-right font-semibold text-slate-800 dark:text-slate-100">
-                          {selectedDetailKnmp.sub_district_name || selectedDetailKnmp.extra?.desa || "-"}
+                          {selectedDetailKnmp.sub_district_name || "-"}
                         </td>
                       </tr>
                       <tr>
@@ -1014,13 +1007,13 @@ export const DashboardPage: React.FC = () => {
                       <tr className="border-b border-slate-200/50 dark:border-slate-700/50">
                         <td className="py-2 text-slate-500 dark:text-slate-400 font-medium align-top">Ketua Tim / PPK</td>
                         <td className="py-2 text-right font-semibold text-slate-800 dark:text-slate-100 max-w-[200px]">
-                          {selectedDetailKnmp.extra?.ketuaPPK || "Muhammad Iqbal S.Pi, M.Si"}
+                          Muhammad Iqbal S.Pi, M.Si
                         </td>
                       </tr>
                       <tr className="border-b border-slate-200/50 dark:border-slate-700/50">
                         <td className="py-2 text-slate-500 dark:text-slate-400 font-medium align-top">Pengawas Lapangan</td>
                         <td className="py-2 text-right font-semibold text-slate-800 dark:text-slate-100 max-w-[200px]">
-                          {selectedDetailKnmp.extra?.pengawas || "Pengawas Ditugaskan"}
+                          Pengawas Ditugaskan
                         </td>
                       </tr>
                       <tr className="border-b border-slate-200/50 dark:border-slate-700/50">
