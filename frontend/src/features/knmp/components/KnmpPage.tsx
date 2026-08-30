@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
+import { CompanyDetailModal } from "./CompanyDetailModal";
 
 interface KnmpItem {
   id: number;
@@ -53,6 +54,8 @@ export const KnmpPage: React.FC = () => {
   const [perPage, setPerPage] = useState(10);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [selectedCompanyForModal, setSelectedCompanyForModal] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<KnmpItem | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -429,11 +432,19 @@ export const KnmpPage: React.FC = () => {
                     <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-100 text-[14.5px]">
                       {item.name}
                     </td>
-                    <td className="py-4 px-5 text-[13.5px] font-semibold text-indigo-700 dark:text-indigo-300">
-                      <div className="flex items-center gap-1.5">
-                        <Building2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                        <span>{item.nama_pt || "PT. Mina Bahari Nusantara"}</span>
-                      </div>
+                    <td className="py-4 px-5 text-[13.5px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCompanyForModal(item.nama_pt || "PT. Mina Bahari Nusantara");
+                          setIsCompanyModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer text-left group"
+                        title="Klik untuk melihat Detail Profil Perusahaan & Rekening Bank"
+                      >
+                        <Building2 className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-500 transition-colors shrink-0" />
+                        <span className="group-hover:underline underline-offset-2">{item.nama_pt || "PT. Mina Bahari Nusantara"}</span>
+                      </button>
                     </td>
                     <td className="py-4 px-5 text-[13.5px]">{item.regional_name || "Sumatera"}</td>
                     <td className="py-4 px-5 text-[13.5px]">{item.province_name || "SUMATERA UTARA"}</td>
@@ -682,6 +693,13 @@ export const KnmpPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Company Legal Profile Detail Modal */}
+      <CompanyDetailModal
+        isOpen={isCompanyModalOpen}
+        onClose={() => setIsCompanyModalOpen(false)}
+        namaPerusahaan={selectedCompanyForModal || undefined}
+      />
 
     </div>
   );

@@ -198,3 +198,13 @@ type ChatRepository interface {
 	SearchUsers(ctx context.Context, query string, excludeUserID int64, limit int) ([]domain.User, error)
 	GetUserByID(ctx context.Context, userID int64) (*domain.User, error)
 }
+
+type PerusahaanRepository interface {
+	GetByID(ctx context.Context, id int64) (*domain.Perusahaan, error)
+	GetByNama(ctx context.Context, nama string) (*domain.Perusahaan, error)
+	GetByKontrak(ctx context.Context, noKontrak string) (*domain.Perusahaan, error)
+	List(ctx context.Context, search string, limit, offset int) ([]*domain.Perusahaan, int, error)
+	Create(ctx context.Context, p *domain.Perusahaan) error
+	Update(ctx context.Context, p *domain.Perusahaan) error
+	Delete(ctx context.Context, id int64) error
+}

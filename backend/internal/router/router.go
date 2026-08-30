@@ -24,6 +24,7 @@ type Handlers struct {
 	Document     *handler.DocumentHandler
 	Chat         *handler.ChatHandler
 	Notification *handler.NotificationHandler
+	Perusahaan   *handler.PerusahaanHandler
 }
 
 func New(cfg *config.Config, h *Handlers) *fiber.App {
@@ -174,6 +175,16 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	protected.Post("/documents", h.Document.Upload)
 	protected.Patch("/documents/:id/verify", h.Document.Verify)
 	protected.Delete("/documents/:id", h.Document.Delete)
+
+	// Perusahaan / Kontraktor Detail & Master
+	if h.Perusahaan != nil {
+		protected.Get("/perusahaan", h.Perusahaan.List)
+		protected.Get("/perusahaan/by-nama", h.Perusahaan.GetByNama)
+		protected.Get("/perusahaan/:id", h.Perusahaan.GetByID)
+		protected.Post("/perusahaan", h.Perusahaan.Create)
+		protected.Put("/perusahaan/:id", h.Perusahaan.Update)
+		protected.Delete("/perusahaan/:id", h.Perusahaan.Delete)
+	}
 
 	// Chat & Messaging
 	if h.Chat != nil {

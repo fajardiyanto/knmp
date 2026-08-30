@@ -65,6 +65,7 @@ func main() {
 	verifRepo := postgres.NewVerificationRepo(db)
 	chatRepo := postgres.NewChatRepo(db)
 	notifRepo := postgres.NewNotificationRepo(db)
+	perusahaanRepo := postgres.NewPerusahaanRepo(db)
 
 	// 4. Initialize Services & Hubs
 	chatHub := service.NewChatHub()
@@ -80,6 +81,7 @@ func main() {
 	pembayaranSvc := service.NewPembayaranService(pembayaranRepo, docRepo, storageEngine)
 	docSvc := service.NewDocumentService(docRepo, storageEngine)
 	chatSvc := service.NewChatService(chatRepo, chatHub, notifSvc)
+	perusahaanSvc := service.NewPerusahaanService(perusahaanRepo)
 
 	// 5. Initialize Handlers
 	handlers := &router.Handlers{
@@ -94,6 +96,7 @@ func main() {
 		Document:     handler.NewDocumentHandler(docSvc),
 		Chat:         handler.NewChatHandler(chatSvc, cfg.JWTSecret, storageEngine),
 		Notification: handler.NewNotificationHandler(notifSvc),
+		Perusahaan:   handler.NewPerusahaanHandler(perusahaanSvc),
 	}
 
 	// 6. Build App & Listen

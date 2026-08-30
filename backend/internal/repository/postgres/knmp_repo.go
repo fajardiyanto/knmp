@@ -45,7 +45,7 @@ func (r *knmpRepo) GetByID(ctx context.Context, id int64) (*domain.Knmp, error) 
 		LEFT JOIN sub_districts sd ON k.sub_district_id = sd.id
 		LEFT JOIN (
 		    SELECT DISTINCT ON (knmp_id) knmp_id, 
-		           COALESCE(NULLIF(additional_data->>'penyedia_jasa', ''), NULLIF(additional_data->>'kontraktor', ''), judul_form) as nama_pt
+		           COALESCE(NULLIF(additional_data->>'penyedia_jasa', ''), NULLIF(additional_data->>'kontraktor', ''), nama) as nama_pt
 		    FROM persiapans
 		    WHERE jenis = 'kontrak' AND deleted_at IS NULL
 		    ORDER BY knmp_id, id DESC
@@ -87,7 +87,7 @@ func (r *knmpRepo) List(ctx context.Context, filter repository.KnmpFilter) ([]*d
 		LEFT JOIN sub_districts sd ON k.sub_district_id = sd.id
 		LEFT JOIN (
 		    SELECT DISTINCT ON (knmp_id) knmp_id, 
-		           COALESCE(NULLIF(additional_data->>'penyedia_jasa', ''), NULLIF(additional_data->>'kontraktor', ''), judul_form) as nama_pt
+		           COALESCE(NULLIF(additional_data->>'penyedia_jasa', ''), NULLIF(additional_data->>'kontraktor', ''), nama) as nama_pt
 		    FROM persiapans
 		    WHERE jenis = 'kontrak' AND deleted_at IS NULL
 		    ORDER BY knmp_id, id DESC
