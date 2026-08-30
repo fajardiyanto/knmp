@@ -119,17 +119,27 @@ export const CompanyDetailModal: React.FC<CompanyDetailModalProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                    (company?.status_administrasi || "").toLowerCase().includes("done")
-                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
-                      : (company?.status_administrasi || "").toLowerCase().includes("cetak")
-                      ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
-                      : (company?.status_administrasi || "").toLowerCase().includes("jampel")
-                      ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
-                      : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
-                  }`}>
-                    {company?.status_administrasi || "SCAN SP - DONE"}
-                  </span>
+                  {(() => {
+                    const s = (company?.status_administrasi || "").toLowerCase().trim();
+                    let badgeClass = "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700";
+                    let dotClass = "bg-slate-500";
+                    if (s.includes("done") || s.includes("scan")) {
+                      badgeClass = "bg-[#e2efda] dark:bg-[#1a3821] text-[#274e13] dark:text-[#a8e6b2] border-[#b6d7a8] dark:border-[#2d5f38]";
+                      dotClass = "bg-[#274e13] dark:bg-[#4ade80]";
+                    } else if (s.includes("cetak") || s.includes("proses")) {
+                      badgeClass = "bg-[#fff2cc] dark:bg-[#3d310a] text-[#7f6000] dark:text-[#fde047] border-[#ffe599] dark:border-[#665214]";
+                      dotClass = "bg-[#b45309] dark:bg-[#facc15]";
+                    } else if (s.includes("jampel") || s.includes("menunggu")) {
+                      badgeClass = "bg-[#fce5cd] dark:bg-[#3d2411] text-[#783f04] dark:text-[#fdba74] border-[#f9cb9c] dark:border-[#663b1a]";
+                      dotClass = "bg-[#c2410c] dark:bg-[#fb923c]";
+                    }
+                    return (
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${badgeClass}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`} />
+                        {company?.status_administrasi || "SCAN SP - DONE"}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 
