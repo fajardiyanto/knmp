@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { fetchMonthlyProjectReport } from "../api";
 import { apiFetch } from "../../../lib/api-client";
+import { formatRupiah, formatDate } from "../../../lib/utils";
 import { MonthlyProjectReportData } from "../types";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
@@ -29,6 +30,7 @@ interface MonthlyProjectReportModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialKnmpId?: number;
+  laporanId?: number;
 }
 
 interface KnmpOption {
@@ -60,6 +62,7 @@ export const MonthlyProjectReportModal: React.FC<MonthlyProjectReportModalProps>
   isOpen,
   onClose,
   initialKnmpId,
+  laporanId,
 }) => {
   const { user } = useAuth();
   const userKnmpId = user?.knmp_ids && user.knmp_ids.length > 0 ? user.knmp_ids[0] : undefined;
@@ -119,6 +122,7 @@ export const MonthlyProjectReportModal: React.FC<MonthlyProjectReportModalProps>
     queryKey: [
       "project-report",
       selectedKnmpId,
+      laporanId,
       periodType,
       selectedDate,
       selectedWeek,
@@ -129,6 +133,7 @@ export const MonthlyProjectReportModal: React.FC<MonthlyProjectReportModalProps>
     ],
     queryFn: () =>
       fetchMonthlyProjectReport(selectedKnmpId, {
+        laporan_id: laporanId,
         period_type: periodType,
         date: selectedDate,
         week: selectedWeek,
@@ -137,7 +142,7 @@ export const MonthlyProjectReportModal: React.FC<MonthlyProjectReportModalProps>
         start_date: startDate,
         end_date: endDate,
       }),
-    enabled: isOpen && !!selectedKnmpId,
+    enabled: isOpen && (!!selectedKnmpId || !!laporanId),
   });
 
   useEffect(() => {
@@ -1377,6 +1382,47 @@ export const MonthlyProjectReportModal: React.FC<MonthlyProjectReportModalProps>
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* ========================================================
+              ROW 5B: LAMPIRAN DOKUMEN & FOTO BUKTI LAPANGAN
+             ======================================================== */}
+          <div className="border border-slate-900 mb-2">
+            <div className="bg-[#002060] text-white px-2 py-0.5 font-black text-[9px] uppercase tracking-wider">
+              LAMPIRAN BERKAS &amp; DOKUMENTASI FISIK LAPANGAN
+            </div>
+            <div className="p-1.5 bg-white text-[8px]">
+              <table className="w-full text-[8px] text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-700">
+                    <th className="py-0.5 px-1 text-center border-r border-slate-300 w-6">NO</th>
+                    <th className="py-0.5 px-1 border-r border-slate-300">JENIS DOKUMEN</th>
+                    <th className="py-0.5 px-1 border-r border-slate-300">NAMA FILE</th>
+                    <th className="py-0.5 px-1 text-center border-r border-slate-300">STATUS</th>
+                    <th className="py-0.5 px-1 text-center">TANGGAL UNGGAH</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {data?.documents && data.documents.length > 0 ? (
+                    data.documents.map((doc, idx) => (
+                      <tr key={doc.id}>
+                        <td className="py-0.5 px-1 text-center border-r border-slate-200 tabular-nums">{idx + 1}</td>
+                        <td className="py-0.5 px-1 border-r border-slate-200 font-semibold capitalize">{doc.category.replace(/_/g, " ")}</td>
+                        <td className="py-0.5 px-1 border-r border-slate-200 text-slate-700 font-mono text-[7.5px]">{doc.file_name}</td>
+                        <td className="py-0.5 px-1 text-center border-r border-slate-200 font-bold text-emerald-800">{doc.status || "Terverifikasi"}</td>
+                        <td className="py-0.5 px-1 text-center tabular-nums">{formatDate(doc.uploaded_at || doc.created_at)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="py-1 text-center text-slate-500 italic">
+                        Status K3, Ceklis Mutu, Laporan PDF &amp; Foto Dokumentasi Lapangan Terlampir
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 

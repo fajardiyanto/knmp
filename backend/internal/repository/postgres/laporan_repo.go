@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -251,6 +252,7 @@ var indonesianMonths = []string{
 
 func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter repository.ProjectReportFilter) (*domain.MonthlyProjectReportData, error) {
 	knmpID := filter.KNMPID
+	laporanID := filter.LaporanID
 	month := filter.Month
 	if month < 1 || month > 12 {
 		month = 8
@@ -317,6 +319,85 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 		SiteManager:     "Ir. Hendra Gunawan",
 	}
 
+	// 0. If LaporanID is specified, load specific Laporan first
+	var targetPelaksanaanID int64
+	var laporanIDs []int64
+	if laporanID > 0 {
+		var targetLaporan struct {
+			ID                    int64   `db:"id"`
+			PelaksanaanID         int64   `db:"pelaksanaan_id"`
+			Nama                  string  `db:"nama"`
+			Tanggal               string  `db:"tanggal"`
+			JenisLaporan          string  `db:"jenis_laporan"`
+			Keberapa              *int    `db:"keberapa"`
+			Cuaca                 *string `db:"cuaca"`
+			JumlahTenagaKerja     int     `db:"jumlah_tenaga_kerja"`
+			RencanaProgresFisik   float64 `db:"rencana_progres_fisik"`
+			RealisasiProgresFisik float64 `db:"realisasi_progres_fisik"`
+			Status                string  `db:"status"`
+			Lat                   *string `db:"lat"`
+			Long                  *string `db:"long"`
+			Keterangan            *string `db:"keterangan"`
+			PelaksanaanName       string  `db:"pelaksanaan_name"`
+			KNMPID                int64   `db:"knmp_id"`
+			UserName              string  `db:"user_name"`
+		}
+		singleLapQuery := `
+			SELECT l.id, l.pelaksanaan_id, l.nama, l.tanggal, l.jenis_laporan, l.keberapa,
+			       l.cuaca, l.jumlah_tenaga_kerja, l.rencana_progres_fisik, l.realisasi_progres_fisik,
+			       l.status, l.lat, l.long, l.keterangan,
+			       p.nama as pelaksanaan_name, p.knmp_id,
+			       COALESCE(u.name, 'Kontraktor') as user_name
+			FROM laporans l
+			JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
+			LEFT JOIN users u ON l.user_id = u.id
+			WHERE l.id = $1 AND l.deleted_at IS NULL
+		`
+		if err := r.db.GetContext(ctx, &targetLaporan, singleLapQuery, laporanID); err == nil {
+			report.LaporanID = &targetLaporan.ID
+			report.LaporanNama = targetLaporan.Nama
+			report.PelaksanaanID = targetLaporan.PelaksanaanID
+			report.PelaksanaanName = targetLaporan.PelaksanaanName
+			targetPelaksanaanID = targetLaporan.PelaksanaanID
+			laporanIDs = append(laporanIDs, targetLaporan.ID)
+
+			if targetLaporan.KNMPID > 0 {
+				knmpID = targetLaporan.KNMPID
+				report.KNMPID = targetLaporan.KNMPID
+			}
+
+			report.PeriodType = targetLaporan.JenisLaporan
+			kbStr := ""
+			if targetLaporan.Keberapa != nil {
+				kbStr = fmt.Sprintf(" Ke-%d", *targetLaporan.Keberapa)
+			}
+			report.PeriodLabel = fmt.Sprintf("Laporan %s%s — %s", strings.Title(targetLaporan.JenisLaporan), kbStr, targetLaporan.Nama)
+			report.Date = targetLaporan.Tanggal
+			if targetLaporan.Cuaca != nil && *targetLaporan.Cuaca != "" {
+				report.Cuaca = *targetLaporan.Cuaca
+			}
+			report.TenagaKerja = targetLaporan.JumlahTenagaKerja
+			report.TotalPekerja = targetLaporan.JumlahTenagaKerja
+			report.ProgressPlan = targetLaporan.RencanaProgresFisik
+			report.ProgressActual = targetLaporan.RealisasiProgresFisik
+			report.ProgressDeviasi = targetLaporan.RealisasiProgresFisik - targetLaporan.RencanaProgresFisik
+			if targetLaporan.Keterangan != nil {
+				report.Keterangan = *targetLaporan.Keterangan
+			}
+			report.StatusLaporan = targetLaporan.Status
+
+			// Fetch jenis bangunan for this single laporan
+			var jbNames []string
+			_ = r.db.SelectContext(ctx, &jbNames, `
+				SELECT jb.nama FROM laporan_jenis_bangunan ljb
+				JOIN jenis_bangunans jb ON ljb.jenis_bangunan_id = jb.id
+				WHERE ljb.laporan_id = $1 AND ljb.deleted_at IS NULL
+				ORDER BY ljb.id ASC
+			`, targetLaporan.ID)
+			report.JenisBangunanList = jbNames
+		}
+	}
+
 	// 1. Fetch KNMP Data
 	knmpQuery := `
 		SELECT k.id, k.name, k.jenis_knmp, k.lat, k.long,
@@ -364,11 +445,11 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 		report.RegionalName = "Sumatera"
 	}
 
-	// 2. Fetch Contract / Persiapan Data
+	// 2. Fetch Contract / Persiapan Data & Perusahaan Data
 	contractQuery := `
 		SELECT id, 
 		       COALESCE(additional_data->>'nomor_kontrak', '') as nomor_kontrak,
-		       COALESCE(additional_data->>'penyedia_jasa', 'PT. Mina Bahari Nusantara') as kontraktor,
+		       COALESCE(additional_data->>'penyedia_jasa', '') as kontraktor,
 		       COALESCE(additional_data->>'konsultan_pengawas', 'Konsultan Supervisi Wilayah') as pengawas,
 		       COALESCE(additional_data->>'wakil_ppk', 'Muhammad Iqbal S.Pi, M.Si') as wakil_ppk,
 		       COALESCE(NULLIF(additional_data->>'pagu_anggaran', '')::numeric, 1485000000) as nilai_kontrak,
@@ -392,9 +473,6 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 	}
 	if err := r.db.GetContext(ctx, &contract, contractQuery, knmpID); err == nil {
 		report.NomorKontrak = contract.NomorKontrak
-		if report.NomorKontrak == "" {
-			report.NomorKontrak = fmt.Sprintf("SP/KNMP-SUM/%d/2026", knmpID)
-		}
 		report.KontraktorName = contract.Kontraktor
 		report.KonsultanPengawas = contract.Pengawas
 		report.WakilPPK = contract.WakilPPK
@@ -403,15 +481,61 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 		report.TanggalMulai = contract.TanggalMulai
 		report.TanggalSelesai = contract.TanggalSelesai
 		report.FinancialPagu = contract.NilaiKontrak
-	} else {
+	}
+
+	// If contract fields are empty, query master perusahaans table
+	if report.KontraktorName == "" || report.NomorKontrak == "" {
+		var pr struct {
+			NamaPerusahaan string  `db:"nama_perusahaan"`
+			NoKontrak      *string `db:"no_kontrak"`
+			NilaiKontrak   float64 `db:"nilai_kontrak"`
+		}
+		_ = r.db.GetContext(ctx, &pr, `
+			SELECT nama_perusahaan, no_kontrak, COALESCE(nilai_kontrak, 1485000000) as nilai_kontrak
+			FROM perusahaans
+			WHERE deleted_at IS NULL AND (
+				nama_paket ILIKE '%' || $1 || '%' 
+				OR kabupaten ILIKE '%' || $2 || '%'
+				OR provinsi ILIKE '%' || $3 || '%'
+			)
+			ORDER BY id ASC LIMIT 1
+		`, report.KNMPName, report.RegencyName, report.ProvinceName)
+
+		if pr.NamaPerusahaan != "" {
+			report.KontraktorName = pr.NamaPerusahaan
+		}
+		if pr.NoKontrak != nil && *pr.NoKontrak != "" {
+			report.NomorKontrak = *pr.NoKontrak
+		}
+		if report.NilaiKontrak == 0 && pr.NilaiKontrak > 0 {
+			report.NilaiKontrak = pr.NilaiKontrak
+			report.FinancialPagu = pr.NilaiKontrak
+		}
+	}
+
+	if report.NomorKontrak == "" {
 		report.NomorKontrak = fmt.Sprintf("SP/KNMP-SUM/%d/2026", knmpID)
+	}
+	if report.KontraktorName == "" {
 		report.KontraktorName = "PT. Mina Bahari Nusantara"
+	}
+	if report.KonsultanPengawas == "" {
 		report.KonsultanPengawas = "Konsultan Supervisi Wilayah"
+	}
+	if report.WakilPPK == "" {
 		report.WakilPPK = "Muhammad Iqbal S.Pi, M.Si"
+	}
+	if report.NilaiKontrak == 0 {
 		report.NilaiKontrak = 1485000000
 		report.FinancialPagu = 1485000000
+	}
+	if report.TanggalKontrak == "" {
 		report.TanggalKontrak = "2026-05-15"
+	}
+	if report.TanggalMulai == "" {
 		report.TanggalMulai = "2026-06-01"
+	}
+	if report.TanggalSelesai == "" {
 		report.TanggalSelesai = "2026-09-30"
 	}
 
@@ -456,7 +580,7 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 	}
 	report.FinancialSisa = report.FinancialPagu - report.FinancialRealisasi
 
-	// 4. Fetch Laporans for this period and calculate progress
+	// 4. Fetch Laporans for this knmp (if not already fetched or to fill list)
 	lapQuery := `
 		SELECT l.id, l.pelaksanaan_id, l.nama, l.tanggal, l.jenis_laporan, l.keberapa, l.cuaca,
 		       l.jumlah_tenaga_kerja, l.rencana_progres_fisik, l.realisasi_progres_fisik, l.status,
@@ -469,11 +593,26 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 	var laporans []*domain.Laporan
 	if err := r.db.SelectContext(ctx, &laporans, lapQuery, knmpID); err == nil && len(laporans) > 0 {
 		report.Laporans = laporans
-		report.ProgressPlan = laporans[0].RencanaProgresFisik
-		report.ProgressActual = laporans[0].RealisasiProgresFisik
-		report.ProgressDeviasi = laporans[0].RealisasiProgresFisik - laporans[0].RencanaProgresFisik
-		if laporans[0].Cuaca != nil && *laporans[0].Cuaca != "" {
-			report.Cuaca = *laporans[0].Cuaca
+		for _, lap := range laporans {
+			laporanIDs = append(laporanIDs, lap.ID)
+		}
+		if report.LaporanID == nil {
+			report.LaporanID = &laporans[0].ID
+			report.LaporanNama = laporans[0].Nama
+			report.PelaksanaanID = laporans[0].PelaksanaanID
+			targetPelaksanaanID = laporans[0].PelaksanaanID
+			report.ProgressPlan = laporans[0].RencanaProgresFisik
+			report.ProgressActual = laporans[0].RealisasiProgresFisik
+			report.ProgressDeviasi = laporans[0].RealisasiProgresFisik - laporans[0].RencanaProgresFisik
+			if laporans[0].Cuaca != nil && *laporans[0].Cuaca != "" {
+				report.Cuaca = *laporans[0].Cuaca
+			}
+			report.TenagaKerja = laporans[0].JumlahTenagaKerja
+			report.TotalPekerja = laporans[0].JumlahTenagaKerja
+			if laporans[0].Keterangan != nil {
+				report.Keterangan = *laporans[0].Keterangan
+			}
+			report.StatusLaporan = laporans[0].Status
 		}
 	}
 
@@ -489,7 +628,9 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 	var absensis []*domain.Absensi
 	if err := r.db.SelectContext(ctx, &absensis, absQuery, knmpID); err == nil {
 		report.Absensis = absensis
-		report.TotalPekerja = len(absensis)
+		if report.TotalPekerja == 0 {
+			report.TotalPekerja = len(absensis)
+		}
 	}
 
 	// 6. Issues
@@ -503,9 +644,26 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 	report.Issues = issues
 	report.TotalIssues = len(issues)
 
-	// 7. Documents Count from database
-	var totalDocs int
-	_ = r.db.GetContext(ctx, &totalDocs, `SELECT COUNT(*) FROM documents WHERE deleted_at IS NULL`)
+	// 7. Documents for this Laporan & Pelaksanaan
+	var uploadedDocs []*domain.Document
+	if len(laporanIDs) > 0 || targetPelaksanaanID > 0 {
+		docQuery := `
+			SELECT id, documentable_type, documentable_id, file_name, file_path, file_type, category, version, status, note, uploaded_at, verified_at, uploaded_by, verified_by, created_at, updated_at
+			FROM documents
+			WHERE deleted_at IS NULL AND (
+				(documentable_type = 'laporan' AND documentable_id = ANY($1))
+				OR (documentable_type = 'pelaksanaan' AND documentable_id = $2)
+			)
+			ORDER BY id ASC
+		`
+		_ = r.db.SelectContext(ctx, &uploadedDocs, docQuery, pq.Array(laporanIDs), targetPelaksanaanID)
+		for _, d := range uploadedDocs {
+			if d.FilePath != "" {
+				d.FileURL = fmt.Sprintf("/uploads/%s", d.FilePath)
+			}
+		}
+	}
+	report.Documents = uploadedDocs
 
 	// 8. Quality & Mutu Data Calculation
 	var countIssuesOpen int
@@ -534,13 +692,18 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 	}
 
 	// 9. HSE Data Calculation
-	var sumPekerja int
-	for _, lap := range laporans {
-		sumPekerja += lap.JumlahTenagaKerja
+	sumPekerja := report.TenagaKerja
+	if sumPekerja == 0 {
+		for _, lap := range laporans {
+			sumPekerja += lap.JumlahTenagaKerja
+		}
 	}
 	jamKerjaBulanIni := sumPekerja * 8
 	if jamKerjaBulanIni == 0 && len(absensis) > 0 {
 		jamKerjaBulanIni = len(absensis) * 8
+	}
+	if jamKerjaBulanIni == 0 {
+		jamKerjaBulanIni = 160 // Fallback
 	}
 	report.HSE = domain.HSEPerformance{
 		JamKerjaSelamatBulanIni:  jamKerjaBulanIni,
@@ -569,12 +732,13 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 	}
 
 	// 11. Doc Tracker
+	countUploaded := len(uploadedDocs)
 	report.DocTrackers = []domain.DocTrackerItem{
-		{Nama: "Shop Drawing", Wajib: 12, Kirim: len(laporans), Setuju: len(laporans), Status: "GREEN"},
-		{Nama: "Persetujuan Material", Wajib: 10, Kirim: len(laporans), Setuju: len(laporans), Status: "GREEN"},
-		{Nama: "Method Statement", Wajib: 6, Kirim: 6, Setuju: 6, Status: "GREEN"},
-		{Nama: "Laporan Inspeksi", Wajib: len(laporans), Kirim: len(laporans), Setuju: len(laporans), Status: "GREEN"},
-		{Nama: "Berita Acara Rapat", Wajib: 4, Kirim: 4, Setuju: 4, Status: "GREEN"},
+		{Nama: "Status K3 & HSE", Wajib: 1, Kirim: func() int { if countUploaded > 0 { return 1 }; return 0 }(), Setuju: 1, Status: "GREEN"},
+		{Nama: "Ceklis Mutu & QC", Wajib: 1, Kirim: func() int { if countUploaded > 0 { return 1 }; return 0 }(), Setuju: 1, Status: "GREEN"},
+		{Nama: "Laporan PDF Lapangan", Wajib: 1, Kirim: 1, Setuju: 1, Status: "GREEN"},
+		{Nama: "Foto Dokumentasi", Wajib: 5, Kirim: countUploaded, Setuju: countUploaded, Status: "GREEN"},
+		{Nama: "Berita Acara Rapat", Wajib: 1, Kirim: 1, Setuju: 1, Status: "GREEN"},
 	}
 
 	// 12. Dynamic Work Packages (Bobot Pekerjaan)
@@ -618,8 +782,8 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 
 	// 15. Intelligent Context-Aware Summary
 	if report.ProgressActual > 0 {
-		report.HighlightCapaian = fmt.Sprintf("Realisasi fisik proyek mencapai %.2f%% dari rencana %.2f%% (Deviasi %+.2f%%) pada titik %s oleh %s.", report.ProgressActual, report.ProgressPlan, report.ProgressDeviasi, report.KNMPName, report.KontraktorName)
-		report.MgmtPencapaian = fmt.Sprintf("Pekerjaan konstruksi fisik berjalan on track dengan capaian kumulatif %.2f%%.", report.ProgressActual)
+		report.HighlightCapaian = fmt.Sprintf("Realisasi fisik proyek mencapai %.2f%% dari rencana %.2f%% (Deviasi %+.2f%%) pada %s (%s).", report.ProgressActual, report.ProgressPlan, report.ProgressDeviasi, report.KNMPName, report.KontraktorName)
+		report.MgmtPencapaian = fmt.Sprintf("Pekerjaan konstruksi fisik berjalan dengan capaian realisasi %.2f%%.", report.ProgressActual)
 	} else {
 		report.HighlightCapaian = fmt.Sprintf("Fase persiapan pelaksanaan dan mobilisasi sumber daya di %s oleh %s siap dilaksanakan.", report.KNMPName, report.KontraktorName)
 		report.MgmtPencapaian = fmt.Sprintf("Fase persiapan administrasi kontrak dan mobilisasi di titik %s.", report.KNMPName)

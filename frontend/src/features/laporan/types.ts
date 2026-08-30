@@ -174,6 +174,15 @@ export interface MonthlyProjectReportData {
     recorded_at: string;
     status: string;
   }>;
+  laporan_id?: number;
+  laporan_nama?: string;
+  pelaksanaan_id?: number;
+  pelaksanaan_name?: string;
+  jenis_bangunan_list?: string[];
+  tenaga_kerja?: number;
+  keterangan?: string;
+  status_laporan?: string;
+  documents?: DocumentItem[];
 }
 
 export interface WorkPackageItem {

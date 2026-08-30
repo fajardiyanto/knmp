@@ -97,6 +97,7 @@ type LaporanFilter struct {
 
 type ProjectReportFilter struct {
 	KNMPID     int64
+	LaporanID  int64
 	PeriodType string // "harian", "mingguan", "bulanan", "custom"
 	Date       string // "YYYY-MM-DD"
 	Week       int

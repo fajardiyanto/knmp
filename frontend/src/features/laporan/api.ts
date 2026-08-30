@@ -57,6 +57,7 @@ export function deleteLaporan(id: number): Promise<{ message: string }> {
 export function fetchMonthlyProjectReport(
   knmpId: number,
   params?: {
+    laporan_id?: number;
     period_type?: string;
     date?: string;
     week?: number;
@@ -67,7 +68,10 @@ export function fetchMonthlyProjectReport(
   }
 ) {
   const query = new URLSearchParams();
-  query.append("knmp_id", knmpId.toString());
+  if (knmpId > 0) {
+    query.append("knmp_id", knmpId.toString());
+  }
+  if (params?.laporan_id) query.append("laporan_id", params.laporan_id.toString());
   if (params?.period_type) query.append("period_type", params.period_type);
   if (params?.date) query.append("date", params.date);
   if (params?.week) query.append("week", params.week.toString());

@@ -31,8 +31,11 @@ export interface DocumentItem {
   file_name: string;
   file_path: string;
   file_type?: string;
+  mime_type?: string;
   category: string;
   status: "pending" | "verified" | "rejected";
   note?: string;
   file_url: string;
+  uploaded_at?: string;
+  created_at?: string;
 }

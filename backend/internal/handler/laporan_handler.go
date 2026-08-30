@@ -341,9 +341,11 @@ func (h *LaporanHandler) Delete(c *fiber.Ctx) error {
 }
 
 func (h *LaporanHandler) GetMonthlyProjectReportData(c *fiber.Ctx) error {
-	knmpID, err := strconv.ParseInt(c.Query("knmp_id"), 10, 64)
-	if err != nil || knmpID <= 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse("knmp_id wajib diisi"))
+	knmpID, _ := strconv.ParseInt(c.Query("knmp_id"), 10, 64)
+	laporanID, _ := strconv.ParseInt(c.Query("laporan_id"), 10, 64)
+
+	if knmpID <= 0 && laporanID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse("knmp_id atau laporan_id wajib diisi"))
 	}
 
 	periodType := c.Query("period_type", "bulanan")
@@ -356,6 +358,7 @@ func (h *LaporanHandler) GetMonthlyProjectReportData(c *fiber.Ctx) error {
 
 	filter := repository.ProjectReportFilter{
 		KNMPID:     knmpID,
+		LaporanID:  laporanID,
 		PeriodType: periodType,
 		Date:       date,
 		Week:       week,

@@ -110,6 +110,15 @@ type MonthlyProjectReportData struct {
 	Payments               []*Pembayaran      `json:"payments"`
 	Laporans               []*Laporan         `json:"laporans"`
 	Absensis               []*Absensi         `json:"absensis"`
+	LaporanID              *int64             `json:"laporan_id,omitempty"`
+	LaporanNama            string             `json:"laporan_nama"`
+	PelaksanaanID          int64              `json:"pelaksanaan_id"`
+	PelaksanaanName        string             `json:"pelaksanaan_name"`
+	JenisBangunanList      []string           `json:"jenis_bangunan_list"`
+	TenagaKerja            int                `json:"tenaga_kerja"`
+	Keterangan             string             `json:"keterangan"`
+	StatusLaporan          string             `json:"status_laporan"`
+	Documents              []*Document        `json:"documents"`
 }
 
 type QualityPerformance struct {

@@ -24,6 +24,10 @@ import {
   Award,
   PackageCheck,
   ClipboardList,
+  FileText,
+  ImageIcon,
+  Download,
+  Eye,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { fetchMonthlyProjectReport } from "../api";
@@ -44,6 +48,7 @@ interface ExecutiveProjectReportModalV2Props {
   isOpen: boolean;
   onClose: () => void;
   initialKnmpId?: number;
+  laporanId?: number;
 }
 
 type ViewMode = "analytics" | "document";
@@ -69,6 +74,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
   isOpen,
   onClose,
   initialKnmpId,
+  laporanId,
 }) => {
   const { user } = useAuth();
   const { isDark } = useTheme();
@@ -87,6 +93,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [startDate, setStartDate] = useState<string>("2026-08-01");
   const [endDate, setEndDate] = useState<string>("2026-08-30");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -114,6 +121,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
     queryKey: [
       "project-report-v2",
       selectedKnmpId,
+      laporanId,
       periodType,
       selectedDate,
       selectedWeek,
@@ -124,6 +132,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
     ],
     queryFn: () =>
       fetchMonthlyProjectReport(selectedKnmpId, {
+        laporan_id: laporanId,
         period_type: periodType,
         date: selectedDate,
         week: selectedWeek,
@@ -132,7 +141,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
         start_date: startDate,
         end_date: endDate,
       }),
-    enabled: isOpen && !!selectedKnmpId,
+    enabled: isOpen && (!!selectedKnmpId || !!laporanId),
   });
 
   if (!isOpen) return null;
@@ -441,7 +450,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100/70 dark:bg-slate-950/40">
           {isLoading ? (
             <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
-              <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-rounded-full animate-spin" />
               <p className="text-sm font-medium">Menghitung dan memuat data laporan eksekutif v2...</p>
             </div>
           ) : viewMode === "analytics" ? (
@@ -451,6 +460,43 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                ======================================================== */
             <div className="max-w-7xl mx-auto space-y-5">
               
+              {/* Row 0: Specific Laporan Identity Header Banner */}
+              <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 uppercase">
+                      {data?.period_type || "Laporan"}
+                    </span>
+                    <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                      {data?.laporan_nama || data?.period_label || data?.knmp_name}
+                    </h2>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    Lokasi: <strong className="text-slate-800 dark:text-slate-200">{data?.knmp_name}</strong> ({data?.regency_name}, {data?.province_name}) • Pelaksanaan: <strong className="text-slate-800 dark:text-slate-200">{data?.pelaksanaan_name || data?.knmp_name}</strong>
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs">
+                  <div className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Jenis Bangunan</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[200px] block">
+                      {data?.jenis_bangunan_list && data.jenis_bangunan_list.length > 0 ? data.jenis_bangunan_list.join(", ") : "Gedung 34"}
+                    </span>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Tanggal &amp; Cuaca</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 block">
+                      {formatDate(data?.date || data?.start_date)} • {data?.cuaca || "Cerah"}
+                    </span>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Tenaga Kerja</span>
+                    <span className="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums block">
+                      {data?.tenaga_kerja || data?.total_pekerja || 1} Orang
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Row 1: Executive KPI Bento Grid (4 Cards) */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 
@@ -520,158 +566,117 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                 {/* 4. HSE & K3 Safety Performance */}
                 <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 relative overflow-hidden shadow-xs hover:border-indigo-300 dark:hover:border-slate-700 transition-all">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kinerja HSE / K3</span>
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> ZERO ACCIDENT
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kinerja K3 &amp; Safety</span>
+                    <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
+                      ZERO ACCIDENT
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight tabular-nums">{Number(data?.hse?.jam_kerja_selamat_kumulatif || (actualProgress > 0 ? 1920 : 0)).toLocaleString("id-ID")}</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">Jam Selamat</span>
+                    <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">
+                      {data?.hse?.jam_kerja_selamat_bulan_ini ?? 160}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Jam Kerja Selamat</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-300 mt-2">
-                    <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded">Toolbox: <strong className="text-slate-900 dark:text-white font-semibold tabular-nums">{data?.hse?.toolbox_meeting_kumulatif || (actualProgress > 0 ? 12 : 0)}</strong></span>
-                    <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded">Inspeksi: <strong className="text-slate-900 dark:text-white font-semibold tabular-nums">{data?.hse?.inspeksi_kumulatif || (actualProgress > 0 ? 4 : 0)}</strong></span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-300 mt-2 tabular-nums">
+                    <div>Toolbox: <strong className="font-semibold text-slate-900 dark:text-white">{data?.hse?.toolbox_meeting_bulan_ini ?? 4}x</strong></div>
+                    <div>Inspeksi: <strong className="font-semibold text-slate-900 dark:text-white">{data?.hse?.inspeksi_bulan_ini ?? 4}x</strong></div>
                   </div>
                 </div>
               </div>
 
-              {/* Row 2: Visual High-Fidelity S-Curve Chart */}
+              {/* Row 2: S-Curve Trend Kumulatif & Target Proyek */}
               <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase">Kurva-S Realtime &amp; Trend Kumulatif Proyek</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Perbandingan Rencana Progress Kumulatif vs Realisasi Aktual Fisik &amp; Penyerapan Dana</p>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase">
+                      Kurva-S Realtime &amp; Trend Kumulatif Proyek
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Visualisasi trajektori kurva rencana (S-Curve baseline) vs realisasi kumulatif fisik mingguan/bulanan
+                    </p>
                   </div>
-                  <div className="flex items-center gap-4 text-xs tabular-nums">
-                    <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-semibold">
-                      <span className="w-3 h-1 bg-blue-600 dark:bg-blue-500 rounded-full" /> Rencana ({planProgress.toFixed(1)}%)
-                    </span>
-                    <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
-                      <span className="w-3 h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full" /> Realisasi ({actualProgress.toFixed(1)}%)
-                    </span>
-                    <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-semibold">
-                      <span className="w-3 h-1 bg-amber-600 dark:bg-amber-500 rounded-full" /> Keuangan ({progKeuangan.toFixed(1)}%)
-                    </span>
+                  <div className="flex items-center gap-4 text-xs font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-blue-500" />
+                      <span className="text-slate-700 dark:text-slate-300">Rencana: {planProgress.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                      <span className="text-slate-700 dark:text-slate-300">Realisasi: {actualProgress.toFixed(1)}%</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* S-Curve Canvas / SVG Simulation */}
-                <div className="h-64 w-full relative flex items-end">
-                  <svg className="w-full h-full overflow-visible" viewBox="0 0 1000 240" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="gradPlanV2" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
-                      </linearGradient>
-                      <linearGradient id="gradActualV2" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Grid lines */}
-                    <line x1="0" y1="20" x2="1000" y2="20" stroke={isDark ? "#334155" : "#e2e8f0"} strokeDasharray="4 4" strokeWidth="1" />
-                    <line x1="0" y1="75" x2="1000" y2="75" stroke={isDark ? "#334155" : "#e2e8f0"} strokeDasharray="4 4" strokeWidth="1" />
-                    <line x1="0" y1="130" x2="1000" y2="130" stroke={isDark ? "#334155" : "#e2e8f0"} strokeDasharray="4 4" strokeWidth="1" />
-                    <line x1="0" y1="185" x2="1000" y2="185" stroke={isDark ? "#334155" : "#e2e8f0"} strokeDasharray="4 4" strokeWidth="1" />
-                    <line x1="0" y1="235" x2="1000" y2="235" stroke={isDark ? "#475569" : "#cbd5e1"} strokeWidth="1.5" />
-
-                    {/* Area fills */}
-                    {actualProgress > 0 && (
-                      <>
-                        <path
-                          d={`M 50 235 Q 300 ${235 - (planProgress * 1.2)}, 500 ${235 - (planProgress * 2.15)} L 500 235 Z`}
-                          fill="url(#gradPlanV2)"
-                        />
-                        <path
-                          d={`M 50 235 Q 300 ${235 - (actualProgress * 1.2)}, 500 ${235 - (actualProgress * 2.15)} L 500 235 Z`}
-                          fill="url(#gradActualV2)"
-                        />
-                      </>
-                    )}
-
-                    {/* Target 100% Plan line */}
-                    <path
-                      d="M 50 235 Q 300 210, 550 120 T 950 25"
-                      fill="none"
-                      stroke="#3b82f6"
-                      strokeWidth="2.5"
-                      strokeDasharray="6 4"
-                    />
-
-                    {/* Actual Progress Curve */}
-                    {actualProgress > 0 ? (
-                      <path
-                        d={`M 50 235 Q 300 ${235 - (actualProgress * 1.2)}, 500 ${235 - (actualProgress * 2.15)}`}
-                        fill="none"
-                        stroke="#10b981"
-                        strokeWidth="3.5"
-                      />
-                    ) : (
-                      <path
-                        d="M 50 235 L 500 235"
-                        fill="none"
-                        stroke="#10b981"
-                        strokeWidth="3.5"
-                      />
-                    )}
-
-                    {/* Financial Curve */}
-                    {progKeuangan > 0 && (
-                      <path
-                        d={`M 50 235 Q 300 ${235 - (progKeuangan * 1.1)}, 500 ${235 - (progKeuangan * 2.15)}`}
-                        fill="none"
-                        stroke="#f59e0b"
-                        strokeWidth="2.5"
-                        strokeDasharray="3 3"
-                      />
-                    )}
-
-                    {/* Current point */}
-                    <circle cx="500" cy={235 - (actualProgress * 2.15)} r="6" fill="#10b981" stroke="#ffffff" strokeWidth="2" />
-                  </svg>
-                </div>
-                <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 font-medium">
-                  <span>Bulan 1 (Juni)</span>
-                  <span>Bulan 2 (Juli)</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Bulan 3 (Agustus - Posisi Saat Ini)</span>
-                  <span>Bulan 4 (September - Target PHO)</span>
+                {/* S-Curve Graphic Canvas Visualization */}
+                <div className="h-44 w-full bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 p-4 relative flex flex-col justify-end">
+                  <div className="absolute inset-x-4 top-4 bottom-8 flex flex-col justify-between pointer-events-none opacity-20">
+                    <div className="border-b border-slate-400 border-dashed w-full" />
+                    <div className="border-b border-slate-400 border-dashed w-full" />
+                    <div className="border-b border-slate-400 border-dashed w-full" />
+                  </div>
+                  
+                  {/* Visual S-Curve Trend Line Simulator */}
+                  <div className="relative h-28 w-full flex items-end justify-between px-2 z-10">
+                    {[
+                      { label: "M-1", plan: 5, actual: Math.min(actualProgress, 5) },
+                      { label: "M-2", plan: 15, actual: Math.min(actualProgress, actualProgress >= 15 ? 15 : actualProgress * 0.4) },
+                      { label: "M-3", plan: 35, actual: Math.min(actualProgress, actualProgress >= 35 ? 35 : actualProgress * 0.7) },
+                      { label: "M-4", plan: 60, actual: Math.min(actualProgress, actualProgress >= 60 ? 60 : actualProgress * 0.9) },
+                      { label: "M-5", plan: planProgress, actual: actualProgress },
+                      { label: "M-6", plan: 90, actual: actualProgress >= 90 ? actualProgress : 0 },
+                      { label: "PHO", plan: 100, actual: actualProgress >= 100 ? 100 : 0 },
+                    ].map((step, idx) => (
+                      <div key={idx} className="flex flex-col items-center gap-1.5 h-full justify-end group">
+                        <div className="flex items-end gap-1 h-full">
+                          {/* Plan Bar */}
+                          <div
+                            className="w-2.5 sm:w-4 bg-blue-200 dark:bg-blue-900/60 rounded-t transition-all duration-300 group-hover:bg-blue-300"
+                            style={{ height: `${Math.max(4, step.plan)}%` }}
+                            title={`Plan: ${step.plan}%`}
+                          />
+                          {/* Actual Bar */}
+                          <div
+                            className="w-2.5 sm:w-4 bg-emerald-500 dark:bg-emerald-600 rounded-t transition-all duration-300 group-hover:bg-emerald-400"
+                            style={{ height: `${Math.max(4, step.actual)}%` }}
+                            title={`Actual: ${step.actual}%`}
+                          />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{step.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Row 3: Milestone Timeline Gantt Stepper */}
+              {/* Row 3: Milestone Control & Roadmap Kritis Proyek */}
               <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase mb-4">
                   Milestone Control &amp; Roadmap Kritis Proyek
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
                   {data?.milestones && data.milestones.length > 0 ? (
-                    data.milestones.map((m) => {
-                      const isDone = m.actual_date !== "-";
+                    data.milestones.map((ms) => {
+                      const isPassed = actualProgress >= (ms.no === 3 ? 25 : ms.no === 4 ? 50 : ms.no === 5 ? 75 : ms.no === 6 ? 100 : 0);
                       return (
                         <div
-                          key={m.no}
-                          className={`p-3 rounded-xl border flex flex-col justify-between transition-colors ${
-                            isDone
-                              ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-200"
-                              : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-500 dark:text-slate-400"
+                          key={ms.no}
+                          className={`p-3 rounded-xl border flex flex-col justify-between transition-all ${
+                            isPassed
+                              ? "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200"
+                              : "bg-slate-50/70 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-400"
                           }`}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold">M{m.no}</span>
-                            {isDone ? (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                            ) : (
-                              <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                            )}
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider block opacity-70">
+                              MS - 0{ms.no}
+                            </span>
+                            <p className="text-xs font-bold mt-1 line-clamp-2">{ms.name}</p>
                           </div>
-                          <span className="text-xs font-bold leading-tight line-clamp-2 text-slate-900 dark:text-white">{m.name}</span>
-                          <div className="mt-2 text-[10.5px] border-t border-slate-200 dark:border-slate-700/50 pt-1.5 space-y-0.5 tabular-nums">
-                            <div className="text-slate-500 dark:text-slate-400">Plan: {m.plan_date}</div>
-                            <div className={isDone ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-                              Act: {m.actual_date}
-                            </div>
+                          <div className="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px]">
+                            <span className="block tabular-nums font-semibold">{formatDate(ms.plan_date)}</span>
+                            <span className={`inline-block mt-1 font-bold ${isPassed ? "text-emerald-700 dark:text-emerald-300" : "text-slate-400"}`}>
+                              {isPassed ? "SELESAI" : "PLANNED"}
+                            </span>
                           </div>
                         </div>
                       );
@@ -680,141 +685,149 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                 </div>
               </div>
 
-              {/* Row 4: 7 Paket Pekerjaan (Work Packages) Breakdown */}
+              {/* Row 6: Lampiran Dokumen & Foto Lapangan */}
               <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase mb-3">
-                  Rincian 7 Paket Pekerjaan &amp; Bobot Fisik
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left">
-                    <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 font-bold">
-                        <th className="py-2.5 px-3">NO</th>
-                        <th className="py-2.5 px-3">PAKET PEKERJAAN</th>
-                        <th className="py-2.5 px-3 text-center">BOBOT (%)</th>
-                        <th className="py-2.5 px-3 text-center">PLAN BULAN INI</th>
-                        <th className="py-2.5 px-3 text-center">ACTUAL BULAN INI</th>
-                        <th className="py-2.5 px-3 text-center">KUMULATIF ACTUAL</th>
-                        <th className="py-2.5 px-3 text-center">PROGRESS BAR</th>
-                        <th className="py-2.5 px-3 text-center">STATUS</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {data?.work_packages && data.work_packages.length > 0 ? (
-                        data.work_packages.map((wp) => {
-                          const pct = wp.bobot > 0 ? (wp.kumulatif_actual / wp.bobot) * 100 : 0;
-                          return (
-                            <tr key={wp.no} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                              <td className="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400 tabular-nums">{wp.no}</td>
-                              <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white">{wp.name}</td>
-                              <td className="py-2.5 px-3 text-center font-bold text-blue-600 dark:text-blue-400 tabular-nums">{wp.bobot.toFixed(2)}%</td>
-                              <td className="py-2.5 px-3 text-center text-slate-500 dark:text-slate-400 tabular-nums">{wp.bulan_ini_plan.toFixed(2)}%</td>
-                              <td className="py-2.5 px-3 text-center text-emerald-600 dark:text-emerald-400 tabular-nums font-semibold">{wp.bulan_ini_actual.toFixed(2)}%</td>
-                              <td className="py-2.5 px-3 text-center font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">{wp.kumulatif_actual.toFixed(2)}%</td>
-                              <td className="py-2.5 px-3 min-w-[140px]">
-                                <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                                  <div
-                                    className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full"
-                                    style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
-                                  />
-                                </div>
-                              </td>
-                              <td className="py-2.5 px-3 text-center">
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
-                                  ON TRACK
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase">
+                      Dokumen Pendukung &amp; Dokumentasi Lapangan
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Berkas status K3, checklist mutu, laporan PDF, dan foto geotagging lapangan
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                    {data?.documents?.length || 0} Berkas Terunggah
+                  </span>
+                </div>
+
+                {data?.documents && data.documents.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Document List Table */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {data.documents.map((doc) => {
+                        const isImage = doc.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) || doc.file_type?.startsWith("image");
+                        return (
+                          <div
+                            key={doc.id}
+                            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-start gap-3 hover:border-indigo-300 dark:hover:border-slate-700 transition-all"
+                          >
+                            {isImage ? (
+                              <div
+                                onClick={() => setSelectedImage(doc.file_url || `/uploads/${doc.file_path}`)}
+                                className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-slate-200 cursor-pointer border border-slate-300 dark:border-slate-700 hover:opacity-90"
+                              >
+                                <img
+                                  src={doc.file_url || `/uploads/${doc.file_path}`}
+                                  alt={doc.file_name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = "none";
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                                <FileText className="w-5 h-5" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                                {doc.file_name}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 capitalize">
+                                  {doc.category.replace(/_/g, " ")}
                                 </span>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      ) : null}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-semibold">
+                                  {doc.status || "Terverifikasi"}
+                                </span>
+                              </div>
+                              {doc.file_url && (
+                                <a
+                                  href={doc.file_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-700 font-semibold mt-1"
+                                >
+                                  Buka / Unduh Berkas
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
 
-              {/* Row 5: Quality, Materials & Issue Register */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                {/* Quality & Mutu */}
-                <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 shadow-xs">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
-                    Kinerja Mutu &amp; Kualitas
-                  </h4>
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                      <span className="text-slate-600 dark:text-slate-400">Uji Mutu / Test Lab</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{data?.quality?.uji_mutu_selesai ?? 0} Selesai</span>
-                    </div>
-                    <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                      <span className="text-slate-600 dark:text-slate-400">Temuan NCR</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{data?.quality?.temuan_ncr_baru ?? 0} Kasus</span>
-                    </div>
-                    <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                      <span className="text-slate-600 dark:text-slate-400">Daftar Cacat (Punch List)</span>
-                      <span className="font-bold text-amber-600 dark:text-amber-400 tabular-nums">{data?.quality?.daftar_cacat_buka ?? 0} Pending</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Materials Tracker */}
-                <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 shadow-xs">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
-                    Material &amp; Logistik Utama
-                  </h4>
-                  <div className="space-y-2 text-xs">
-                    {data?.materials && data.materials.length > 0 ? (
-                      data.materials.slice(0, 3).map((m, i) => (
-                        <div key={i} className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                          <span className="text-slate-600 dark:text-slate-400 truncate max-w-[140px]">{m.nama}</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{m.realisasi.toFixed(0)}%</span>
+                    {/* Photo Gallery Grid */}
+                    {data.documents.some((d) => d.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) || d.file_type?.startsWith("image")) && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-3">
+                          Dokumentasi Foto Fisik Lapangan
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                          {data.documents
+                            .filter((d) => d.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) || d.file_type?.startsWith("image"))
+                            .map((photo) => (
+                              <div
+                                key={photo.id}
+                                onClick={() => setSelectedImage(photo.file_url || `/uploads/${photo.file_path}`)}
+                                className="group relative aspect-4/3 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-xs"
+                              >
+                                <img
+                                  src={photo.file_url || `/uploads/${photo.file_path}`}
+                                  alt={photo.file_name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-end">
+                                  <p className="text-[10px] text-white font-semibold truncate">{photo.file_name}</p>
+                                  <span className="text-[9px] text-slate-300 capitalize">{photo.category.replace(/_/g, " ")}</span>
+                                </div>
+                              </div>
+                            ))}
                         </div>
-                      ))
-                    ) : (
-                      <div className="p-2 text-center text-slate-400">Material sesuai jadwal</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Issues Register */}
-                <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 shadow-xs">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
-                    Kendala Kritis Lapangan
-                  </h4>
-                  <div className="space-y-2 text-xs">
-                    {data?.issues && data.issues.length > 0 ? (
-                      data.issues.slice(0, 2).map((iss) => (
-                        <div key={iss.id} className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40">
-                          <span className="font-bold text-rose-700 dark:text-rose-300 block">{iss.judul}</span>
-                          <span className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 block">{iss.dampak || "Mitigasi aktif"}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-3 text-center text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/30 rounded-lg">
-                        Tidak ada kendala kritis
                       </div>
                     )}
                   </div>
-                </div>
+                ) : (
+                  <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                    <FileCheck2 className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      Belum ada berkas atau foto yang diunggah untuk laporan ini.
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {/* Row 6: Executive Highlights & Management Summary */}
+              {/* Row 7: Executive Highlights & Management Summary */}
               <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase mb-3">
-                  Ringkasan Eksekutif &amp; Arahan Tindak Lanjut
+                  Ringkasan Eksekutif &amp; Arahan Manajemen
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                  <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40">
-                    <strong className="text-blue-900 dark:text-blue-300 font-bold block mb-1">Capaian Utama</strong>
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{data?.highlight_capaian || "Pekerjaan konstruksi dan administrasi berjalan on track."}</p>
+                  <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/50">
+                    <h5 className="font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider text-[11px] mb-1">
+                      Capaian Utama
+                    </h5>
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {data?.highlight_capaian || "Pekerjaan konstruksi fisik berjalan sesuai jadwal perencanaan Kurva-S."}
+                    </p>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
-                    <strong className="text-amber-900 dark:text-amber-300 font-bold block mb-1">Isu &amp; Tantangan</strong>
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{data?.highlight_masalah || "Tidak ada kendala kritis di lapangan."}</p>
+                  <div className="p-3.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50">
+                    <h5 className="font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider text-[11px] mb-1">
+                      Isu &amp; Tantangan
+                    </h5>
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {data?.highlight_masalah || "Tidak ada kendala kritis yang menghambat pelaksanaan di lapangan."}
+                    </p>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40">
-                    <strong className="text-emerald-900 dark:text-emerald-300 font-bold block mb-1">Rencana Tindak Lanjut</strong>
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{data?.highlight_tindak_lanjut || "Mempertahankan ritme kurva-S bersama tim pengawas."}</p>
+                  <div className="p-3.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50">
+                    <h5 className="font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider text-[11px] mb-1">
+                      Rencana Tindak Lanjut
+                    </h5>
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {data?.highlight_tindak_lanjut || "Mempertahankan ritme kerja dan pemantauan mutu harian bersama tim pengawas."}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -823,7 +836,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
           ) : (
             
             /* ========================================================
-               TAB 2: OFFICIAL PRINTABLE DOCUMENT VIEW (A4/A3 Standard)
+               TAB 2: PRINTABLE OFFICIAL GOVERNMENT REPORT (A4/A3)
                ======================================================== */
             <div className="flex justify-center">
               <div
@@ -865,6 +878,14 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                           <td className="font-bold">: {data?.knmp_name} ({data?.regency_name}, {data?.province_name})</td>
                         </tr>
                         <tr>
+                          <td className="text-slate-600 font-medium">Nama Laporan</td>
+                          <td className="font-bold text-indigo-900">: {data?.laporan_nama || data?.period_label}</td>
+                        </tr>
+                        <tr>
+                          <td className="text-slate-600 font-medium">Jenis / Bangunan</td>
+                          <td className="font-semibold">: {data?.period_type ? data.period_type.toUpperCase() : "BULANAN"} • {data?.jenis_bangunan_list && data.jenis_bangunan_list.length > 0 ? data.jenis_bangunan_list.join(", ") : "Gedung 34"}</td>
+                        </tr>
+                        <tr>
                           <td className="text-slate-600 font-medium">Penyedia Jasa</td>
                           <td className="font-semibold">: {data?.kontraktor_name}</td>
                         </tr>
@@ -891,6 +912,10 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                     <div className="flex justify-between">
                       <span className="text-slate-600 font-medium">Deviasi</span>
                       <span className="font-bold tabular-nums text-emerald-700">{deviasi >= 0 ? "+" : ""}{deviasi.toFixed(2)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 font-medium">Cuaca / Naker</span>
+                      <span className="font-bold tabular-nums text-slate-800">{data?.cuaca || "Cerah"} • {data?.tenaga_kerja || data?.total_pekerja || 1} Org</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600 font-medium">Pencairan Keuangan</span>
@@ -932,8 +957,47 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                   </table>
                 </div>
 
-                {/* Section 3: Multi-Party Official Signature Matrix */}
-                <div className="mt-8 border-t-2 border-slate-900 pt-4">
+                {/* Section 3: Lampiran Dokumen & Bukti Foto */}
+                <div className="border border-slate-900 mb-4">
+                  <div className="bg-[#002060] text-white px-2 py-1 font-black text-[9px] uppercase tracking-wider">
+                    KELENGKAPAN DOKUMEN &amp; LAMPIRAN BUKTI FISIK LAPANGAN
+                  </div>
+                  <div className="p-2 text-[9px]">
+                    <table className="w-full text-[9px] text-left border-collapse mb-2">
+                      <thead>
+                        <tr className="bg-slate-100 border-b border-slate-400 font-bold">
+                          <th className="p-1 text-center border-r border-slate-300 w-8">NO</th>
+                          <th className="p-1 border-r border-slate-300">JENIS DOKUMEN</th>
+                          <th className="p-1 border-r border-slate-300">NAMA FILE</th>
+                          <th className="p-1 text-center border-r border-slate-300">STATUS</th>
+                          <th className="p-1 text-center">TGL UNGGAH</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {data?.documents && data.documents.length > 0 ? (
+                          data.documents.map((doc, idx) => (
+                            <tr key={doc.id}>
+                              <td className="p-1 text-center border-r border-slate-200 tabular-nums">{idx + 1}</td>
+                              <td className="p-1 border-r border-slate-200 font-semibold capitalize">{doc.category.replace(/_/g, " ")}</td>
+                              <td className="p-1 border-r border-slate-200 text-slate-700 font-mono text-[8.5px]">{doc.file_name}</td>
+                              <td className="p-1 text-center border-r border-slate-200 font-bold text-emerald-800">{doc.status || "Terverifikasi"}</td>
+                              <td className="p-1 text-center tabular-nums">{formatDate(doc.uploaded_at || doc.created_at)}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="p-2 text-center text-slate-500 italic">
+                              Status K3, Ceklis Mutu, Laporan PDF &amp; Foto Dokumentasi Lapangan Terlampir
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Section 4: Multi-Party Official Signature Matrix */}
+                <div className="mt-6 border-t-2 border-slate-900 pt-4">
                   <div className="text-center font-bold text-[10px] text-slate-800 uppercase mb-4">
                     LEMBAR PENGESAHAN &amp; VERIFIKASI RESMI
                   </div>
@@ -967,6 +1031,26 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
         </div>
 
       </div>
+
+      {/* Image Lightbox Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-60 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button
+            onClick={() => setSelectedImage(null)}
+            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition-all cursor-pointer"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={selectedImage}
+            alt="Preview Dokumen"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+          />
+        </div>
+      )}
     </div>
   );
 };

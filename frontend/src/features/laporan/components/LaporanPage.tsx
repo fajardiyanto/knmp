@@ -103,6 +103,7 @@ export const LaporanPage: React.FC = () => {
   const [isMonthlyReportModalOpen, setIsMonthlyReportModalOpen] = useState(false);
   const [isExecutiveReportV2Open, setIsExecutiveReportV2Open] = useState(false);
   const [monthlyReportKnmpId, setMonthlyReportKnmpId] = useState<number | undefined>(undefined);
+  const [selectedLaporanId, setSelectedLaporanId] = useState<number | undefined>(undefined);
   const [editingItem, setEditingItem] = useState<LaporanItem | null>(null);
   const [formData, setFormData] = useState({
     nama: "",
@@ -500,6 +501,7 @@ export const LaporanPage: React.FC = () => {
           <button
             type="button"
             onClick={() => {
+              setSelectedLaporanId(undefined);
               setMonthlyReportKnmpId(undefined);
               setIsMonthlyReportModalOpen(true);
             }}
@@ -512,6 +514,7 @@ export const LaporanPage: React.FC = () => {
           <button
             type="button"
             onClick={() => {
+              setSelectedLaporanId(undefined);
               setMonthlyReportKnmpId(undefined);
               setIsExecutiveReportV2Open(true);
             }}
@@ -711,11 +714,12 @@ export const LaporanPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
+                              setSelectedLaporanId(item.id);
                               setMonthlyReportKnmpId(item.pelaksanaan_id);
-                              setIsMonthlyReportModalOpen(true);
+                              setIsExecutiveReportV2Open(true);
                             }}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                            title="Laporan Proyek Terpadu"
+                            title="Laporan Proyek Terpadu (Executive Report)"
                           >
                             <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
                           </button>
@@ -1144,15 +1148,23 @@ export const LaporanPage: React.FC = () => {
       {/* Monthly Project Report Official Document Modal (v1) */}
       <MonthlyProjectReportModal
         isOpen={isMonthlyReportModalOpen}
-        onClose={() => setIsMonthlyReportModalOpen(false)}
+        onClose={() => {
+          setIsMonthlyReportModalOpen(false);
+          setSelectedLaporanId(undefined);
+        }}
         initialKnmpId={monthlyReportKnmpId}
+        laporanId={selectedLaporanId}
       />
 
       {/* Executive Project Report Dual-Mode Modal (v2) */}
       <ExecutiveProjectReportModalV2
         isOpen={isExecutiveReportV2Open}
-        onClose={() => setIsExecutiveReportV2Open(false)}
+        onClose={() => {
+          setIsExecutiveReportV2Open(false);
+          setSelectedLaporanId(undefined);
+        }}
         initialKnmpId={monthlyReportKnmpId}
+        laporanId={selectedLaporanId}
       />
     </div>
   );
