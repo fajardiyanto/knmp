@@ -68,11 +68,13 @@ export const KnmpPage: React.FC = () => {
   });
 
   // 1. Fetch All Locations
-  const { data: allKnmp = [], isLoading } = useQuery<KnmpItem[]>({
+  const { data: rawKnmp, isLoading } = useQuery<KnmpItem[]>({
     queryKey: ["knmps", search, selectedPenyedia, selectedRegional, selectedProvinsi, selectedKabupaten],
     queryFn: () =>
       apiFetch<KnmpItem[]>(`/api/v1/knmp?search=${encodeURIComponent(search)}`),
   });
+
+  const allKnmp: KnmpItem[] = Array.isArray(rawKnmp) ? rawKnmp : [];
 
   // Extract distinct PT / Penyedia list
   const penyediaList = Array.from(
@@ -81,7 +83,10 @@ export const KnmpPage: React.FC = () => {
 
   // Client-side filtering & pagination
   const filteredData = allKnmp.filter((k) => {
-    if (search && !k.name.toLowerCase().includes(search.toLowerCase()) && !k.nama_pt?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (!k) return false;
+    const kName = k.name || "";
+    const kPt = k.nama_pt || "";
+    if (search && !kName.toLowerCase().includes(search.toLowerCase()) && !kPt.toLowerCase().includes(search.toLowerCase())) return false;
     if (selectedPenyedia && k.nama_pt !== selectedPenyedia) return false;
     if (selectedRegional && k.regional_name !== selectedRegional) return false;
     if (selectedProvinsi && k.province_name !== selectedProvinsi) return false;

@@ -66,7 +66,7 @@ func (r *knmpRepo) GetByID(ctx context.Context, id int64) (*domain.Knmp, error) 
 }
 
 func (r *knmpRepo) List(ctx context.Context, filter repository.KnmpFilter) ([]*domain.Knmp, error) {
-	var results []*domain.Knmp
+	results := make([]*domain.Knmp, 0)
 	query := `
 		SELECT k.id, k.regional_id, k.province_id, k.regency_id, k.district_id, k.sub_district_id,
 		       k.name, k.jenis_knmp, k.lat, k.long, k.status, k.created_at, k.updated_at, k.deleted_at,
@@ -168,6 +168,9 @@ func (r *knmpRepo) List(ctx context.Context, filter repository.KnmpFilter) ([]*d
 	err := r.db.SelectContext(ctx, &results, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list knmps: %w", err)
+	}
+	if results == nil {
+		results = make([]*domain.Knmp, 0)
 	}
 	return results, nil
 }
