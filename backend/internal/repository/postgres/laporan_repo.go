@@ -646,21 +646,32 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 
 	// 7. Documents for this Laporan & Pelaksanaan
 	var uploadedDocs []*domain.Document
-	if len(laporanIDs) > 0 || targetPelaksanaanID > 0 {
+	if laporanID > 0 {
 		docQuery := `
-			SELECT id, documentable_type, documentable_id, file_name, file_path, file_type, category, version, status, note, uploaded_at, verified_at, uploaded_by, verified_by, created_at, updated_at
+			SELECT DISTINCT ON (category, file_name) id, documentable_type, documentable_id, file_name, file_path, file_type, category, version, status, note, uploaded_at, verified_at, uploaded_by, verified_by, created_at, updated_at
+			FROM documents
+			WHERE deleted_at IS NULL AND documentable_type = 'laporan' AND documentable_id = $1
+			ORDER BY category, file_name, id DESC
+		`
+		_ = r.db.SelectContext(ctx, &uploadedDocs, docQuery, laporanID)
+	} else if len(laporanIDs) > 0 || targetPelaksanaanID > 0 {
+		docQuery := `
+			SELECT DISTINCT ON (category, file_name) id, documentable_type, documentable_id, file_name, file_path, file_type, category, version, status, note, uploaded_at, verified_at, uploaded_by, verified_by, created_at, updated_at
 			FROM documents
 			WHERE deleted_at IS NULL AND (
 				(documentable_type = 'laporan' AND documentable_id = ANY($1))
 				OR (documentable_type = 'pelaksanaan' AND documentable_id = $2)
 			)
-			ORDER BY id ASC
+			ORDER BY category, file_name, id DESC
 		`
 		_ = r.db.SelectContext(ctx, &uploadedDocs, docQuery, pq.Array(laporanIDs), targetPelaksanaanID)
-		for _, d := range uploadedDocs {
-			if d.FilePath != "" {
-				d.FileURL = fmt.Sprintf("/uploads/%s", d.FilePath)
-			}
+	}
+
+	for _, d := range uploadedDocs {
+		if d.FilePath != "" {
+			cleanPath := strings.TrimPrefix(d.FilePath, "/")
+			cleanPath = strings.TrimPrefix(cleanPath, "uploads/")
+			d.FileURL = fmt.Sprintf("/uploads/%s", cleanPath)
 		}
 	}
 	report.Documents = uploadedDocs

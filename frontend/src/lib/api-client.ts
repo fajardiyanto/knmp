@@ -50,5 +50,12 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 export function getFileUrl(path: string): string {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+  let cleanPath = path;
+  while (cleanPath.includes("uploads/uploads/")) {
+    cleanPath = cleanPath.replace("uploads/uploads/", "uploads/");
+  }
+  if (!cleanPath.startsWith("/uploads/") && !cleanPath.startsWith("uploads/")) {
+    cleanPath = "/uploads/" + cleanPath.replace(/^\/+/, "");
+  }
+  return `${BASE_URL}${cleanPath.startsWith("/") ? "" : "/"}${cleanPath}`;
 }

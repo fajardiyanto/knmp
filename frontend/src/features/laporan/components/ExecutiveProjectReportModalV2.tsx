@@ -29,7 +29,7 @@ import {
   Download,
   Eye,
 } from "lucide-react";
-import { apiFetch } from "../../../lib/api-client";
+import { apiFetch, getFileUrl } from "../../../lib/api-client";
 import { fetchMonthlyProjectReport } from "../api";
 import { formatRupiah, formatDate } from "../../../lib/utils";
 import type { MonthlyProjectReportData } from "../types";
@@ -706,7 +706,13 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                     {/* Document List Table */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {data.documents.map((doc) => {
-                        const isImage = doc.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) || doc.file_type?.startsWith("image");
+                        const isImage = Boolean(
+                          doc.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) ||
+                            doc.file_type?.startsWith("image") ||
+                            doc.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i)
+                        );
+                        const fileUrl = getFileUrl(doc.file_url || doc.file_path);
+
                         return (
                           <div
                             key={doc.id}
@@ -714,16 +720,14 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                           >
                             {isImage ? (
                               <div
-                                onClick={() => setSelectedImage(doc.file_url || `/uploads/${doc.file_path}`)}
-                                className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-slate-200 cursor-pointer border border-slate-300 dark:border-slate-700 hover:opacity-90"
+                                onClick={() => setSelectedImage(fileUrl)}
+                                className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800 cursor-pointer border border-slate-300 dark:border-slate-700 hover:opacity-90 flex items-center justify-center"
                               >
                                 <img
-                                  src={doc.file_url || `/uploads/${doc.file_path}`}
+                                  src={fileUrl}
                                   alt={doc.file_name}
                                   className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLElement).style.display = "none";
-                                  }}
+                                  loading="lazy"
                                 />
                               </div>
                             ) : (
@@ -743,16 +747,24 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                                   {doc.status || "Terverifikasi"}
                                 </span>
                               </div>
-                              {doc.file_url && (
+                              <div className="flex items-center gap-3 mt-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedImage(fileUrl)}
+                                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
+                                >
+                                  Lihat Preview
+                                </button>
                                 <a
-                                  href={doc.file_url}
+                                  href={fileUrl}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-700 font-semibold mt-1"
+                                  download={doc.file_name}
+                                  className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-semibold"
                                 >
-                                  Buka / Unduh Berkas
+                                  Unduh File
                                 </a>
-                              )}
+                              </div>
                             </div>
                           </div>
                         );
@@ -760,31 +772,35 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                     </div>
 
                     {/* Photo Gallery Grid */}
-                    {data.documents.some((d) => d.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) || d.file_type?.startsWith("image")) && (
+                    {data.documents.some((d) => d.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) || d.file_type?.startsWith("image") || d.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i)) && (
                       <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
                         <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-3">
                           Dokumentasi Foto Fisik Lapangan
                         </h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                           {data.documents
-                            .filter((d) => d.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) || d.file_type?.startsWith("image"))
-                            .map((photo) => (
-                              <div
-                                key={photo.id}
-                                onClick={() => setSelectedImage(photo.file_url || `/uploads/${photo.file_path}`)}
-                                className="group relative aspect-4/3 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-xs"
-                              >
-                                <img
-                                  src={photo.file_url || `/uploads/${photo.file_path}`}
-                                  alt={photo.file_name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-end">
-                                  <p className="text-[10px] text-white font-semibold truncate">{photo.file_name}</p>
-                                  <span className="text-[9px] text-slate-300 capitalize">{photo.category.replace(/_/g, " ")}</span>
+                            .filter((d) => d.file_path.match(/\.(jpg|jpeg|png|webp|gif)$/i) || d.file_type?.startsWith("image") || d.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i))
+                            .map((photo) => {
+                              const photoUrl = getFileUrl(photo.file_url || photo.file_path);
+                              return (
+                                <div
+                                  key={photo.id}
+                                  onClick={() => setSelectedImage(photoUrl)}
+                                  className="group relative aspect-4/3 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-xs"
+                                >
+                                  <img
+                                    src={photoUrl}
+                                    alt={photo.file_name}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    loading="lazy"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-end">
+                                    <p className="text-[10px] text-white font-semibold truncate">{photo.file_name}</p>
+                                    <span className="text-[9px] text-slate-300 capitalize">{photo.category.replace(/_/g, " ")}</span>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                         </div>
                       </div>
                     )}

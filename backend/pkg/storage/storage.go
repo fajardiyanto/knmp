@@ -95,7 +95,9 @@ func (s *LocalStorage) GetFileURL(filePath string) string {
 	if strings.HasPrefix(filePath, "http://") || strings.HasPrefix(filePath, "https://") {
 		return filePath
 	}
-	return "/api/v1/documents/stream?path=" + filePath
+	cleanPath := strings.TrimPrefix(filePath, "/")
+	cleanPath = strings.TrimPrefix(cleanPath, "uploads/")
+	return "/uploads/" + cleanPath
 }
 
 func (s *LocalStorage) DeleteFile(filePath string) error {
