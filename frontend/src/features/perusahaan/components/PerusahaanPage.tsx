@@ -41,6 +41,8 @@ interface PerusahaanItem {
   tgl_jaminan?: string;
   no_kontrak?: string;
   nama_paket?: string;
+  status_administrasi?: string;
+  status_karwas?: string;
   created_at: string;
 }
 
@@ -50,6 +52,7 @@ export const PerusahaanPage: React.FC = () => {
 
   const [search, setSearch] = useState("");
   const [selectedBank, setSelectedBank] = useState("");
+  const [selectedStatusAdmin, setSelectedStatusAdmin] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
 
@@ -77,6 +80,8 @@ export const PerusahaanPage: React.FC = () => {
     tgl_jaminan: "",
     no_kontrak: "",
     nama_paket: "",
+    status_administrasi: "SCAN SP - DONE",
+    status_karwas: "",
   });
 
   // Fetch list of companies from DB
@@ -94,6 +99,11 @@ export const PerusahaanPage: React.FC = () => {
     ? rawPerusahaan.data
     : [];
 
+  // Extract distinct status administrasi list
+  const statusAdminList = Array.from(
+    new Set(allPerusahaan.map((p) => p.status_administrasi).filter(Boolean) as string[])
+  ).sort();
+
   // Extract distinct banks for filter
   const bankList = Array.from(
     new Set(allPerusahaan.map((p) => p.nama_bank).filter(Boolean) as string[])
@@ -103,6 +113,7 @@ export const PerusahaanPage: React.FC = () => {
   const filteredData = allPerusahaan.filter((p) => {
     if (!p) return false;
     if (selectedBank && p.nama_bank !== selectedBank) return false;
+    if (selectedStatusAdmin && p.status_administrasi !== selectedStatusAdmin) return false;
     return true;
   });
 
@@ -132,6 +143,8 @@ export const PerusahaanPage: React.FC = () => {
       tgl_jaminan: "",
       no_kontrak: "",
       nama_paket: "",
+      status_administrasi: "SCAN SP - DONE",
+      status_karwas: "",
     });
     setIsFormModalOpen(true);
   };
@@ -157,6 +170,8 @@ export const PerusahaanPage: React.FC = () => {
       tgl_jaminan: item.tgl_jaminan || "",
       no_kontrak: item.no_kontrak || "",
       nama_paket: item.nama_paket || "",
+      status_administrasi: item.status_administrasi || "SCAN SP - DONE",
+      status_karwas: item.status_karwas || "",
     });
     setIsFormModalOpen(true);
   };
@@ -329,6 +344,22 @@ export const PerusahaanPage: React.FC = () => {
                 </option>
               ))}
             </select>
+
+            <select
+              value={selectedStatusAdmin}
+              onChange={(e) => {
+                setSelectedStatusAdmin(e.target.value);
+                setPage(1);
+              }}
+              className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs sm:text-sm text-slate-700 dark:text-slate-300"
+            >
+              <option value="">Semua Status Administrasi</option>
+              {statusAdminList.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-center gap-2">
@@ -356,6 +387,7 @@ export const PerusahaanPage: React.FC = () => {
               <tr>
                 <th className="py-3.5 px-4 text-center w-12">No</th>
                 <th className="py-3.5 px-4">Nama Perusahaan</th>
+                <th className="py-3.5 px-4">Status Lanjutan Administrasi</th>
                 <th className="py-3.5 px-4">Direktur / Pimpinan</th>
                 <th className="py-3.5 px-4">NPWP</th>
                 <th className="py-3.5 px-4">Kontak (Telp / Email)</th>
@@ -367,13 +399,13 @@ export const PerusahaanPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
+                  <td colSpan={9} className="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
                     Memuat daftar perusahaan rekanan...
                   </td>
                 </tr>
               ) : currentData.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
+                  <td colSpan={9} className="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
                     Tidak ada data perusahaan ditemukan
                   </td>
                 </tr>
@@ -393,6 +425,28 @@ export const PerusahaanPage: React.FC = () => {
                           {item.alamat}
                         </p>
                       )}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                        (item.status_administrasi || "").toLowerCase().includes("done")
+                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                          : (item.status_administrasi || "").toLowerCase().includes("cetak")
+                          ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                          : (item.status_administrasi || "").toLowerCase().includes("jampel")
+                          ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                          : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          (item.status_administrasi || "").toLowerCase().includes("done")
+                            ? "bg-emerald-500"
+                            : (item.status_administrasi || "").toLowerCase().includes("cetak")
+                            ? "bg-amber-500"
+                            : (item.status_administrasi || "").toLowerCase().includes("jampel")
+                            ? "bg-blue-500"
+                            : "bg-slate-400"
+                        }`} />
+                        {item.status_administrasi || "SCAN SP - DONE"}
+                      </span>
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-slate-800 dark:text-slate-200">
@@ -682,6 +736,22 @@ export const PerusahaanPage: React.FC = () => {
                     placeholder="Bank Garansi (5%)"
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500"
                   />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Status Lanjutan Administrasi
+                  </label>
+                  <select
+                    value={formData.status_administrasi}
+                    onChange={(e) => setFormData({ ...formData, status_administrasi: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="SCAN SP - DONE">SCAN SP - DONE</option>
+                    <option value="SCAN SPPBJ - DONE">SCAN SPPBJ - DONE</option>
+                    <option value="Proses Cetak SP">Proses Cetak SP</option>
+                    <option value="Menunggu JAMPEL">Menunggu JAMPEL</option>
+                  </select>
                 </div>
               </div>
 

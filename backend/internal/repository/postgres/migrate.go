@@ -463,12 +463,17 @@ func ensurePerusahaansTableAndSeed(db *sqlx.DB) {
 			tgl_jaminan VARCHAR(50) NULL,
 			no_kontrak VARCHAR(255) NULL,
 			nama_paket TEXT NULL,
+			status_administrasi VARCHAR(100) NULL,
+			status_karwas VARCHAR(100) NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			deleted_at TIMESTAMP NULL
 		);
+		ALTER TABLE perusahaans ADD COLUMN IF NOT EXISTS status_administrasi VARCHAR(100) NULL;
+		ALTER TABLE perusahaans ADD COLUMN IF NOT EXISTS status_karwas VARCHAR(100) NULL;
 		CREATE INDEX IF NOT EXISTS idx_perusahaans_nama ON perusahaans(nama);
 		CREATE INDEX IF NOT EXISTS idx_perusahaans_kontrak ON perusahaans(no_kontrak);
+		CREATE INDEX IF NOT EXISTS idx_perusahaans_status_admin ON perusahaans(status_administrasi);
 	`)
 	if err != nil {
 		log.Printf("Warning: failed to ensure perusahaans table: %v", err)
@@ -491,6 +496,27 @@ func ensurePerusahaansTableAndSeed(db *sqlx.DB) {
 				_, err = db.ExecContext(ctx, string(content))
 				if err == nil {
 					log.Println("Successfully auto-seeded perusahaans table!")
+					break
+				}
+			}
+		}
+	} else {
+		// Update status_administrasi on existing records if NULL
+		var nullStatusCount int
+		_ = db.GetContext(ctx, &nullStatusCount, `SELECT COUNT(*) FROM perusahaans WHERE status_administrasi IS NULL`)
+		if nullStatusCount > 0 {
+			migrationPaths := []string{
+				"migrations/000003_create_perusahaans_table.up.sql",
+				"./migrations/000003_create_perusahaans_table.up.sql",
+				"/app/migrations/000003_create_perusahaans_table.up.sql",
+				"backend/migrations/000003_create_perusahaans_table.up.sql",
+			}
+			for _, p := range migrationPaths {
+				content, err := os.ReadFile(p)
+				if err == nil {
+					// re-apply migration to populate statuses
+					_, _ = db.ExecContext(ctx, `TRUNCATE TABLE perusahaans RESTART IDENTITY; `+string(content))
+					log.Println("Updated perusahaans with status_administrasi and status_karwas!")
 					break
 				}
 			}

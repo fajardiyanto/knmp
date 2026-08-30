@@ -25,7 +25,7 @@ func (r *perusahaanRepo) GetByID(ctx context.Context, id int64) (*domain.Perusah
 		SELECT id, nama, alamat, npwp, nama_direktur, jabatan_direktur, no_telp, email,
 		       notaris_akta, tanggal_akta, no_akta, nama_bank, norek_bank, cabang_bank,
 		       nama_bank_jaminan, no_jaminan, tgl_jaminan, no_kontrak, nama_paket,
-		       created_at, updated_at, deleted_at
+		       status_administrasi, status_karwas, created_at, updated_at, deleted_at
 		FROM perusahaans
 		WHERE id = $1 AND deleted_at IS NULL
 	`
@@ -45,7 +45,7 @@ func (r *perusahaanRepo) GetByNama(ctx context.Context, nama string) (*domain.Pe
 		SELECT id, nama, alamat, npwp, nama_direktur, jabatan_direktur, no_telp, email,
 		       notaris_akta, tanggal_akta, no_akta, nama_bank, norek_bank, cabang_bank,
 		       nama_bank_jaminan, no_jaminan, tgl_jaminan, no_kontrak, nama_paket,
-		       created_at, updated_at, deleted_at
+		       status_administrasi, status_karwas, created_at, updated_at, deleted_at
 		FROM perusahaans
 		WHERE (nama ILIKE $1 OR nama ILIKE '%' || $1 || '%' OR $1 ILIKE '%' || nama || '%') AND deleted_at IS NULL
 		ORDER BY CASE WHEN nama ILIKE $1 THEN 1 ELSE 2 END, id ASC
@@ -67,7 +67,7 @@ func (r *perusahaanRepo) GetByKontrak(ctx context.Context, noKontrak string) (*d
 		SELECT id, nama, alamat, npwp, nama_direktur, jabatan_direktur, no_telp, email,
 		       notaris_akta, tanggal_akta, no_akta, nama_bank, norek_bank, cabang_bank,
 		       nama_bank_jaminan, no_jaminan, tgl_jaminan, no_kontrak, nama_paket,
-		       created_at, updated_at, deleted_at
+		       status_administrasi, status_karwas, created_at, updated_at, deleted_at
 		FROM perusahaans
 		WHERE no_kontrak = $1 AND deleted_at IS NULL
 		LIMIT 1
@@ -88,7 +88,7 @@ func (r *perusahaanRepo) List(ctx context.Context, search string, limit, offset 
 		SELECT id, nama, alamat, npwp, nama_direktur, jabatan_direktur, no_telp, email,
 		       notaris_akta, tanggal_akta, no_akta, nama_bank, norek_bank, cabang_bank,
 		       nama_bank_jaminan, no_jaminan, tgl_jaminan, no_kontrak, nama_paket,
-		       created_at, updated_at, deleted_at
+		       status_administrasi, status_karwas, created_at, updated_at, deleted_at
 		FROM perusahaans
 		WHERE deleted_at IS NULL
 	`
@@ -96,7 +96,7 @@ func (r *perusahaanRepo) List(ctx context.Context, search string, limit, offset 
 
 	var args []any
 	if search != "" {
-		filter := " AND (nama ILIKE $1 OR nama_direktur ILIKE $1 OR npwp ILIKE $1 OR no_kontrak ILIKE $1 OR alamat ILIKE $1)"
+		filter := " AND (nama ILIKE $1 OR nama_direktur ILIKE $1 OR npwp ILIKE $1 OR no_kontrak ILIKE $1 OR alamat ILIKE $1 OR status_administrasi ILIKE $1)"
 		query += filter
 		countQuery += filter
 		args = append(args, "%"+search+"%")
@@ -130,11 +130,12 @@ func (r *perusahaanRepo) Create(ctx context.Context, p *domain.Perusahaan) error
 			nama, alamat, npwp, nama_direktur, jabatan_direktur, no_telp, email,
 			notaris_akta, tanggal_akta, no_akta, nama_bank, norek_bank, cabang_bank,
 			nama_bank_jaminan, no_jaminan, tgl_jaminan, no_kontrak, nama_paket,
-			created_at, updated_at
+			status_administrasi, status_karwas, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7,
 			$8, $9, $10, $11, $12, $13,
 			$14, $15, $16, $17, $18,
+			$19, $20,
 			NOW(), NOW()
 		) RETURNING id, created_at, updated_at
 	`
@@ -143,6 +144,7 @@ func (r *perusahaanRepo) Create(ctx context.Context, p *domain.Perusahaan) error
 		p.Nama, p.Alamat, p.NPWP, p.NamaDirektur, p.JabatanDirektur, p.NoTelp, p.Email,
 		p.NotarisAkta, p.TanggalAkta, p.NoAkta, p.NamaBank, p.NorekBank, p.CabangBank,
 		p.NamaBankJaminan, p.NoJaminan, p.TglJaminan, p.NoKontrak, p.NamaPaket,
+		p.StatusAdministrasi, p.StatusKarwas,
 	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 }
 
@@ -153,8 +155,8 @@ func (r *perusahaanRepo) Update(ctx context.Context, p *domain.Perusahaan) error
 			no_telp = $6, email = $7, notaris_akta = $8, tanggal_akta = $9, no_akta = $10,
 			nama_bank = $11, norek_bank = $12, cabang_bank = $13, nama_bank_jaminan = $14,
 			no_jaminan = $15, tgl_jaminan = $16, no_kontrak = $17, nama_paket = $18,
-			updated_at = NOW()
-		WHERE id = $19 AND deleted_at IS NULL
+			status_administrasi = $19, status_karwas = $20, updated_at = NOW()
+		WHERE id = $21 AND deleted_at IS NULL
 	`
 	_, err := r.db.ExecContext(
 		ctx, query,
@@ -162,6 +164,7 @@ func (r *perusahaanRepo) Update(ctx context.Context, p *domain.Perusahaan) error
 		p.NoTelp, p.Email, p.NotarisAkta, p.TanggalAkta, p.NoAkta,
 		p.NamaBank, p.NorekBank, p.CabangBank, p.NamaBankJaminan,
 		p.NoJaminan, p.TglJaminan, p.NoKontrak, p.NamaPaket,
+		p.StatusAdministrasi, p.StatusKarwas,
 		p.ID,
 	)
 	return err
