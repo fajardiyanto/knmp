@@ -83,7 +83,7 @@ func (r *perusahaanRepo) GetByKontrak(ctx context.Context, noKontrak string) (*d
 }
 
 func (r *perusahaanRepo) List(ctx context.Context, search string, limit, offset int) ([]*domain.Perusahaan, int, error) {
-	var results []*domain.Perusahaan
+	results := make([]*domain.Perusahaan, 0)
 	query := `
 		SELECT id, nama, alamat, npwp, nama_direktur, jabatan_direktur, no_telp, email,
 		       notaris_akta, tanggal_akta, no_akta, nama_bank, norek_bank, cabang_bank,
@@ -109,13 +109,18 @@ func (r *perusahaanRepo) List(ctx context.Context, search string, limit, offset 
 
 	query += " ORDER BY id ASC"
 	if limit > 0 {
-		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
+		query += fmt.Sprintf(" LIMIT %d", limit)
+		if offset > 0 {
+			query += fmt.Sprintf(" OFFSET %d", offset)
+		}
 	}
 
 	if err := r.db.SelectContext(ctx, &results, query, args...); err != nil {
 		return nil, 0, fmt.Errorf("list perusahaans: %w", err)
 	}
-
+	if results == nil {
+		results = make([]*domain.Perusahaan, 0)
+	}
 	return results, total, nil
 }
 

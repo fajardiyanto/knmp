@@ -80,15 +80,19 @@ export const PerusahaanPage: React.FC = () => {
   });
 
   // Fetch list of companies from DB
-  const { data: perusahaanRes, isLoading } = useQuery<{ data: PerusahaanItem[]; meta?: { total: number } }>({
+  const { data: rawPerusahaan, isLoading } = useQuery<any>({
     queryKey: ["perusahaans", search],
     queryFn: () =>
-      apiFetch<{ data: PerusahaanItem[]; meta?: { total: number } }>(
+      apiFetch<any>(
         `/api/v1/perusahaan?search=${encodeURIComponent(search)}&per_page=100`
       ),
   });
 
-  const allPerusahaan: PerusahaanItem[] = Array.isArray(perusahaanRes?.data) ? perusahaanRes.data : [];
+  const allPerusahaan: PerusahaanItem[] = Array.isArray(rawPerusahaan)
+    ? rawPerusahaan
+    : Array.isArray(rawPerusahaan?.data)
+    ? rawPerusahaan.data
+    : [];
 
   // Extract distinct banks for filter
   const bankList = Array.from(
