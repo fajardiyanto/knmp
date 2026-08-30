@@ -80,7 +80,10 @@ func RunMigrationsAndSeed(db *sqlx.DB, migrationsDir string) error {
 
 	log.Println("All database migrations applied successfully.")
 
-	// 3. Run Seeder automatically if users are empty
+	// 3. Ensure perusahaans table and seeders are guaranteed to exist on all environments
+	ensurePerusahaansTableAndSeed(db)
+
+	// 4. Run Seeder automatically if users are empty
 	var userCount int
 	_ = db.GetContext(ctx, &userCount, `SELECT COUNT(*) FROM users`)
 	if userCount == 0 {
@@ -434,5 +437,63 @@ func seedKontrakSumatera(db *sqlx.DB) {
 
 	if insertedCount > 0 {
 		log.Printf("Seeded %d contracts and payment milestones from Data Kontrak Sumatera.xlsx", insertedCount)
+	}
+}
+
+func ensurePerusahaansTableAndSeed(db *sqlx.DB) {
+	ctx := context.Background()
+	_, err := db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS perusahaans (
+			id BIGSERIAL PRIMARY KEY,
+			nama VARCHAR(255) NOT NULL,
+			alamat TEXT NULL,
+			npwp VARCHAR(100) NULL,
+			nama_direktur VARCHAR(255) NULL,
+			jabatan_direktur VARCHAR(100) NULL DEFAULT 'Direktur',
+			no_telp VARCHAR(50) NULL,
+			email VARCHAR(255) NULL,
+			notaris_akta VARCHAR(255) NULL,
+			tanggal_akta VARCHAR(50) NULL,
+			no_akta VARCHAR(100) NULL,
+			nama_bank VARCHAR(100) NULL,
+			norek_bank VARCHAR(100) NULL,
+			cabang_bank VARCHAR(255) NULL,
+			nama_bank_jaminan VARCHAR(100) NULL,
+			no_jaminan VARCHAR(100) NULL,
+			tgl_jaminan VARCHAR(50) NULL,
+			no_kontrak VARCHAR(255) NULL,
+			nama_paket TEXT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			deleted_at TIMESTAMP NULL
+		);
+		CREATE INDEX IF NOT EXISTS idx_perusahaans_nama ON perusahaans(nama);
+		CREATE INDEX IF NOT EXISTS idx_perusahaans_kontrak ON perusahaans(no_kontrak);
+	`)
+	if err != nil {
+		log.Printf("Warning: failed to ensure perusahaans table: %v", err)
+		return
+	}
+
+	var count int
+	_ = db.GetContext(ctx, &count, `SELECT COUNT(*) FROM perusahaans`)
+	if count == 0 {
+		log.Println("Table perusahaans is empty, seeding companies from migration...")
+		migrationPaths := []string{
+			"migrations/000003_create_perusahaans_table.up.sql",
+			"./migrations/000003_create_perusahaans_table.up.sql",
+			"/app/migrations/000003_create_perusahaans_table.up.sql",
+			"backend/migrations/000003_create_perusahaans_table.up.sql",
+		}
+		for _, p := range migrationPaths {
+			content, err := os.ReadFile(p)
+			if err == nil {
+				_, err = db.ExecContext(ctx, string(content))
+				if err == nil {
+					log.Println("Successfully auto-seeded perusahaans table!")
+					break
+				}
+			}
+		}
 	}
 }
