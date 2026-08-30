@@ -36,14 +36,23 @@ func (s *LaporanService) GetByID(ctx context.Context, id int64) (*domain.Laporan
 		return nil, err
 	}
 
+	// Fetch documents uploaded directly to this laporan
+	docs, err := s.docRepo.ListByEntity(ctx, "laporan", l.ID)
+	if err == nil {
+		for _, doc := range docs {
+			doc.FileURL = s.storage.GetFileURL(doc.FilePath)
+		}
+		l.Documents = docs
+	}
+
 	details, err := s.laporanRepo.GetDetailsByLaporanID(ctx, l.ID)
 	if err == nil {
 		for _, d := range details {
-			docs, _ := s.docRepo.ListByEntity(ctx, "laporan_jenis_bangunan", d.ID)
-			for _, doc := range docs {
+			dDocs, _ := s.docRepo.ListByEntity(ctx, "laporan_jenis_bangunan", d.ID)
+			for _, doc := range dDocs {
 				doc.FileURL = s.storage.GetFileURL(doc.FilePath)
 			}
-			d.Documents = docs
+			d.Documents = dDocs
 		}
 		l.JenisBangunanDetails = details
 	}
@@ -64,13 +73,22 @@ func (s *LaporanService) List(ctx context.Context, filter repository.LaporanFilt
 	}
 
 	for _, l := range list {
-		details, _ := s.laporanRepo.GetDetailsByLaporanID(ctx, l.ID)
-		for _, d := range details {
-			docs, _ := s.docRepo.ListByEntity(ctx, "laporan_jenis_bangunan", d.ID)
+		// Populate direct documents
+		docs, err := s.docRepo.ListByEntity(ctx, "laporan", l.ID)
+		if err == nil {
 			for _, doc := range docs {
 				doc.FileURL = s.storage.GetFileURL(doc.FilePath)
 			}
-			d.Documents = docs
+			l.Documents = docs
+		}
+
+		details, _ := s.laporanRepo.GetDetailsByLaporanID(ctx, l.ID)
+		for _, d := range details {
+			dDocs, _ := s.docRepo.ListByEntity(ctx, "laporan_jenis_bangunan", d.ID)
+			for _, doc := range dDocs {
+				doc.FileURL = s.storage.GetFileURL(doc.FilePath)
+			}
+			d.Documents = dDocs
 		}
 		l.JenisBangunanDetails = details
 

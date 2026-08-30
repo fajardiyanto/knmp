@@ -80,7 +80,21 @@ export const UploadDokumenLaporanPage: React.FC = () => {
     enabled: !!id,
   });
 
-  const allDocDefs = [...DEFAULT_LAPORAN_DOCS, ...customDocs];
+  // Merge loaded categories from server that might be custom
+  const serverCustomCategories = (laporan?.documents || [])
+    .map((d) => d.category)
+    .filter((cat) => !DEFAULT_LAPORAN_DOCS.some((def) => def.code === cat) && !customDocs.some((def) => def.code === cat));
+
+  const dynamicServerDefs: LaporanDocDef[] = Array.from(new Set(serverCustomCategories)).map((cat, idx) => ({
+    no: DEFAULT_LAPORAN_DOCS.length + customDocs.length + idx + 1,
+    code: cat,
+    name: cat.replace(/^custom_laporan_\d+/, "Dokumen Tambahan").replace(/_/g, " "),
+    badge: "Tambahan",
+    isMulti: true,
+    isCustom: true,
+  }));
+
+  const allDocDefs = [...DEFAULT_LAPORAN_DOCS, ...customDocs, ...dynamicServerDefs];
 
   // Upload mutation
   const uploadMutation = useMutation({
