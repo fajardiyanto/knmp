@@ -402,7 +402,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 text-xs font-mono"
+              className="px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 text-xs tabular-nums"
             />
           )}
 
@@ -412,25 +412,25 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 text-xs font-mono"
+                className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 text-xs tabular-nums"
               />
               <span className="text-slate-500">s/d</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 text-xs font-mono"
+                className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 text-xs tabular-nums"
               />
             </div>
           )}
 
           {/* General Metadata Badges */}
           <div className="ml-auto flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-              Kontraktor: <strong className="text-slate-900 dark:text-slate-100">{data?.kontraktor_name || "PT. Mina Bahari Nusantara"}</strong>
+            <span className="px-2.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs">
+              Kontraktor: <strong className="text-slate-900 dark:text-slate-100 font-semibold">{data?.kontraktor_name || "PT. Mina Bahari Nusantara"}</strong>
             </span>
-            <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-              Pengawas: <strong className="text-slate-900 dark:text-slate-100">{data?.konsultan_pengawas || "Konsultan Supervisi"}</strong>
+            <span className="px-2.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs">
+              Pengawas: <strong className="text-slate-900 dark:text-slate-100 font-semibold">{data?.konsultan_pengawas || "Konsultan Supervisi"}</strong>
             </span>
           </div>
         </div>
@@ -458,15 +458,15 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                 <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 relative overflow-hidden shadow-xs hover:border-indigo-300 dark:hover:border-slate-700 transition-all">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Progres Fisik</span>
-                    <span className={`px-2 py-0.5 text-[11px] font-mono font-black rounded-md ${
+                    <span className={`px-2 py-0.5 text-[11px] font-bold tabular-nums rounded-md ${
                       deviasi >= 0 ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30" : "bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30"
                     }`}>
                       {deviasi >= 0 ? "+" : ""}{deviasi.toFixed(2)}% Dev
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{actualProgress.toFixed(2)}%</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">dari plan <strong className="font-mono text-slate-700 dark:text-slate-200">{planProgress.toFixed(2)}%</strong></span>
+                    <span className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight tabular-nums">{actualProgress.toFixed(2)}%</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">dari plan <strong className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{planProgress.toFixed(2)}%</strong></span>
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mt-3 overflow-hidden">
                     <div
@@ -474,7 +474,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                       style={{ width: `${Math.min(100, Math.max(0, actualProgress))}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-mono">
+                  <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 tabular-nums">
                     <span>Target: {planProgress.toFixed(1)}%</span>
                     <span>100% Selesai</span>
                   </div>
@@ -484,18 +484,18 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                 <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 relative overflow-hidden shadow-xs hover:border-indigo-300 dark:hover:border-slate-700 transition-all">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Keuangan / Pagu</span>
-                    <span className="px-2 py-0.5 text-[11px] font-mono font-black rounded-md bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">
+                    <span className="px-2 py-0.5 text-[11px] font-bold tabular-nums rounded-md bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">
                       {progKeuangan.toFixed(1)}% Cair
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{formatRupiah(data?.financial_realisasi)}</span>
+                    <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">{formatRupiah(data?.financial_realisasi)}</span>
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
-                    Pagu: <span className="font-mono font-semibold text-slate-900 dark:text-slate-200">{formatRupiah(data?.nilai_kontrak)}</span>
+                    Pagu: <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-200">{formatRupiah(data?.nilai_kontrak)}</span>
                   </p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-1">
-                    Sisa Pagu: <span className="text-slate-700 dark:text-slate-300 font-semibold">{formatRupiah(data?.financial_sisa)}</span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    Sisa Pagu: <span className="text-slate-700 dark:text-slate-300 font-semibold tabular-nums">{formatRupiah(data?.financial_sisa)}</span>
                   </p>
                 </div>
 
@@ -503,15 +503,15 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                 <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 relative overflow-hidden shadow-xs hover:border-indigo-300 dark:hover:border-slate-700 transition-all">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Durasi Waktu</span>
-                    <span className="px-2 py-0.5 text-[11px] font-mono font-black rounded-md bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30">
+                    <span className="px-2 py-0.5 text-[11px] font-bold tabular-nums rounded-md bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30">
                       {timeElapsed.toFixed(1)}% Terpakai
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{data?.masa_pelaksanaan || 120}</span>
+                    <span className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight tabular-nums">{data?.masa_pelaksanaan || 120}</span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">Hari Kalender</span>
                   </div>
-                  <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300 mt-2 font-mono">
+                  <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300 mt-2 tabular-nums font-medium">
                     <span>Mulai: {formatDate(data?.tanggal_mulai)}</span>
                     <span>PHO: {formatDate(data?.tanggal_selesai)}</span>
                   </div>
@@ -521,17 +521,17 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                 <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 relative overflow-hidden shadow-xs hover:border-indigo-300 dark:hover:border-slate-700 transition-all">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kinerja HSE / K3</span>
-                    <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1">
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3" /> ZERO ACCIDENT
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{Number(data?.hse?.jam_kerja_selamat_kumulatif || (actualProgress > 0 ? 1920 : 0)).toLocaleString("id-ID")}</span>
+                    <span className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight tabular-nums">{Number(data?.hse?.jam_kerja_selamat_kumulatif || (actualProgress > 0 ? 1920 : 0)).toLocaleString("id-ID")}</span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">Jam Selamat</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-600 dark:text-slate-300 mt-2">
-                    <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded">Toolbox: <strong className="text-slate-900 dark:text-white font-mono">{data?.hse?.toolbox_meeting_kumulatif || (actualProgress > 0 ? 12 : 0)}</strong></span>
-                    <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded">Inspeksi: <strong className="text-slate-900 dark:text-white font-mono">{data?.hse?.inspeksi_kumulatif || (actualProgress > 0 ? 4 : 0)}</strong></span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-300 mt-2">
+                    <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded">Toolbox: <strong className="text-slate-900 dark:text-white font-semibold tabular-nums">{data?.hse?.toolbox_meeting_kumulatif || (actualProgress > 0 ? 12 : 0)}</strong></span>
+                    <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded">Inspeksi: <strong className="text-slate-900 dark:text-white font-semibold tabular-nums">{data?.hse?.inspeksi_kumulatif || (actualProgress > 0 ? 4 : 0)}</strong></span>
                   </div>
                 </div>
               </div>
@@ -539,14 +539,11 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
               {/* Row 2: Visual High-Fidelity S-Curve Chart */}
               <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase">Kurva-S Realtime &amp; Trend Kumulatif Proyek</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Perbandingan Rencana Progress Kumulatif vs Realisasi Aktual Fisik &amp; Penyerapan Dana</p>
-                    </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase">Kurva-S Realtime &amp; Trend Kumulatif Proyek</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Perbandingan Rencana Progress Kumulatif vs Realisasi Aktual Fisik &amp; Penyerapan Dana</p>
                   </div>
-                  <div className="flex items-center gap-4 text-xs font-mono">
+                  <div className="flex items-center gap-4 text-xs tabular-nums">
                     <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-semibold">
                       <span className="w-3 h-1 bg-blue-600 dark:bg-blue-500 rounded-full" /> Rencana ({planProgress.toFixed(1)}%)
                     </span>
@@ -635,7 +632,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                     <circle cx="500" cy={235 - (actualProgress * 2.15)} r="6" fill="#10b981" stroke="#ffffff" strokeWidth="2" />
                   </svg>
                 </div>
-                <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 font-medium">
                   <span>Bulan 1 (Juni)</span>
                   <span>Bulan 2 (Juli)</span>
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">Bulan 3 (Agustus - Posisi Saat Ini)</span>
@@ -645,8 +642,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
 
               {/* Row 3: Milestone Timeline Gantt Stepper */}
               <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase mb-4 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase mb-4">
                   Milestone Control &amp; Roadmap Kritis Proyek
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -663,7 +659,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-mono font-bold">M{m.no}</span>
+                            <span className="text-[11px] font-bold">M{m.no}</span>
                             {isDone ? (
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                             ) : (
@@ -671,7 +667,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                             )}
                           </div>
                           <span className="text-xs font-bold leading-tight line-clamp-2 text-slate-900 dark:text-white">{m.name}</span>
-                          <div className="mt-2 text-[10px] font-mono border-t border-slate-200 dark:border-slate-700/50 pt-1.5 space-y-0.5">
+                          <div className="mt-2 text-[10.5px] border-t border-slate-200 dark:border-slate-700/50 pt-1.5 space-y-0.5 tabular-nums">
                             <div className="text-slate-500 dark:text-slate-400">Plan: {m.plan_date}</div>
                             <div className={isDone ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
                               Act: {m.actual_date}
@@ -686,8 +682,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
 
               {/* Row 4: 7 Paket Pekerjaan (Work Packages) Breakdown */}
               <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase mb-3 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase mb-3">
                   Rincian 7 Paket Pekerjaan &amp; Bobot Fisik
                 </h3>
                 <div className="overflow-x-auto">
@@ -696,10 +691,10 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                       <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 font-bold">
                         <th className="py-2.5 px-3">NO</th>
                         <th className="py-2.5 px-3">PAKET PEKERJAAN</th>
-                        <th className="py-2.5 px-3 text-center font-mono">BOBOT (%)</th>
-                        <th className="py-2.5 px-3 text-center font-mono">PLAN BULAN INI</th>
-                        <th className="py-2.5 px-3 text-center font-mono">ACTUAL BULAN INI</th>
-                        <th className="py-2.5 px-3 text-center font-mono">KUMULATIF ACTUAL</th>
+                        <th className="py-2.5 px-3 text-center">BOBOT (%)</th>
+                        <th className="py-2.5 px-3 text-center">PLAN BULAN INI</th>
+                        <th className="py-2.5 px-3 text-center">ACTUAL BULAN INI</th>
+                        <th className="py-2.5 px-3 text-center">KUMULATIF ACTUAL</th>
                         <th className="py-2.5 px-3 text-center">PROGRESS BAR</th>
                         <th className="py-2.5 px-3 text-center">STATUS</th>
                       </tr>
@@ -710,12 +705,12 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                           const pct = wp.bobot > 0 ? (wp.kumulatif_actual / wp.bobot) * 100 : 0;
                           return (
                             <tr key={wp.no} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                              <td className="py-2.5 px-3 font-mono font-bold text-slate-500 dark:text-slate-400">{wp.no}</td>
+                              <td className="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400 tabular-nums">{wp.no}</td>
                               <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white">{wp.name}</td>
-                              <td className="py-2.5 px-3 text-center font-mono font-bold text-blue-600 dark:text-blue-400">{wp.bobot.toFixed(2)}%</td>
-                              <td className="py-2.5 px-3 text-center font-mono text-slate-500 dark:text-slate-400">{wp.bulan_ini_plan.toFixed(2)}%</td>
-                              <td className="py-2.5 px-3 text-center font-mono text-emerald-600 dark:text-emerald-400">{wp.bulan_ini_actual.toFixed(2)}%</td>
-                              <td className="py-2.5 px-3 text-center font-mono font-bold text-emerald-700 dark:text-emerald-300">{wp.kumulatif_actual.toFixed(2)}%</td>
+                              <td className="py-2.5 px-3 text-center font-bold text-blue-600 dark:text-blue-400 tabular-nums">{wp.bobot.toFixed(2)}%</td>
+                              <td className="py-2.5 px-3 text-center text-slate-500 dark:text-slate-400 tabular-nums">{wp.bulan_ini_plan.toFixed(2)}%</td>
+                              <td className="py-2.5 px-3 text-center text-emerald-600 dark:text-emerald-400 tabular-nums font-semibold">{wp.bulan_ini_actual.toFixed(2)}%</td>
+                              <td className="py-2.5 px-3 text-center font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">{wp.kumulatif_actual.toFixed(2)}%</td>
                               <td className="py-2.5 px-3 min-w-[140px]">
                                 <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                                   <div
@@ -725,7 +720,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                                 </div>
                               </td>
                               <td className="py-2.5 px-3 text-center">
-                                <span className="px-2 py-0.5 text-[10px] font-black rounded bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
                                   ON TRACK
                                 </span>
                               </td>
@@ -743,30 +738,28 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                 
                 {/* Quality & Mutu */}
                 <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 shadow-xs">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Award className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
                     Kinerja Mutu &amp; Kualitas
                   </h4>
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                       <span className="text-slate-600 dark:text-slate-400">Uji Mutu / Test Lab</span>
-                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{data?.quality?.uji_mutu_selesai ?? 0} Selesai</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{data?.quality?.uji_mutu_selesai ?? 0} Selesai</span>
                     </div>
                     <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                       <span className="text-slate-600 dark:text-slate-400">Temuan NCR</span>
-                      <span className="font-mono font-bold text-slate-700 dark:text-slate-200">{data?.quality?.temuan_ncr_baru ?? 0} Kasus</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{data?.quality?.temuan_ncr_baru ?? 0} Kasus</span>
                     </div>
                     <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                       <span className="text-slate-600 dark:text-slate-400">Daftar Cacat (Punch List)</span>
-                      <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{data?.quality?.daftar_cacat_buka ?? 0} Pending</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400 tabular-nums">{data?.quality?.daftar_cacat_buka ?? 0} Pending</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Materials Tracker */}
                 <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 shadow-xs">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <PackageCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
                     Material &amp; Logistik Utama
                   </h4>
                   <div className="space-y-2 text-xs">
@@ -774,7 +767,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                       data.materials.slice(0, 3).map((m, i) => (
                         <div key={i} className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                           <span className="text-slate-600 dark:text-slate-400 truncate max-w-[140px]">{m.nama}</span>
-                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{m.realisasi.toFixed(0)}%</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{m.realisasi.toFixed(0)}%</span>
                         </div>
                       ))
                     ) : (
@@ -785,8 +778,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
 
                 {/* Issues Register */}
                 <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 shadow-xs">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
                     Kendala Kritis Lapangan
                   </h4>
                   <div className="space-y-2 text-xs">
@@ -808,21 +800,20 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
 
               {/* Row 6: Executive Highlights & Management Summary */}
               <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase mb-3 flex items-center gap-2">
-                  <ClipboardList className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase mb-3">
                   Ringkasan Eksekutif &amp; Arahan Tindak Lanjut
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                   <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40">
-                    <strong className="text-blue-900 dark:text-blue-300 font-bold block mb-1">🛡️ Capaian Utama</strong>
+                    <strong className="text-blue-900 dark:text-blue-300 font-bold block mb-1">Capaian Utama</strong>
                     <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{data?.highlight_capaian || "Pekerjaan konstruksi dan administrasi berjalan on track."}</p>
                   </div>
                   <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
-                    <strong className="text-amber-900 dark:text-amber-300 font-bold block mb-1">⚠️ Isu &amp; Tantangan</strong>
+                    <strong className="text-amber-900 dark:text-amber-300 font-bold block mb-1">Isu &amp; Tantangan</strong>
                     <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{data?.highlight_masalah || "Tidak ada kendala kritis di lapangan."}</p>
                   </div>
                   <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40">
-                    <strong className="text-emerald-900 dark:text-emerald-300 font-bold block mb-1">⚡ Rencana Tindak Lanjut</strong>
+                    <strong className="text-emerald-900 dark:text-emerald-300 font-bold block mb-1">Rencana Tindak Lanjut</strong>
                     <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{data?.highlight_tindak_lanjut || "Mempertahankan ritme kurva-S bersama tim pengawas."}</p>
                   </div>
                 </div>
@@ -857,7 +848,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                       </h2>
                     </div>
                   </div>
-                  <div className="text-right text-[10px] font-mono space-y-0.5">
+                  <div className="text-right text-[10px] tabular-nums space-y-0.5">
                     <div>No. Kontrak: <strong>{data?.nomor_kontrak}</strong></div>
                     <div>Periode: <strong>{data?.period_label || `${data?.month_name} ${data?.year}`}</strong></div>
                     <div>Health Score: <strong className="text-emerald-700">{healthScore}/100</strong></div>
@@ -883,7 +874,7 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                         </tr>
                         <tr>
                           <td className="text-slate-600 font-medium">Nilai Kontrak</td>
-                          <td className="font-bold font-mono text-blue-900">: {formatRupiah(data?.nilai_kontrak)}</td>
+                          <td className="font-bold tabular-nums text-blue-900">: {formatRupiah(data?.nilai_kontrak)}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -891,19 +882,19 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                   <div className="col-span-4 border border-slate-400 p-2.5 bg-slate-50/50 flex flex-col justify-between">
                     <div className="flex justify-between">
                       <span className="text-slate-600 font-medium">Plan Progress</span>
-                      <span className="font-mono font-bold">{planProgress.toFixed(2)}%</span>
+                      <span className="font-bold tabular-nums">{planProgress.toFixed(2)}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600 font-medium">Actual Progress</span>
-                      <span className="font-mono font-black text-blue-900">{actualProgress.toFixed(2)}%</span>
+                      <span className="font-extrabold tabular-nums text-blue-900">{actualProgress.toFixed(2)}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600 font-medium">Deviasi</span>
-                      <span className="font-mono font-bold text-emerald-700">{deviasi >= 0 ? "+" : ""}{deviasi.toFixed(2)}%</span>
+                      <span className="font-bold tabular-nums text-emerald-700">{deviasi >= 0 ? "+" : ""}{deviasi.toFixed(2)}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600 font-medium">Pencairan Keuangan</span>
-                      <span className="font-mono font-bold text-purple-900">{progKeuangan.toFixed(2)}%</span>
+                      <span className="font-bold tabular-nums text-purple-900">{progKeuangan.toFixed(2)}%</span>
                     </div>
                   </div>
                 </div>
@@ -918,22 +909,22 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                       <tr className="bg-slate-100 border-b border-slate-400 font-bold">
                         <th className="p-1 text-center border-r border-slate-300 w-8">NO</th>
                         <th className="p-1 border-r border-slate-300">PAKET PEKERJAAN</th>
-                        <th className="p-1 text-center border-r border-slate-300 font-mono">BOBOT (%)</th>
-                        <th className="p-1 text-center border-r border-slate-300 font-mono">BULAN INI PLAN</th>
-                        <th className="p-1 text-center border-r border-slate-300 font-mono">BULAN INI ACTUAL</th>
-                        <th className="p-1 text-center border-r border-slate-300 font-mono">KUMULATIF ACTUAL</th>
+                        <th className="p-1 text-center border-r border-slate-300">BOBOT (%)</th>
+                        <th className="p-1 text-center border-r border-slate-300">BULAN INI PLAN</th>
+                        <th className="p-1 text-center border-r border-slate-300">BULAN INI ACTUAL</th>
+                        <th className="p-1 text-center border-r border-slate-300">KUMULATIF ACTUAL</th>
                         <th className="p-1 text-center">STATUS</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
                       {data?.work_packages?.map((wp) => (
                         <tr key={wp.no}>
-                          <td className="p-1 text-center border-r border-slate-200 font-mono">{wp.no}</td>
+                          <td className="p-1 text-center border-r border-slate-200 tabular-nums">{wp.no}</td>
                           <td className="p-1 border-r border-slate-200 font-medium">{wp.name}</td>
-                          <td className="p-1 text-center border-r border-slate-200 font-mono">{wp.bobot.toFixed(2)}</td>
-                          <td className="p-1 text-center border-r border-slate-200 font-mono">{wp.bulan_ini_plan.toFixed(2)}</td>
-                          <td className="p-1 text-center border-r border-slate-200 font-mono">{wp.bulan_ini_actual.toFixed(2)}</td>
-                          <td className="p-1 text-center border-r border-slate-200 font-mono font-bold text-blue-900">{wp.kumulatif_actual.toFixed(2)}</td>
+                          <td className="p-1 text-center border-r border-slate-200 tabular-nums">{wp.bobot.toFixed(2)}</td>
+                          <td className="p-1 text-center border-r border-slate-200 tabular-nums">{wp.bulan_ini_plan.toFixed(2)}</td>
+                          <td className="p-1 text-center border-r border-slate-200 tabular-nums">{wp.bulan_ini_actual.toFixed(2)}</td>
+                          <td className="p-1 text-center border-r border-slate-200 font-bold tabular-nums text-blue-900">{wp.kumulatif_actual.toFixed(2)}</td>
                           <td className="p-1 text-center font-bold text-emerald-800">GREEN</td>
                         </tr>
                       ))}
@@ -949,22 +940,22 @@ export const ExecutiveProjectReportModalV2: React.FC<ExecutiveProjectReportModal
                   <div className="grid grid-cols-4 gap-4 text-center text-[9px]">
                     <div className="border border-slate-300 p-2 rounded flex flex-col justify-between h-32">
                       <span className="font-semibold text-slate-600">Disiapkan Oleh:<br /><strong>KONTRAKTOR PELAKSANA</strong></span>
-                      <div className="text-slate-400 font-mono text-[8px]">(Tanda Tangan &amp; Cap)</div>
+                      <div className="text-slate-400 text-[8px]">(Tanda Tangan &amp; Cap)</div>
                       <div className="border-t border-slate-400 pt-1 font-bold">{data?.kontraktor_name}</div>
                     </div>
                     <div className="border border-slate-300 p-2 rounded flex flex-col justify-between h-32">
                       <span className="font-semibold text-slate-600">Diperiksa Oleh:<br /><strong>KONSULTAN PENGAWAS</strong></span>
-                      <div className="text-slate-400 font-mono text-[8px]">(Tanda Tangan &amp; Cap)</div>
+                      <div className="text-slate-400 text-[8px]">(Tanda Tangan &amp; Cap)</div>
                       <div className="border-t border-slate-400 pt-1 font-bold">{data?.konsultan_pengawas}</div>
                     </div>
                     <div className="border border-slate-300 p-2 rounded flex flex-col justify-between h-32">
                       <span className="font-semibold text-slate-600">Diverifikasi Oleh:<br /><strong>WAKIL PPK WILAYAH</strong></span>
-                      <div className="text-slate-400 font-mono text-[8px]">(Tanda Tangan &amp; Cap)</div>
+                      <div className="text-slate-400 text-[8px]">(Tanda Tangan &amp; Cap)</div>
                       <div className="border-t border-slate-400 pt-1 font-bold">{data?.wakil_ppk}</div>
                     </div>
                     <div className="border border-slate-300 p-2 rounded flex flex-col justify-between h-32">
                       <span className="font-semibold text-slate-600">Disetujui Oleh:<br /><strong>PEJABAT PEMBUAT KOMITMEN</strong></span>
-                      <div className="text-slate-400 font-mono text-[8px]">(Tanda Tangan &amp; Cap)</div>
+                      <div className="text-slate-400 text-[8px]">(Tanda Tangan &amp; Cap)</div>
                       <div className="border-t border-slate-400 pt-1 font-bold">Direksi KNMP Pertamina</div>
                     </div>
                   </div>

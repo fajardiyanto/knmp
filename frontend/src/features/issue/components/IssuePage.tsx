@@ -115,8 +115,8 @@ export const IssuePage: React.FC = () => {
       const finalKnmpId = payload.knmp_id
         ? Number(payload.knmp_id)
         : !isAdminOrPengawas && defaultUserKnmpId
-        ? Number(defaultUserKnmpId)
-        : undefined;
+          ? Number(defaultUserKnmpId)
+          : undefined;
 
       const body = {
         knmp_id: finalKnmpId,
@@ -239,8 +239,8 @@ export const IssuePage: React.FC = () => {
       knmp_id: item.knmp_id
         ? item.knmp_id.toString()
         : !isAdminOrPengawas && defaultUserKnmpId
-        ? defaultUserKnmpId
-        : "",
+          ? defaultUserKnmpId
+          : "",
       kategori_issue: item.kategori_issue,
       tingkat: item.tingkat,
       uraian_masalah: item.uraian_masalah,
@@ -671,11 +671,10 @@ export const IssuePage: React.FC = () => {
                   key={p}
                   type="button"
                   onClick={() => setPage(p)}
-                  className={`w-7 h-7 rounded-lg font-bold text-xs transition-colors ${
-                    page === p
+                  className={`w-7 h-7 rounded-lg font-bold text-xs transition-colors ${page === p
                       ? "bg-[#0d6efd] text-white shadow-xs"
                       : "border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  }`}
+                    }`}
                 >
                   {p}
                 </button>
@@ -737,9 +736,6 @@ export const IssuePage: React.FC = () => {
                         <span>
                           {knmpOptions.find((k) => k.id.toString() === (formData.knmp_id || defaultUserKnmpId))?.name ||
                             `KNMP #${formData.knmp_id || defaultUserKnmpId}`}
-                        </span>
-                        <span className="text-[10px] text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded font-semibold">
-                          Otomatis Terkunci
                         </span>
                       </div>
                     ) : (

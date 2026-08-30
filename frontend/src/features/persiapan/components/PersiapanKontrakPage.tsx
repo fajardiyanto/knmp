@@ -179,8 +179,8 @@ export const PersiapanKontrakPage: React.FC = () => {
       knmp_id: item.knmp_id
         ? item.knmp_id.toString()
         : !isAdminOrPengawas && defaultUserKnmpId
-        ? defaultUserKnmpId
-        : "",
+          ? defaultUserKnmpId
+          : "",
       tanggal: item.tanggal?.split("T")[0] || "",
       keterangan: item.keterangan || "",
     });
@@ -213,8 +213,8 @@ export const PersiapanKontrakPage: React.FC = () => {
       const finalKnmpId = data.knmp_id
         ? Number(data.knmp_id)
         : !isAdminOrPengawas && defaultUserKnmpId
-        ? Number(defaultUserKnmpId)
-        : undefined;
+          ? Number(defaultUserKnmpId)
+          : undefined;
 
       const payload = {
         nama: data.nama,
@@ -296,7 +296,7 @@ export const PersiapanKontrakPage: React.FC = () => {
 
   return (
     <div className="space-y-7 w-full font-sans">
-      
+
       {/* 1. Top Action Row: Search, Dropdowns, Reset, Tambah Data */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:flex lg:flex-wrap items-center gap-3 flex-1">
@@ -392,7 +392,7 @@ export const PersiapanKontrakPage: React.FC = () => {
 
       {/* 2. 4 Summary Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        
+
         {/* Total Data */}
         <div className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div className="space-y-1.5">
@@ -441,7 +441,7 @@ export const PersiapanKontrakPage: React.FC = () => {
 
       {/* 3. Per Page Selector & Data Table Card */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-        
+
         {/* Top Controls */}
         <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
@@ -587,11 +587,10 @@ export const PersiapanKontrakPage: React.FC = () => {
                   key={p}
                   type="button"
                   onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-xl font-medium text-xs transition-colors ${
-                    page === p
+                  className={`w-8 h-8 rounded-xl font-medium text-xs transition-colors ${page === p
                       ? "bg-[#0d6efd] text-white shadow-xs"
                       : "border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  }`}
+                    }`}
                 >
                   {p}
                 </button>
@@ -604,11 +603,10 @@ export const PersiapanKontrakPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setPage(totalPages)}
-                  className={`w-8 h-8 rounded-xl font-medium text-xs transition-colors ${
-                    page === totalPages
+                  className={`w-8 h-8 rounded-xl font-medium text-xs transition-colors ${page === totalPages
                       ? "bg-[#0d6efd] text-white shadow-xs"
                       : "border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  }`}
+                    }`}
                 >
                   {totalPages}
                 </button>
@@ -805,9 +803,6 @@ export const PersiapanKontrakPage: React.FC = () => {
                     <span>
                       {knmpOptions.find((k) => k.id.toString() === (formData.knmp_id || defaultUserKnmpId))?.name ||
                         `KNMP #${formData.knmp_id || defaultUserKnmpId}`}
-                    </span>
-                    <span className="text-[11px] text-blue-700 bg-blue-100/70 dark:bg-blue-900/40 px-2 py-0.5 rounded-md font-semibold">
-                      Otomatis Terkunci
                     </span>
                   </div>
                 ) : (

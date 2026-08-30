@@ -114,8 +114,8 @@ export const PelaksanaanPage: React.FC = () => {
       const finalKnmpId = payload.knmp_id
         ? Number(payload.knmp_id)
         : !isAdminOrPengawas && defaultUserKnmpId
-        ? Number(defaultUserKnmpId)
-        : undefined;
+          ? Number(defaultUserKnmpId)
+          : undefined;
 
       const body = {
         nama: payload.nama,
@@ -206,8 +206,8 @@ export const PelaksanaanPage: React.FC = () => {
       knmp_id: item.knmp_id
         ? item.knmp_id.toString()
         : !isAdminOrPengawas && defaultUserKnmpId
-        ? defaultUserKnmpId
-        : "",
+          ? defaultUserKnmpId
+          : "",
       keterangan: item.keterangan || "",
     });
     setIsModalOpen(true);
@@ -608,11 +608,10 @@ export const PelaksanaanPage: React.FC = () => {
                   key={p}
                   type="button"
                   onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-xl font-bold text-xs transition-colors ${
-                    page === p
+                  className={`w-8 h-8 rounded-xl font-bold text-xs transition-colors ${page === p
                       ? "bg-[#0d6efd] text-white shadow-xs"
                       : "border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  }`}
+                    }`}
                 >
                   {p}
                 </button>
@@ -625,11 +624,10 @@ export const PelaksanaanPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setPage(totalPages)}
-                  className={`w-8 h-8 rounded-xl font-bold text-xs transition-colors ${
-                    page === totalPages
+                  className={`w-8 h-8 rounded-xl font-bold text-xs transition-colors ${page === totalPages
                       ? "bg-[#0d6efd] text-white shadow-xs"
                       : "border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  }`}
+                    }`}
                 >
                   {totalPages}
                 </button>
@@ -733,9 +731,6 @@ export const PelaksanaanPage: React.FC = () => {
                         <span>
                           {knmpOptions.find((k) => k.id.toString() === (formData.knmp_id || defaultUserKnmpId))?.name ||
                             `KNMP #${formData.knmp_id || defaultUserKnmpId}`}
-                        </span>
-                        <span className="text-[10px] text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded font-semibold">
-                          Otomatis Terkunci
                         </span>
                       </div>
                     ) : (
