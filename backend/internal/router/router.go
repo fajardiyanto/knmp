@@ -182,6 +182,7 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	protected.Get("/documents/:id/download", h.Document.Download)
 	protected.Post("/documents", h.Document.Upload)
 	protected.Patch("/documents/:id/verify", h.Document.Verify)
+	protected.Post("/documents/:id/verify", h.Document.Verify)
 	protected.Delete("/documents/:id", h.Document.Delete)
 
 	// Perusahaan / Kontraktor Detail & Master

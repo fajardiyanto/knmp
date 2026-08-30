@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { apiFetch, getFileUrl } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
+import { useAuth } from "../../auth/hooks/useAuth";
 import { formatDate } from "../../../lib/utils";
 
 interface LaporanDetail {
@@ -62,6 +63,17 @@ export const UploadDokumenLaporanPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showAlert, showConfirm } = useAlert();
+  const { user, hasRole } = useAuth();
+
+  const isSupervisor =
+    hasRole("superadmin") ||
+    hasRole("admin") ||
+    hasRole("admin_ppk") ||
+    hasRole("pengawas") ||
+    hasRole("konsultan_pengawas") ||
+    hasRole("ppk") ||
+    hasRole("wakil_ppk") ||
+    hasRole("wakil ppk");
 
   const [customDocs, setCustomDocs] = useState<LaporanDocDef[]>([
     { no: 5, code: "foto_kegiatan_tambahan", name: "Foto kegiatan tambahan", badge: "Tambahan", isMulti: true, isCustom: true },
@@ -143,14 +155,28 @@ export const UploadDokumenLaporanPage: React.FC = () => {
 
   // Verify Document Mutation
   const verifyDocMutation = useMutation({
-    mutationFn: ({ docId, status }: { docId: number; status: string }) =>
-      apiFetch(`/api/v1/documents/${docId}/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+    mutationFn: async ({ docId, status }: { docId: number; status: string }) => {
+      return apiFetch(`/api/v1/documents/${docId}/verify`, {
+        method: "PATCH",
         body: JSON.stringify({ status }),
-      }),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["laporan-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
+      queryClient.invalidateQueries({ queryKey: ["monthly-project-report"] });
+      showAlert({
+        title: "Verifikasi Berhasil",
+        message: "Status verifikasi dokumen berhasil diperbarui.",
+        type: "success",
+      });
+    },
+    onError: (err: any) => {
+      showAlert({
+        title: "Verifikasi Gagal",
+        message: err.message || "Gagal memperbarui status dokumen.",
+        type: "error",
+      });
     },
   });
 
@@ -512,8 +538,8 @@ export const UploadDokumenLaporanPage: React.FC = () => {
                           <span className="font-bold text-emerald-700 text-xs block">
                             Terverifikasi
                           </span>
-                          <span className="text-[10.5px] text-slate-400 block font-mono">
-                            Oleh: SuperAdmin
+                          <span className="text-[10.5px] text-slate-500 block font-mono">
+                            Oleh: {user?.name || "Pengawas"}
                           </span>
                           <span className="text-[10px] text-slate-400 block font-mono">
                             {formatDate(primaryDoc?.verified_at || primaryDoc?.created_at || "")}
@@ -549,24 +575,39 @@ export const UploadDokumenLaporanPage: React.FC = () => {
                     {/* Aksi */}
                     <td className="py-4 px-5 text-center text-xs align-top">
                       {hasDocs ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              verifyDocMutation.mutate({
-                                docId: primaryDoc.id,
-                                status: isVerified ? "dalam_verifikasi" : "terverifikasi",
-                              })
-                            }
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs ${
-                              isVerified
-                                ? "bg-[#198754] text-white hover:bg-[#157347]"
-                                : "bg-[#0dcaf0] text-white hover:bg-[#0bb5d8]"
-                            }`}
-                          >
-                            {isVerified ? "Terverifikasi" : "Verifikasi"}
-                          </button>
-                        </div>
+                        isSupervisor ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              disabled={verifyDocMutation.isPending}
+                              onClick={() => {
+                                const nextStatus = isVerified ? "pending" : "verified";
+                                matchingDocs.forEach((d) => {
+                                  verifyDocMutation.mutate({
+                                    docId: d.id,
+                                    status: nextStatus,
+                                  });
+                                });
+                              }}
+                              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+                                isVerified
+                                  ? "bg-[#198754] text-white hover:bg-[#157347]"
+                                  : "bg-[#0dcaf0] text-white hover:bg-[#0bb5d8]"
+                              }`}
+                              title={isVerified ? "Batalkan Verifikasi" : "Setujui & Verifikasi Berkas"}
+                            >
+                              {verifyDocMutation.isPending
+                                ? "Memproses..."
+                                : isVerified
+                                ? "Terverifikasi ✓"
+                                : "Verifikasi"}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs font-medium text-slate-500 italic">
+                            {isVerified ? "Terverifikasi Pengawas" : "Menunggu Verifikasi Pengawas"}
+                          </span>
+                        )
                       ) : (
                         <span className="text-slate-400 text-xs italic">Menunggu upload</span>
                       )}
