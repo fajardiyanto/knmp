@@ -24,6 +24,7 @@ import { UploadDokumenAbsensiPage } from "../features/absensi/components/UploadD
 import { IssuePage } from "../features/issue/components/IssuePage";
 import { UploadDokumenIssuePage } from "../features/issue/components/UploadDokumenIssuePage";
 import { UsersPage } from "../features/users/components/UsersPage";
+import { PerusahaanPage } from "../features/perusahaan/components/PerusahaanPage";
 import {
   PerencanaanPage,
   PHOPage,
@@ -313,6 +314,14 @@ export const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute requiredPermission="user_read">
               <UsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="perusahaan"
+          element={
+            <ProtectedRoute requiredPermission="user_read">
+              <PerusahaanPage />
             </ProtectedRoute>
           }
         />

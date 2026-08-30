@@ -18,6 +18,7 @@ import {
   DollarSign,
   Calendar,
   Building2,
+  Building,
   LogOut,
   FileText,
   MessageSquare,
@@ -139,11 +140,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: "USER",
       items: [
         { name: "Users", href: "/user", icon: Users, show: hasPermission("user_read") },
+        {
+          name: "Daftar Perusahaan",
+          href: "/perusahaan",
+          icon: Building2,
+          show: isSuperOrAdmin || hasPermission("user_read"),
+        },
         { name: "Periode", href: "/periode", icon: Calendar, show: hasPermission("periode_read") },
         {
           name: "Jenis Bangunan",
           href: "/jenis-bangunan",
-          icon: Building2,
+          icon: Building,
           show: hasPermission("jenis_bangunan_read"),
         },
       ],
