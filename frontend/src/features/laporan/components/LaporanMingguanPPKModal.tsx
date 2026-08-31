@@ -681,34 +681,44 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
 
                 {/* 5. Photos, HSE & Signatures (G, H, I) */}
                 <div className="grid grid-cols-12 gap-3.5 items-stretch">
-                  {/* G. Dokumentasi Kegiatan Minggu Ini (Sampel Geotagging) */}
+                  {/* G. Dokumentasi Kegiatan Lapangan (Sampel Geotagging) */}
                   <div className="col-span-6 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>G. DOKUMENTASI KEGIATAN MINGGU INI (SAMPEL GEOTAGGING GPS)</span>
+                      <span>G. DOKUMENTASI KEGIATAN LAPANGAN (SAMPEL GEOTAGGING GPS)</span>
                     </div>
 
-                    <div className="grid grid-cols-6 gap-2">
-                      {(reportData.photos || []).map((item, idx) => (
-                        <div key={idx} className="space-y-1 text-center group">
-                          <div className="h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-300 flex items-center justify-center relative shadow-xs">
-                            <img
-                              src={item.file_url}
-                              alt={item.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              onError={(e) => {
-                                e.currentTarget.src = "/assets/images/property-1.jpg";
-                              }}
-                            />
-                            <div className="absolute top-0.5 right-0.5 bg-black/60 text-white text-[6.5px] font-bold px-1 py-0.2 rounded backdrop-blur-xs">
-                              GPS 📍
+                    {reportData.photos && reportData.photos.length > 0 ? (
+                      <div className="grid grid-cols-6 gap-2">
+                        {reportData.photos.map((item, idx) => (
+                          <div key={idx} className="space-y-1 text-center group">
+                            <div className="h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-300 flex items-center justify-center relative shadow-xs">
+                              <img
+                                src={item.file_url}
+                                alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                  if (e.currentTarget.parentElement) {
+                                    e.currentTarget.parentElement.innerHTML =
+                                      '<div class="flex flex-col items-center justify-center p-1 text-slate-400 text-[8px] font-semibold"><span class="text-xs mb-0.5">📷</span><span>Foto Lapangan</span></div>';
+                                  }
+                                }}
+                              />
+                              <div className="absolute top-0.5 right-0.5 bg-black/60 text-white text-[6.5px] font-bold px-1 py-0.2 rounded backdrop-blur-xs">
+                                GPS 📍
+                              </div>
                             </div>
+                            <span className="text-[7.5px] font-bold text-slate-700 block line-clamp-1" title={item.title}>
+                              {item.title}
+                            </span>
                           </div>
-                          <span className="text-[7.5px] font-bold text-slate-700 block line-clamp-1" title={item.title}>
-                            {item.title}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-16 flex items-center justify-center bg-white rounded-lg border border-dashed border-slate-300 text-slate-400 text-[8.5px] italic">
+                        Belum ada foto dokumentasi kegiatan lapangan yang diunggah.
+                      </div>
+                    )}
                   </div>
 
                   {/* H. Kepatuhan & Keselamatan Kerja */}

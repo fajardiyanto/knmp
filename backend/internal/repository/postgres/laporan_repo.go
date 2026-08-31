@@ -1417,7 +1417,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 		}
 	}
 
-	// 11. Section G: Real Geotagged Documentation Photos
+	// 11. Section G: Real Geotagged Documentation Photos (Only Real Uploaded Files)
 	type docPhotoRow struct {
 		ID       int64  `db:"id"`
 		FilePath string `db:"file_path"`
@@ -1460,36 +1460,19 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 		`)
 	}
 
-	realFallbackImages := []struct {
-		Title string
-		URL   string
-	}{
-		{Title: "Pekerjaan Pondasi & Dermaga Hub", URL: "/assets/images/property-1.jpg"},
-		{Title: "Pemasangan Fasilitas Pabrik Es", URL: "/assets/images/property-2.jpg"},
-		{Title: "Instalasi Panel Solar Cell Sentra Nelayan", URL: "/assets/images/property-5.png"},
-		{Title: "Inspeksi Kualitas Fisik bersama Pengawas", URL: "/assets/images/event-1.jpg"},
-		{Title: "Penyusunan Sarana Pendukung & UMKM", URL: "/assets/images/property-7.png"},
-		{Title: "Rapat Lapangan Tim Pelaksana & Nelayan", URL: "/assets/images/event-3.jpg"},
-	}
-
-	for i := 0; i < 6; i++ {
-		if i < len(rawDocs) && rawDocs[i].FilePath != "" {
-			title := rawDocs[i].DocTitle
+	for _, doc := range rawDocs {
+		if doc.FilePath != "" {
+			title := doc.DocTitle
 			if title == "" || title == "Kontraktor" || title == "-" {
-				title = rawDocs[i].Category
+				title = doc.Category
 			}
-			fileURL := rawDocs[i].FilePath
+			fileURL := doc.FilePath
 			if !strings.HasPrefix(fileURL, "/") {
 				fileURL = "/" + fileURL
 			}
 			data.Photos = append(data.Photos, domain.WeeklyPhotoItem{
 				Title:   title,
 				FileURL: fileURL,
-			})
-		} else {
-			data.Photos = append(data.Photos, domain.WeeklyPhotoItem{
-				Title:   realFallbackImages[i].Title,
-				FileURL: realFallbackImages[i].URL,
 			})
 		}
 	}
