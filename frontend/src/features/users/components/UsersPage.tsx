@@ -334,20 +334,6 @@ export const UsersPage: React.FC = () => {
 
   const getRoleBadge = (roleName?: string) => {
     const r = (roleName || "Kontraktor").toLowerCase();
-    if (r.includes("wakil")) {
-      return (
-        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200">
-          Wakil PPK
-        </span>
-      );
-    }
-    if (r === "ppk") {
-      return (
-        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-200">
-          PPK
-        </span>
-      );
-    }
     if (r.includes("pengawas")) {
       return (
         <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">
@@ -355,16 +341,17 @@ export const UsersPage: React.FC = () => {
         </span>
       );
     }
-    if (r.includes("admin")) {
+    if (r.includes("kontraktor")) {
       return (
-        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
-          Admin_ppk
+        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-600 border border-teal-200">
+          Kontraktor
         </span>
       );
     }
+    // PPK, Wakil PPK, Admin_ppk, admin, superadmin → semua tampil sebagai Admin
     return (
-      <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-600 border border-teal-200">
-        Kontraktor
+      <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
+        Admin
       </span>
     );
   };
@@ -399,10 +386,8 @@ export const UsersPage: React.FC = () => {
             className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[140px]"
           >
             <option value="">Role</option>
-            <option value="Wakil PPK">Wakil PPK</option>
-            <option value="PPK">PPK</option>
+            <option value="Admin_ppk">Admin</option>
             <option value="Pengawas">Pengawas</option>
-            <option value="Admin_ppk">Admin PPK</option>
             <option value="Kontraktor">Kontraktor</option>
           </select>
         </div>
