@@ -107,6 +107,15 @@ type ProjectReportFilter struct {
 	EndDate    string
 }
 
+type WeeklyReportFilter struct {
+	Week        int
+	Year        int
+	IsGlobal    bool
+	UserRoles   []string
+	UserKnmpIDs []int64
+	UserID      int64
+}
+
 type LaporanRepository interface {
 	GetByID(ctx context.Context, id int64) (*domain.Laporan, error)
 	List(ctx context.Context, filter LaporanFilter) ([]*domain.Laporan, error)
@@ -116,7 +125,7 @@ type LaporanRepository interface {
 	Delete(ctx context.Context, id int64) error
 	GetDetailsByLaporanID(ctx context.Context, laporanID int64) ([]*domain.LaporanJenisBangunan, error)
 	GetMonthlyProjectReportData(ctx context.Context, filter ProjectReportFilter) (*domain.MonthlyProjectReportData, error)
-	GetWeeklyPPKReportData(ctx context.Context, week int, year int) (*domain.WeeklyPPKReportData, error)
+	GetWeeklyPPKReportData(ctx context.Context, filter WeeklyReportFilter) (*domain.WeeklyPPKReportData, error)
 }
 
 type AbsensiFilter struct {

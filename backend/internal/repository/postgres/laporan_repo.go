@@ -815,10 +815,12 @@ func (r *laporanRepo) GetMonthlyProjectReportData(ctx context.Context, filter re
 	return report, nil
 }
 
-func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year int) (*domain.WeeklyPPKReportData, error) {
+func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter repository.WeeklyReportFilter) (*domain.WeeklyPPKReportData, error) {
+	week := filter.Week
 	if week <= 0 {
 		week = 14
 	}
+	year := filter.Year
 	if year < 2020 {
 		year = 2026
 	}
@@ -865,7 +867,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 		}
 	}
 
-	// 2. Fetch KNMP points & status counts
+	// 2. Fetch KNMP points & status counts with Scoping
 	type knmpRow struct {
 		ID        int64    `db:"id"`
 		Name      string   `db:"name"`
@@ -876,22 +878,50 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 		Province  *string  `db:"province_name"`
 	}
 	var knmpList []knmpRow
-	gisQuery := `
-		SELECT k.id, k.name, k.lat, k.long,
-		       COALESCE(k.realisasi_progres_fisik, 0) as progress,
-		       COALESCE(rg.name, '-') as regency_name,
-		       COALESCE(pr.name, '-') as province_name
-		FROM knmps k
-		LEFT JOIN regencies rg ON k.regency_id = rg.id
-		LEFT JOIN provinces pr ON k.province_id = pr.id
-		WHERE k.deleted_at IS NULL
-		ORDER BY k.id ASC
-	`
-	_ = r.db.SelectContext(ctx, &knmpList, gisQuery)
+
+	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
+		gisQuery := `
+			SELECT k.id, k.name, k.lat, k.long,
+			       COALESCE(k.realisasi_progres_fisik, 0) as progress,
+			       COALESCE(rg.name, '-') as regency_name,
+			       COALESCE(pr.name, '-') as province_name
+			FROM knmps k
+			LEFT JOIN regencies rg ON k.regency_id = rg.id
+			LEFT JOIN provinces pr ON k.province_id = pr.id
+			WHERE k.deleted_at IS NULL AND k.id = ANY($1)
+			ORDER BY k.id ASC
+		`
+		_ = r.db.SelectContext(ctx, &knmpList, gisQuery, pq.Array(filter.UserKnmpIDs))
+	} else {
+		gisQuery := `
+			SELECT k.id, k.name, k.lat, k.long,
+			       COALESCE(k.realisasi_progres_fisik, 0) as progress,
+			       COALESCE(rg.name, '-') as regency_name,
+			       COALESCE(pr.name, '-') as province_name
+			FROM knmps k
+			LEFT JOIN regencies rg ON k.regency_id = rg.id
+			LEFT JOIN provinces pr ON k.province_id = pr.id
+			WHERE k.deleted_at IS NULL
+			ORDER BY k.id ASC
+		`
+		_ = r.db.SelectContext(ctx, &knmpList, gisQuery)
+	}
 
 	data.TotalLokasi = len(knmpList)
 	if data.TotalLokasi == 0 {
-		data.TotalLokasi = 346
+		if filter.IsGlobal {
+			data.TotalLokasi = 346
+		} else {
+			data.TotalLokasi = 1
+		}
+	}
+
+	if !filter.IsGlobal && len(knmpList) > 0 {
+		provStr := "Sumatera"
+		if knmpList[0].Province != nil && *knmpList[0].Province != "" {
+			provStr = *knmpList[0].Province
+		}
+		data.Wilayah = fmt.Sprintf("%s (%s)", knmpList[0].Name, provStr)
 	}
 
 	var sumProgress float64
@@ -953,8 +983,12 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 		})
 	}
 
-	// 3. Count tertunda / issues
-	_ = r.db.GetContext(ctx, &tertunda, `SELECT COUNT(DISTINCT knmp_id) FROM issues WHERE status != 'selesai' AND deleted_at IS NULL`)
+	// 3. Count tertunda / issues with scoping
+	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
+		_ = r.db.GetContext(ctx, &tertunda, `SELECT COUNT(DISTINCT knmp_id) FROM issues WHERE status != 'selesai' AND deleted_at IS NULL AND knmp_id = ANY($1)`, pq.Array(filter.UserKnmpIDs))
+	} else {
+		_ = r.db.GetContext(ctx, &tertunda, `SELECT COUNT(DISTINCT knmp_id) FROM issues WHERE status != 'selesai' AND deleted_at IS NULL`)
+	}
 
 	data.LokasiSelesai = selesai
 	data.LokasiOnProgress = onProgress
@@ -964,26 +998,44 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 	if countWithProg > 0 {
 		data.CapaianFisikKumulatif = math.Round((sumProgress/float64(countWithProg))*100) / 100
 	} else {
-		data.CapaianFisikKumulatif = 72.45
+		data.CapaianFisikKumulatif = 33.52
 	}
 
-	// 4. Persiapans & Kontraktor
-	_ = r.db.GetContext(ctx, &data.TotalKontraktor, `SELECT COUNT(DISTINCT perusahaan_id) FROM persiapans WHERE deleted_at IS NULL`)
-	if data.TotalKontraktor == 0 {
-		data.TotalKontraktor = 32
-	}
-
-	var nilaiKontrak float64
-	_ = r.db.GetContext(ctx, &nilaiKontrak, `SELECT COALESCE(SUM(nilai_kontrak), 0) FROM persiapans WHERE deleted_at IS NULL`)
-	if nilaiKontrak > 0 {
-		data.NilaiKontrakKumulatif = nilaiKontrak
+	// 4. Persiapans & Kontraktor with Scoping
+	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
+		_ = r.db.GetContext(ctx, &data.TotalKontraktor, `SELECT COUNT(DISTINCT perusahaan_id) FROM persiapans WHERE deleted_at IS NULL AND knmp_id = ANY($1)`, pq.Array(filter.UserKnmpIDs))
+		if data.TotalKontraktor == 0 {
+			data.TotalKontraktor = 1
+		}
+		var nilaiKontrak float64
+		_ = r.db.GetContext(ctx, &nilaiKontrak, `SELECT COALESCE(SUM(nilai_kontrak), 0) FROM persiapans WHERE deleted_at IS NULL AND knmp_id = ANY($1)`, pq.Array(filter.UserKnmpIDs))
+		if nilaiKontrak > 0 {
+			data.NilaiKontrakKumulatif = nilaiKontrak
+		} else {
+			data.NilaiKontrakKumulatif = float64(data.TotalLokasi) * 1485000000.0
+		}
 	} else {
-		data.NilaiKontrakKumulatif = float64(data.TotalLokasi) * 1485000000.0 // Rp 1.485 M per titik standard
+		_ = r.db.GetContext(ctx, &data.TotalKontraktor, `SELECT COUNT(DISTINCT perusahaan_id) FROM persiapans WHERE deleted_at IS NULL`)
+		if data.TotalKontraktor == 0 {
+			data.TotalKontraktor = 32
+		}
+		var nilaiKontrak float64
+		_ = r.db.GetContext(ctx, &nilaiKontrak, `SELECT COALESCE(SUM(nilai_kontrak), 0) FROM persiapans WHERE deleted_at IS NULL`)
+		if nilaiKontrak > 0 {
+			data.NilaiKontrakKumulatif = nilaiKontrak
+		} else {
+			data.NilaiKontrakKumulatif = float64(data.TotalLokasi) * 1485000000.0
+		}
 	}
 
-	// 5. Pembayarans
+	// 5. Pembayarans with Scoping
 	var realKeuangan float64
-	_ = r.db.GetContext(ctx, &realKeuangan, `SELECT COALESCE(SUM(realisasi_anggaran), 0) FROM pembayarans WHERE deleted_at IS NULL`)
+	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
+		_ = r.db.GetContext(ctx, &realKeuangan, `SELECT COALESCE(SUM(realisasi_anggaran), 0) FROM pembayarans WHERE deleted_at IS NULL AND knmp_id = ANY($1)`, pq.Array(filter.UserKnmpIDs))
+	} else {
+		_ = r.db.GetContext(ctx, &realKeuangan, `SELECT COALESCE(SUM(realisasi_anggaran), 0) FROM pembayarans WHERE deleted_at IS NULL`)
+	}
+
 	if realKeuangan > 0 {
 		data.RealisasiKeuangan = realKeuangan
 	} else {
@@ -996,13 +1048,19 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 		data.SisaAnggaranPct = math.Round((data.SisaAnggaran/data.NilaiKontrakKumulatif)*10000) / 100
 	}
 
-	// 6. Section E: Capaian Progress Fisik Rekap (Direct Query from Pelaksanaan & Laporan)
-	var pelaksCount int
-	_ = r.db.GetContext(ctx, &pelaksCount, `SELECT COUNT(DISTINCT knmp_id) FROM pelaksanaans WHERE deleted_at IS NULL`)
-
-	// Total real average physical progress from laporans & pelaksanaans
+	// 6. Section E: Capaian Progress Fisik Rekap (Direct Query from Pelaksanaan & Laporan with Scoping)
 	var avgFisikReal float64
-	_ = r.db.GetContext(ctx, &avgFisikReal, `SELECT COALESCE(AVG(realisasi_progres_fisik), 0) FROM laporans WHERE deleted_at IS NULL`)
+	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
+		_ = r.db.GetContext(ctx, &avgFisikReal, `
+			SELECT COALESCE(AVG(l.realisasi_progres_fisik), 0)
+			FROM laporans l
+			JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
+			WHERE l.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+	} else {
+		_ = r.db.GetContext(ctx, &avgFisikReal, `SELECT COALESCE(AVG(realisasi_progres_fisik), 0) FROM laporans WHERE deleted_at IS NULL`)
+	}
+
 	if avgFisikReal == 0 && data.CapaianFisikKumulatif > 0 {
 		avgFisikReal = data.CapaianFisikKumulatif
 	}
@@ -1061,7 +1119,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 	// 7. Section F: Rekap Lokasi Status
 	tot := float64(data.TotalLokasi)
 	if tot == 0 {
-		tot = 346
+		tot = 1
 	}
 	data.RekapLokasi = []domain.WeeklyLokasiStatusItem{
 		{No: 1, Status: "🟢 Selesai (100%)", Jumlah: data.LokasiSelesai, Persentase: math.Round((float64(data.LokasiSelesai)/tot)*1000) / 10, Keterangan: "Siap PHO & Serah Terima"},
@@ -1079,7 +1137,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 		{Code: "E", Name: "Penguatan Kelembagaan & Sosial", Progress: math.Round(avgFisikReal*0.87*100) / 100},
 	}
 
-	// 9. Section H & I: Real Issues from database
+	// 9. Section H & I: Real Issues with Scoping
 	type issueRow struct {
 		ID              int64   `db:"id"`
 		Deskripsi       *string `db:"deskripsi_kendala"`
@@ -1093,21 +1151,32 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 		Status          *string `db:"status"`
 	}
 	var rawIssues []issueRow
-	_ = r.db.SelectContext(ctx, &rawIssues, `
-		SELECT id, deskripsi_kendala, lokasi, penyebab, dampak, tingkat_kendala,
-		       rencana_mitigasi, pic, target_selesai, status
-		FROM issues
-		WHERE deleted_at IS NULL
-		ORDER BY id DESC
-		LIMIT 5
-	`)
+	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
+		_ = r.db.SelectContext(ctx, &rawIssues, `
+			SELECT id, deskripsi_kendala, lokasi, penyebab, dampak, tingkat_kendala,
+			       rencana_mitigasi, pic, target_selesai, status
+			FROM issues
+			WHERE deleted_at IS NULL AND knmp_id = ANY($1)
+			ORDER BY id DESC
+			LIMIT 5
+		`, pq.Array(filter.UserKnmpIDs))
+	} else {
+		_ = r.db.SelectContext(ctx, &rawIssues, `
+			SELECT id, deskripsi_kendala, lokasi, penyebab, dampak, tingkat_kendala,
+			       rencana_mitigasi, pic, target_selesai, status
+			FROM issues
+			WHERE deleted_at IS NULL
+			ORDER BY id DESC
+			LIMIT 5
+		`)
+	}
 
 	for i, iss := range rawIssues {
 		desk := "Kendala teknis pelaksanaan"
 		if iss.Deskripsi != nil && *iss.Deskripsi != "" {
 			desk = *iss.Deskripsi
 		}
-		lok := "Sumatera"
+		lok := data.Wilayah
 		if iss.Lokasi != nil && *iss.Lokasi != "" {
 			lok = *iss.Lokasi
 		}
@@ -1161,20 +1230,30 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 		})
 	}
 
-	// 10. Section J: Work Plans from pelaksanaans
+	// 10. Section J: Work Plans with Scoping
 	type planRow struct {
 		ID      int64   `db:"id"`
 		Nama    string  `db:"nama"`
 		Rencana *string `db:"rencana_minggu_depan"`
 	}
 	var rawPlans []planRow
-	_ = r.db.SelectContext(ctx, &rawPlans, `
-		SELECT id, nama, rencana_minggu_depan
-		FROM pelaksanaans
-		WHERE deleted_at IS NULL AND rencana_minggu_depan IS NOT NULL AND rencana_minggu_depan != ''
-		ORDER BY id DESC
-		LIMIT 5
-	`)
+	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
+		_ = r.db.SelectContext(ctx, &rawPlans, `
+			SELECT id, nama, rencana_minggu_depan
+			FROM pelaksanaans
+			WHERE deleted_at IS NULL AND rencana_minggu_depan IS NOT NULL AND rencana_minggu_depan != '' AND knmp_id = ANY($1)
+			ORDER BY id DESC
+			LIMIT 5
+		`, pq.Array(filter.UserKnmpIDs))
+	} else {
+		_ = r.db.SelectContext(ctx, &rawPlans, `
+			SELECT id, nama, rencana_minggu_depan
+			FROM pelaksanaans
+			WHERE deleted_at IS NULL AND rencana_minggu_depan IS NOT NULL AND rencana_minggu_depan != ''
+			ORDER BY id DESC
+			LIMIT 5
+		`)
+	}
 
 	for i, p := range rawPlans {
 		text := p.Nama
@@ -1198,7 +1277,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 		}
 	}
 
-	// 11. Section K: Photos from documents
+	// 11. Section K: Photos with Scoping
 	type docRow struct {
 		ID       int64  `db:"id"`
 		FilePath string `db:"file_path"`
@@ -1206,13 +1285,24 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 		Category string `db:"category"`
 	}
 	var rawDocs []docRow
-	_ = r.db.SelectContext(ctx, &rawDocs, `
-		SELECT id, file_path, original_name, category
-		FROM documents
-		WHERE mime_type LIKE 'image/%' AND deleted_at IS NULL
-		ORDER BY id DESC
-		LIMIT 6
-	`)
+	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
+		_ = r.db.SelectContext(ctx, &rawDocs, `
+			SELECT d.id, d.file_path, d.original_name, d.category
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.mime_type LIKE 'image/%' AND d.deleted_at IS NULL AND d.documentable_type = 'pelaksanaan' AND p.knmp_id = ANY($1)
+			ORDER BY d.id DESC
+			LIMIT 6
+		`, pq.Array(filter.UserKnmpIDs))
+	} else {
+		_ = r.db.SelectContext(ctx, &rawDocs, `
+			SELECT id, file_path, original_name, category
+			FROM documents
+			WHERE mime_type LIKE 'image/%' AND deleted_at IS NULL
+			ORDER BY id DESC
+			LIMIT 6
+		`)
+	}
 
 	categories := []string{
 		"Infrastruktur Darat", "Infrastruktur Laut", "Sarana Produksi",
@@ -1236,23 +1326,10 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 	data.K3Pelatihan = 12
 	data.K3KepatuhanAPD = 98.5
 
-	var k3Agg struct {
-		TotalFatal    int     `db:"total_fatal"`
-		TotalNearMiss int     `db:"total_near_miss"`
-		AvgTenaga     float64 `db:"avg_tenaga"`
-	}
-	_ = r.db.GetContext(ctx, &k3Agg, `
-		SELECT COALESCE(SUM(jumlah_tenaga_kerja), 0) as total_fatal,
-		       COALESCE(AVG(jumlah_tenaga_kerja), 5) as avg_tenaga,
-		       0 as total_near_miss
-		FROM laporans
-		WHERE deleted_at IS NULL
-	`)
-
 	// 13. Section B: Dynamic Executive Summary Narrative
 	data.RingkasanNarasi = fmt.Sprintf(
-		"Pada minggu ini, pelaksanaan Program KNMP Sumatra menunjukkan kemajuan positif dengan capaian fisik kumulatif sebesar %.2f%%. Sebanyak %d lokasi on progress, %d lokasi selesai, dan %d lokasi masih dalam tahap persiapan. Terdapat %d isu/kendala utama yang sedang ditindaklanjuti dengan solusi dan rencana aksi yang terencana. Secara umum, pelaksanaan proyek berjalan sesuai rencana dengan komitmen untuk menjaga kualitas, keselamatan, dan ketepatan waktu.",
-		data.CapaianFisikKumulatif, data.LokasiOnProgress, data.LokasiSelesai, data.LokasiPersiapan, len(data.Issues),
+		"Pada minggu ini, pelaksanaan Program KNMP %s menunjukkan kemajuan positif dengan capaian fisik kumulatif sebesar %.2f%%. Sebanyak %d lokasi on progress, %d lokasi selesai, dan %d lokasi masih dalam tahap persiapan. Terdapat %d isu/kendala utama yang sedang ditindaklanjuti dengan solusi dan rencana aksi yang terencana. Secara umum, pelaksanaan proyek berjalan sesuai rencana dengan komitmen untuk menjaga kualitas, keselamatan, dan ketepatan waktu.",
+		data.Wilayah, data.CapaianFisikKumulatif, data.LokasiOnProgress, data.LokasiSelesai, data.LokasiPersiapan, len(data.Issues),
 	)
 
 	return data, nil

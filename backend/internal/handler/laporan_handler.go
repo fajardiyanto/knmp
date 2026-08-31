@@ -380,7 +380,29 @@ func (h *LaporanHandler) GetWeeklyPPKReportData(c *fiber.Ctx) error {
 	week, _ := strconv.Atoi(c.Query("week", "14"))
 	year, _ := strconv.Atoi(c.Query("year", "2026"))
 
-	data, err := h.laporanSvc.GetWeeklyPPKReportData(c.Context(), week, year)
+	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
+	isGlobal := false
+	for _, r := range userRoles {
+		lower := strings.ToLower(strings.TrimSpace(r))
+		if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin ppk" || lower == "admin" || lower == "ppk" {
+			isGlobal = true
+			break
+		}
+	}
+
+	userKnmpIDs, _ := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64)
+	userID, _ := c.Locals(middleware.CtxUserIDKey).(int64)
+
+	filter := repository.WeeklyReportFilter{
+		Week:        week,
+		Year:        year,
+		IsGlobal:    isGlobal,
+		UserRoles:   userRoles,
+		UserKnmpIDs: userKnmpIDs,
+		UserID:      userID,
+	}
+
+	data, err := h.laporanSvc.GetWeeklyPPKReportData(c.Context(), filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse(err.Error()))
 	}

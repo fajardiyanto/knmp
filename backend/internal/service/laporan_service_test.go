@@ -71,7 +71,7 @@ func (m *mockLaporanRepo) GetMonthlyProjectReportData(ctx context.Context, filte
 	}, nil
 }
 
-func (m *mockLaporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year int) (*domain.WeeklyPPKReportData, error) {
+func (m *mockLaporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter repository.WeeklyReportFilter) (*domain.WeeklyPPKReportData, error) {
 	return &domain.WeeklyPPKReportData{
 		PPKName:               "Ir. Hendra Wijaya, M.T.",
 		Wilayah:               "SUMATRA",

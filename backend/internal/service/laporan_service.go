@@ -253,6 +253,6 @@ func (s *LaporanService) GetMonthlyProjectReportData(ctx context.Context, filter
 	return s.laporanRepo.GetMonthlyProjectReportData(ctx, filter)
 }
 
-func (s *LaporanService) GetWeeklyPPKReportData(ctx context.Context, week int, year int) (*domain.WeeklyPPKReportData, error) {
-	return s.laporanRepo.GetWeeklyPPKReportData(ctx, week, year)
+func (s *LaporanService) GetWeeklyPPKReportData(ctx context.Context, filter repository.WeeklyReportFilter) (*domain.WeeklyPPKReportData, error) {
+	return s.laporanRepo.GetWeeklyPPKReportData(ctx, filter)
 }
