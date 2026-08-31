@@ -1223,83 +1223,86 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 		{Code: "E", Name: "Penguatan Kelembagaan & Sosial", Progress: math.Min(100.0, math.Round(progBase*0.87*100)/100)},
 	}
 
-	// 9. Section H & I: Real Issues with Scoping
+	// 9. Section F & G: Real Issues with Scoping
 	type issueRow struct {
-		ID              int64   `db:"id"`
-		Deskripsi       *string `db:"deskripsi_kendala"`
-		Lokasi          *string `db:"lokasi"`
-		Penyebab        *string `db:"penyebab"`
-		Dampak          *string `db:"dampak"`
-		Tingkat         *string `db:"tingkat_kendala"`
-		RencanaMitigasi *string `db:"rencana_mitigasi"`
-		PIC             *string `db:"pic"`
-		TargetSelesai   *string `db:"target_selesai"`
-		Status          *string `db:"status"`
+		ID            int64     `db:"id"`
+		KnmpID        int64     `db:"knmp_id"`
+		Kategori      string    `db:"kategori_issue"`
+		Tingkat       string    `db:"tingkat"`
+		Status        string    `db:"status"`
+		UraianMasalah string    `db:"uraian_masalah"`
+		KnmpName      string    `db:"knmp_name"`
+		CreatedByName string    `db:"created_by_name"`
+		CreatedAt     time.Time `db:"created_at"`
 	}
 	var rawIssues []issueRow
 	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
 		_ = r.db.SelectContext(ctx, &rawIssues, `
-			SELECT id, deskripsi_kendala, lokasi, penyebab, dampak, tingkat_kendala,
-			       rencana_mitigasi, pic, target_selesai, status
-			FROM issues
-			WHERE deleted_at IS NULL AND knmp_id = ANY($1)
-			ORDER BY id DESC
-			LIMIT 5
+			SELECT i.id, i.knmp_id, i.kategori_issue, i.tingkat, i.status, i.uraian_masalah,
+			       i.created_at,
+			       COALESCE(k.name, '-') as knmp_name,
+			       COALESCE(u.name, 'Kontraktor') as created_by_name
+			FROM issues i
+			LEFT JOIN knmps k ON i.knmp_id = k.id
+			LEFT JOIN users u ON i.created_by = u.id
+			WHERE i.knmp_id = ANY($1)
+			ORDER BY i.id DESC
+			LIMIT 10
 		`, pq.Array(filter.UserKnmpIDs))
-	} else {
+	}
+
+	if len(rawIssues) == 0 {
 		_ = r.db.SelectContext(ctx, &rawIssues, `
-			SELECT id, deskripsi_kendala, lokasi, penyebab, dampak, tingkat_kendala,
-			       rencana_mitigasi, pic, target_selesai, status
-			FROM issues
-			WHERE deleted_at IS NULL
-			ORDER BY id DESC
-			LIMIT 5
+			SELECT i.id, i.knmp_id, i.kategori_issue, i.tingkat, i.status, i.uraian_masalah,
+			       i.created_at,
+			       COALESCE(k.name, '-') as knmp_name,
+			       COALESCE(u.name, 'Kontraktor') as created_by_name
+			FROM issues i
+			LEFT JOIN knmps k ON i.knmp_id = k.id
+			LEFT JOIN users u ON i.created_by = u.id
+			ORDER BY i.id DESC
+			LIMIT 10
 		`)
 	}
 
 	for i, iss := range rawIssues {
-		desk := "Kendala teknis pelaksanaan"
-		if iss.Deskripsi != nil && *iss.Deskripsi != "" {
-			desk = *iss.Deskripsi
+		desk := iss.UraianMasalah
+		if desk == "" {
+			desk = fmt.Sprintf("Kendala kategori %s", iss.Kategori)
 		}
-		lok := data.Wilayah
-		if iss.Lokasi != nil && *iss.Lokasi != "" {
-			lok = *iss.Lokasi
+		lok := iss.KnmpName
+		if lok == "-" || lok == "" {
+			lok = data.Wilayah
 		}
-		peny := "Faktor Alam / Logistik"
-		if iss.Penyebab != nil && *iss.Penyebab != "" {
-			peny = *iss.Penyebab
+		peny := fmt.Sprintf("Faktor %s", iss.Kategori)
+		if iss.Kategori == "" {
+			peny = "Faktor Lapangan / Teknis"
 		}
-		damp := "Penyesuaian jadwal harian"
-		if iss.Dampak != nil && *iss.Dampak != "" {
-			damp = *iss.Dampak
+		damp := "Penyesuaian ritme & jadwal kerja"
+		risk := "🟡 Sedang"
+		lowerTingkat := strings.ToLower(iss.Tingkat)
+		if lowerTingkat == "kritis" || lowerTingkat == "berat" || lowerTingkat == "tinggi" {
+			risk = "🔴 Kritis"
+		} else if lowerTingkat == "ringan" || lowerTingkat == "rendah" {
+			risk = "🟢 Ringan"
 		}
-		risk := "🟡 Menengah"
-		if iss.Tingkat != nil {
-			if *iss.Tingkat == "berat" || *iss.Tingkat == "tinggi" {
-				risk = "🔴 Tinggi"
-			} else if *iss.Tingkat == "ringan" || *iss.Tingkat == "rendah" {
-				risk = "🟢 Rendah"
-			}
-		}
-		mit := "Koordinasi pengawas & percepatan lapangan"
-		if iss.RencanaMitigasi != nil && *iss.RencanaMitigasi != "" {
-			mit = *iss.RencanaMitigasi
-		}
-		pic := "Site Engineer"
-		if iss.PIC != nil && *iss.PIC != "" {
-			pic = *iss.PIC
+
+		mit := fmt.Sprintf("Mitigasi & penanganan kendala %s", strings.ToLower(iss.Kategori))
+		pic := iss.CreatedByName
+		if pic == "" || pic == "-" {
+			pic = "Pengawas Lapangan"
 		}
 		tgt := tglAkhir
-		if iss.TargetSelesai != nil && *iss.TargetSelesai != "" {
-			tgt = *iss.TargetSelesai
-			if len(tgt) > 10 {
-				tgt = tgt[:10]
-			}
-		}
-		stat := "On Progress"
-		if iss.Status != nil && *iss.Status != "" {
-			stat = *iss.Status
+
+		stat := iss.Status
+		if stat == "menunggu_pengawas" {
+			stat = "Menunggu Verifikasi"
+		} else if stat == "proses" || stat == "on_progress" {
+			stat = "Dalam Penanganan"
+		} else if stat == "selesai" {
+			stat = "Terselesaikan"
+		} else if stat == "" {
+			stat = "Aktif"
 		}
 
 		data.Issues = append(data.Issues, domain.WeeklyIssueItem{
