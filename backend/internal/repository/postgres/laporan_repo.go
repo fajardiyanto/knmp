@@ -834,12 +834,45 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 	tglAkhir := fmt.Sprintf("%02d September", endDay)
 	tglLaporan := fmt.Sprintf("%02d September %d", endDay, year)
 
+	// Fetch Real PPK User from DB
+	var realPPKName string
+	_ = r.db.GetContext(ctx, &realPPKName, `
+		SELECT u.name
+		FROM users u
+		JOIN model_has_roles mhr ON mhr.model_id = u.id
+		JOIN roles r ON mhr.role_id = r.id
+		WHERE LOWER(r.name) IN ('ppk', 'admin_ppk', 'admin', 'wakil ppk', 'wakil_ppk')
+		ORDER BY u.id ASC
+		LIMIT 1
+	`)
+	if realPPKName == "" {
+		_ = r.db.GetContext(ctx, &realPPKName, `SELECT name FROM users ORDER BY id ASC LIMIT 1`)
+		if realPPKName == "" {
+			realPPKName = "PPK KNMP"
+		}
+	}
+
+	// Fetch Real Pengawas / Kadis User from DB
+	var realKadisName string
+	_ = r.db.GetContext(ctx, &realKadisName, `
+		SELECT u.name
+		FROM users u
+		JOIN model_has_roles mhr ON mhr.model_id = u.id
+		JOIN roles r ON mhr.role_id = r.id
+		WHERE LOWER(r.name) IN ('pengawas')
+		ORDER BY u.id ASC
+		LIMIT 1
+	`)
+	if realKadisName == "" {
+		realKadisName = "Konsultan Pengawas / Dinas KP"
+	}
+
 	data := &domain.WeeklyPPKReportData{
-		PPKName:        "Ir. Hendra Wijaya, M.T.",
-		PPKNip:         "19780415 200312 1 002",
-		KadisName:      "Dr. Ir. H. Syamsul Bahri, M.Si.",
-		KadisNip:       "19720819 199803 1 004",
-		Wilayah:        "SUMATRA",
+		PPKName:        realPPKName,
+		PPKNip:         "-",
+		KadisName:      realKadisName,
+		KadisNip:       "-",
+		Wilayah:        "Sumatera",
 		SumberDana:     "APBN",
 		TahunAnggaran:  year,
 		MingguKe:       week,
@@ -853,18 +886,6 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 		Issues:         make([]domain.WeeklyIssueItem, 0),
 		WorkPlans:      make([]domain.WeeklyWorkPlanItem, 0),
 		Photos:         make([]domain.WeeklyPhotoItem, 0),
-	}
-
-	// 1. Fetch PPK profile if exists
-	var ppkUser struct {
-		Name string  `db:"name"`
-		Nip  *string `db:"nip"`
-	}
-	if err := r.db.GetContext(ctx, &ppkUser, `SELECT name, nip FROM users WHERE role_name IN ('ppk', 'admin_ppk') OR name ILIKE '%PPK%' LIMIT 1`); err == nil && ppkUser.Name != "" {
-		data.PPKName = ppkUser.Name
-		if ppkUser.Nip != nil && *ppkUser.Nip != "" {
-			data.PPKNip = *ppkUser.Nip
-		}
 	}
 
 	// 2. Fetch KNMP points & status counts with Scoping
@@ -1018,28 +1039,14 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 	// 4. Persiapans & Kontraktor with Scoping
 	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
 		_ = r.db.GetContext(ctx, &data.TotalKontraktor, `SELECT COUNT(DISTINCT perusahaan_id) FROM persiapans WHERE deleted_at IS NULL AND knmp_id = ANY($1)`, pq.Array(filter.UserKnmpIDs))
-		if data.TotalKontraktor == 0 {
-			data.TotalKontraktor = 1
-		}
 		var nilaiKontrak float64
 		_ = r.db.GetContext(ctx, &nilaiKontrak, `SELECT COALESCE(SUM(nilai_kontrak), 0) FROM persiapans WHERE deleted_at IS NULL AND knmp_id = ANY($1)`, pq.Array(filter.UserKnmpIDs))
-		if nilaiKontrak > 0 {
-			data.NilaiKontrakKumulatif = nilaiKontrak
-		} else {
-			data.NilaiKontrakKumulatif = float64(data.TotalLokasi) * 1485000000.0
-		}
+		data.NilaiKontrakKumulatif = nilaiKontrak
 	} else {
 		_ = r.db.GetContext(ctx, &data.TotalKontraktor, `SELECT COUNT(DISTINCT perusahaan_id) FROM persiapans WHERE deleted_at IS NULL`)
-		if data.TotalKontraktor == 0 {
-			data.TotalKontraktor = 32
-		}
 		var nilaiKontrak float64
 		_ = r.db.GetContext(ctx, &nilaiKontrak, `SELECT COALESCE(SUM(nilai_kontrak), 0) FROM persiapans WHERE deleted_at IS NULL`)
-		if nilaiKontrak > 0 {
-			data.NilaiKontrakKumulatif = nilaiKontrak
-		} else {
-			data.NilaiKontrakKumulatif = float64(data.TotalLokasi) * 1485000000.0
-		}
+		data.NilaiKontrakKumulatif = nilaiKontrak
 	}
 
 	// 5. Pembayarans with Scoping
