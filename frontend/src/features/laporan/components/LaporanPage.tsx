@@ -22,6 +22,7 @@ import {
   FileSpreadsheet,
   Printer,
   Sparkles,
+  Download,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
@@ -511,11 +512,11 @@ export const LaporanPage: React.FC = () => {
             onClick={() => {
               setIsWeeklyPpkModalOpen(true);
             }}
-            className="flex-1 sm:flex-none px-5 py-2.5 text-[13.5px] font-black bg-gradient-to-r from-[#002060] via-blue-900 to-indigo-900 hover:from-[#001848] hover:to-indigo-950 text-white rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-950/25 cursor-pointer border border-blue-800"
-            title="Buka Template Laporan Mingguan PPK Resmi (Program KNMP Wilayah Sumatra)"
+            className="flex-1 sm:flex-none px-4.5 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-[#002060] text-white rounded-xl hover:bg-[#001848] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            title="Export Laporan Mingguan PPK"
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Template Laporan Mingguan PPK</span>
+            <Download className="w-4 h-4" />
+            <span>Export</span>
           </button>
           <button
             type="button"
