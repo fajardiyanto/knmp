@@ -623,10 +623,10 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                   </div>
                 </div>
 
-                {/* 2. Top Grid: A (Identitas), B (Ringkasan), C (Dashboard), D (Peta Spasial) */}
+                {/* 2. Top Grid: A (Identitas), B (Ringkasan), C (Dashboard) */}
                 <div className="grid grid-cols-12 gap-3.5 items-stretch">
                   {/* A. Identitas Laporan */}
-                  <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
+                  <div className="col-span-4 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider flex items-center gap-1.5">
                       <span>A. IDENTITAS LAPORAN</span>
                     </div>
@@ -663,7 +663,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                   </div>
 
                   {/* B. Ringkasan Eksekutif */}
-                  <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
+                  <div className="col-span-4 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider flex items-center gap-1.5">
                       <span>B. RINGKASAN EKSEKUTIF</span>
                     </div>
@@ -673,7 +673,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                   </div>
 
                   {/* C. Dashboard Capaian Mingguan */}
-                  <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
+                  <div className="col-span-4 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
                       <span>C. DASHBOARD CAPAIAN MINGGUAN</span>
                     </div>
@@ -711,50 +711,14 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                       </div>
                     </div>
                   </div>
-
-                  {/* D. Peta Sebaran Titik KNMP Sumatra (Real GIS Leaflet Map) */}
-                  <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-2.5 space-y-2">
-                    <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider flex items-center justify-between">
-                      <span>
-                        {reportData.total_lokasi <= 1 && reportData.wilayah !== "SUMATRA"
-                          ? `D. PETA LOKASI KNMP`
-                          : `D. PETA SEBARAN TITIK SUMATRA`}
-                      </span>
-                      <span className="text-[9px] font-normal lowercase">
-                        {(reportData.gis_points || []).length}{" "}
-                        {(reportData.gis_points || []).length === 1 ? "titik lokasi" : "real GIS points"}
-                      </span>
-                    </div>
-
-                    {/* Real Leaflet Map Container */}
-                    <div className="relative rounded-lg border border-slate-300 h-40 overflow-hidden shadow-inner">
-                      <div ref={mapContainerRef} className="w-full h-full bg-slate-100 z-10" />
-
-                      {/* Map Status Legend */}
-                      <div className="absolute right-1.5 top-1.5 bg-white/95 backdrop-blur-xs p-1.5 rounded-lg border border-slate-300 text-[8px] space-y-0.5 font-bold shadow-md z-20">
-                        <div className="flex items-center gap-1.5 text-slate-800">
-                          <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Selesai
-                        </div>
-                        <div className="flex items-center gap-1.5 text-slate-800">
-                          <span className="w-2 h-2 rounded-full bg-blue-600"></span> On Progress
-                        </div>
-                        <div className="flex items-center gap-1.5 text-slate-800">
-                          <span className="w-2 h-2 rounded-full bg-amber-500"></span> Dalam Persiapan
-                        </div>
-                        <div className="flex items-center gap-1.5 text-slate-800">
-                          <span className="w-2 h-2 rounded-full bg-red-600"></span> Tertunda/Masalah
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
-                {/* 3. Middle Grid: E (Progres Rekap Full Width) */}
+                {/* 3. Middle Grid: D (Progres Rekap Full Width) */}
                 <div className="grid grid-cols-12 gap-3 items-start">
-                  {/* E. Capaian Progress Fisik (Rekap) */}
+                  {/* D. Capaian Progress Fisik (Rekap) */}
                   <div className="col-span-12 bg-slate-50 rounded-xl border border-slate-300 p-2.5 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>E. CAPAIAN PROGRESS FISIK (REKAP)</span>
+                      <span>D. CAPAIAN PROGRESS FISIK (REKAP)</span>
                     </div>
 
                     <table className="w-full text-[9px] border-collapse border border-slate-300 text-left bg-white">
@@ -794,12 +758,12 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                   </div>
                 </div>
 
-                {/* 4. Bottom Grid: F (Isu), G (Solusi) */}
+                {/* 4. Bottom Grid: E (Isu), F (Solusi) */}
                 <div className="grid grid-cols-12 gap-3 items-start">
-                  {/* F. Isu / Kendala Minggu Ini */}
+                  {/* E. Isu / Kendala Minggu Ini */}
                   <div className="col-span-6 bg-slate-50 rounded-xl border border-slate-300 p-2.5 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>F. ISU / KENDALA MINGGU INI</span>
+                      <span>E. ISU / KENDALA MINGGU INI</span>
                     </div>
 
                     <table className="w-full text-[9px] border-collapse border border-slate-300 text-left bg-white">
@@ -834,10 +798,10 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </table>
                   </div>
 
-                  {/* G. Solusi Dan Tindak Lanjut */}
+                  {/* F. Solusi Dan Tindak Lanjut */}
                   <div className="col-span-6 bg-slate-50 rounded-xl border border-slate-300 p-2.5 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>G. SOLUSI DAN TINDAK LANJUT</span>
+                      <span>F. SOLUSI DAN TINDAK LANJUT</span>
                     </div>
 
                     <table className="w-full text-[9px] border-collapse border border-slate-300 text-left bg-white">
@@ -873,12 +837,12 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                   </div>
                 </div>
 
-                {/* 5. Photos, HSE & Signatures (H, I, J) */}
+                {/* 5. Photos, HSE & Signatures (G, H, I) */}
                 <div className="grid grid-cols-12 gap-3.5 items-stretch">
-                  {/* H. Dokumentasi Kegiatan Minggu Ini (Sampel Geotagging) */}
+                  {/* G. Dokumentasi Kegiatan Minggu Ini (Sampel Geotagging) */}
                   <div className="col-span-6 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>H. DOKUMENTASI KEGIATAN MINGGU INI (SAMPEL GEOTAGGING GPS)</span>
+                      <span>G. DOKUMENTASI KEGIATAN MINGGU INI (SAMPEL GEOTAGGING GPS)</span>
                     </div>
 
                     <div className="grid grid-cols-6 gap-2">
@@ -902,10 +866,10 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </div>
                   </div>
 
-                  {/* I. Kepatuhan & Keselamatan Kerja */}
+                  {/* H. Kepatuhan & Keselamatan Kerja */}
                   <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-2.5 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>I. KEPATUHAN & KESELAMATAN (K3)</span>
+                      <span>H. KEPATUHAN & KESELAMATAN (K3)</span>
                     </div>
 
                     <div className="text-[9.5px] space-y-1.5 text-slate-700 bg-white p-2 rounded-lg border border-slate-200">
@@ -928,10 +892,10 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </div>
                   </div>
 
-                  {/* J. Penutup & Tanda Tangan */}
+                  {/* I. Penutup & Tanda Tangan */}
                   <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>J. PENUTUP & PENGESAHAN</span>
+                      <span>I. PENUTUP & PENGESAHAN</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-center text-[8.5px]">
