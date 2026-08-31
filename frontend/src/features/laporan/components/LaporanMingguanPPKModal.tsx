@@ -11,7 +11,9 @@ import {
 } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../../../lib/api-client";
+import { useAuth } from "../../auth/hooks/useAuth";
 
 interface WeeklyGISPoint {
   id: number;
@@ -137,6 +139,17 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
+  const { user } = useAuth();
+  const isAdminOrPengawas = user?.roles?.some((r) =>
+    ["superadmin", "super admin", "admin_ppk", "admin", "pengawas", "ppk", "wakil_ppk", "wakil ppk"].includes(r.toLowerCase())
+  ) || false;
+
+  const { data: fallbackMapPoints = [] } = useQuery<any[]>({
+    queryKey: ["dashboard-map-fallback"],
+    queryFn: () => apiFetch<any[]>("/api/v1/knmp/map"),
+    enabled: isOpen,
+  });
+
   // 1. Fetch Real Backend Data from Endpoint with Array Defaults
   const loadReportData = () => {
     setLoading(true);
@@ -170,7 +183,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
     }
   }, [isOpen, mingguKe]);
 
-  // 2. Initialize Real Leaflet Map with Real Coordinates
+  // 2. Initialize Real Leaflet Map (Same as Dashboard Satellite & Pin Markers)
   useEffect(() => {
     if (!isOpen || activeTab !== "laporan" || !reportData) return;
 
@@ -179,16 +192,25 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
 
       if (!mapInstanceRef.current) {
         const map = L.map(mapContainerRef.current, {
-          center: [0.7893, 101.5], // Center of Sumatra
+          center: [0.7893, 105.0], // Center of Sumatra
           zoom: 5.5,
           minZoom: 4,
-          maxZoom: 14,
+          maxZoom: 18,
           zoomControl: false,
           attributionControl: false,
         });
 
+        // 1. ArcGIS Satellite Base Layer (Identical to Dashboard)
         L.tileLayer(
-          "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          {
+            maxZoom: 18,
+          }
+        ).addTo(map);
+
+        // 2. Labels Overlay Layer (Identical to Dashboard)
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png",
           {
             maxZoom: 18,
             subdomains: "abcd",
@@ -210,31 +232,57 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
         }
       });
 
-      const createDot = (color: string) => {
+      // SVG Pin Marker Creation Helper (Identical to Dashboard)
+      const createPin = (fillColor: string) => {
         return L.divIcon({
-          className: "leaflet-custom-dot",
+          className: "custom-leaflet-marker",
           html: `
             <div style="
-              width: 9px;
-              height: 9px;
-              border-radius: 50%;
-              background-color: ${color};
-              border: 1.5px solid #ffffff;
-              box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+              width: 20px;
+              height: 26px;
+              filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
               cursor: pointer;
-            "></div>
+              transition: transform 0.15s ease;
+            " onmouseover="this.style.transform='scale(1.25)'" onmouseout="this.style.transform='scale(1)'">
+              <svg width="20" height="26" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M10 0C4.47715 0 0 4.47715 0 10C0 17 10 26 10 26C10 26 20 17 20 10C20 4.47715 15.5228 0 10 0ZM10 14C12.2091 14 14 12.2091 14 10C14 7.79086 12.2091 6 10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14Z" fill="${fillColor}"/>
+              </svg>
+            </div>
           `,
-          iconSize: [9, 9],
-          iconAnchor: [4.5, 4.5],
-          popupAnchor: [0, -5],
+          iconSize: [20, 26],
+          iconAnchor: [10, 26],
+          popupAnchor: [0, -26],
         });
       };
 
-      const greenDot = createDot("#16a34a");
-      const blueDot = createDot("#2563eb");
-      const yellowDot = createDot("#eab308");
+      const greenIcon = createPin("#10b981"); // >= 75%
+      const blueIcon = createPin("#3b82f6");  // 50% - 74%
+      const yellowIcon = createPin("#f59e0b");// < 50%
+      const redIcon = createPin("#ef4444");   // 0%
 
-      const points = reportData.gis_points || [];
+      let points = reportData.gis_points && reportData.gis_points.length > 0 ? reportData.gis_points : [];
+
+      // Fallback from /api/v1/knmp/map if reportData points is empty
+      if (points.length === 0 && fallbackMapPoints.length > 0) {
+        let fallback = [...fallbackMapPoints];
+        if (!isAdminOrPengawas && user?.knmp_ids && user.knmp_ids.length > 0) {
+          fallback = fallback.filter((m) => user.knmp_ids?.includes(m.id));
+        }
+        if (!isAdminOrPengawas && fallback.length === 0 && fallbackMapPoints.length > 0) {
+          fallback = [fallbackMapPoints[0]];
+        }
+        points = fallback.map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          lat: parseFloat(m.lat) || 0.7893,
+          long: parseFloat(m.long) || 101.5,
+          progress: m.progress ?? m.realisasi_progres_fisik ?? 0,
+          status: (m.progress ?? 0) >= 100 ? "Selesai (100%)" : (m.progress ?? 0) >= 50 ? `On Progress (${m.progress ?? 0}%)` : (m.progress ?? 0) > 0 ? `On Progress (${m.progress ?? 0}%)` : "Belum Mulai (0%)",
+          regency: m.regency_name || m.regency || "-",
+          province: m.province_name || m.province || "-",
+        }));
+      }
+
       const bounds = L.latLngBounds([]);
       let singleMarker: L.Marker | null = null;
 
@@ -242,26 +290,26 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
         if (p.lat && p.long && !isNaN(p.lat) && !isNaN(p.long)) {
           bounds.extend([p.lat, p.long]);
 
-          let dot = yellowDot;
-          if (p.progress >= 100) {
-            dot = greenDot;
+          let icon = redIcon;
+          if (p.progress >= 75) {
+            icon = greenIcon;
           } else if (p.progress >= 50) {
-            dot = blueDot;
+            icon = blueIcon;
           } else if (p.progress > 0) {
-            dot = yellowDot;
+            icon = yellowIcon;
           }
 
-          const marker = L.marker([p.lat, p.long], { icon: dot }).addTo(map);
+          const marker = L.marker([p.lat, p.long], { icon }).addTo(map);
           marker.bindPopup(`
-            <div style="font-size: 11px; font-family: sans-serif; min-width: 150px; line-height: 1.4;">
-              <strong style="color: #002060; font-size: 12px;">${p.name}</strong><br/>
+            <div style="font-size: 11px; font-family: sans-serif; min-width: 160px; line-height: 1.4;">
+              <strong style="color: #002060; font-size: 12.5px;">${p.name}</strong><br/>
               <span style="color: #64748b;">${p.regency || p.province || "Sumatera"}</span><br/>
-              <div style="margin-top: 4px; font-weight: bold; color: ${
-                p.progress >= 100 ? "#16a34a" : p.progress >= 50 ? "#2563eb" : "#d97706"
+              <div style="margin-top: 5px; font-weight: bold; color: ${
+                p.progress >= 75 ? "#10b981" : p.progress >= 50 ? "#3b82f6" : p.progress > 0 ? "#d97706" : "#ef4444"
               };">
-                Status: ${p.status}
+                Progres: ${p.progress}% (${p.status})
               </div>
-              <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2px;">
                 Koord: ${p.lat.toFixed(4)}, ${p.long.toFixed(4)}
               </div>
             </div>
@@ -283,7 +331,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
     }, 150);
 
     return () => clearTimeout(timer);
-  }, [isOpen, activeTab, reportData]);
+  }, [isOpen, activeTab, reportData, fallbackMapPoints, isAdminOrPengawas]);
 
   if (!isOpen) return null;
 
