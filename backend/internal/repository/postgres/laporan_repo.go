@@ -844,6 +844,13 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year
 		TanggalAwal:    tglAwal,
 		TanggalAkhir:   tglAkhir,
 		TanggalLaporan: tglLaporan,
+		GISPoints:      make([]domain.WeeklyGISPoint, 0),
+		ProgressRekap:  make([]domain.WeeklyProgressRekapItem, 0),
+		RekapLokasi:    make([]domain.WeeklyLokasiStatusItem, 0),
+		ProgressKlaster: make([]domain.WeeklyKlasterProgressItem, 0),
+		Issues:         make([]domain.WeeklyIssueItem, 0),
+		WorkPlans:      make([]domain.WeeklyWorkPlanItem, 0),
+		Photos:         make([]domain.WeeklyPhotoItem, 0),
 	}
 
 	// 1. Fetch PPK profile if exists

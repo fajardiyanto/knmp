@@ -8,7 +8,6 @@ import {
   Database,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
 } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -138,13 +137,24 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
-  // 1. Fetch Real Backend Data from Endpoint
+  // 1. Fetch Real Backend Data from Endpoint with Array Defaults
   const loadReportData = () => {
     setLoading(true);
     setErrorMsg("");
     apiFetch<WeeklyPPKReportData>(`/api/v1/laporan/weekly-ppk-report?week=${mingguKe}&year=${tahun}`)
       .then((data) => {
-        setReportData(data);
+        if (data) {
+          setReportData({
+            ...data,
+            gis_points: Array.isArray(data.gis_points) ? data.gis_points : [],
+            progress_rekap: Array.isArray(data.progress_rekap) ? data.progress_rekap : [],
+            rekap_lokasi: Array.isArray(data.rekap_lokasi) ? data.rekap_lokasi : [],
+            progress_klaster: Array.isArray(data.progress_klaster) ? data.progress_klaster : [],
+            issues: Array.isArray(data.issues) ? data.issues : [],
+            work_plans: Array.isArray(data.work_plans) ? data.work_plans : [],
+            photos: Array.isArray(data.photos) ? data.photos : [],
+          });
+        }
       })
       .catch((err) => {
         setErrorMsg(err?.message || "Gagal memuat data laporan mingguan PPK dari server");
@@ -223,7 +233,6 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
       const greenDot = createDot("#16a34a");
       const blueDot = createDot("#2563eb");
       const yellowDot = createDot("#eab308");
-      const redDot = createDot("#dc2626");
 
       const points = reportData.gis_points || [];
       const bounds = L.latLngBounds([]);
@@ -439,7 +448,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     B. Ringkasan Eksekutif
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Auto-generator narasi cerdas yang menghitung rata-rata capaian fisik ({reportData.capaian_fisik_kumulatif}%), lokasi selesai ({reportData.lokasi_selesai}), on progress ({reportData.lokasi_on_progress}), dan mitigasi kendala aktif ({reportData.issues.length} isu).
+                    Sumber: Auto-generator narasi cerdas yang menghitung rata-rata capaian fisik ({reportData.capaian_fisik_kumulatif}%), lokasi selesai ({reportData.lokasi_selesai}), on progress ({reportData.lokasi_on_progress}), dan mitigasi kendala aktif ({(reportData.issues || []).length} isu).
                   </p>
                 </div>
 
@@ -457,7 +466,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     D. Peta Sebaran Titik KNMP Sumatra (Real GIS)
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Peta interaktif Leaflet dengan titik koordinat asli `latitude` & `longitude` dari tabel `knmps` ({reportData.gis_points.length} titik terplot se-Sumatera).
+                    Sumber: Peta interaktif Leaflet dengan titik koordinat asli `latitude` & `longitude` dari tabel `knmps` ({(reportData.gis_points || []).length} titik terplot se-Sumatera).
                   </p>
                 </div>
 
@@ -650,7 +659,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                   <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider flex items-center justify-between">
                       <span>D. PETA SEBARAN TITIK SUMATRA</span>
-                      <span className="text-[9px] font-normal lowercase">{reportData.gis_points.length} real GIS points</span>
+                      <span className="text-[9px] font-normal lowercase">{(reportData.gis_points || []).length} real GIS points</span>
                     </div>
 
                     {/* Real Leaflet Map Container */}
@@ -696,7 +705,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        {reportData.progress_rekap?.map((row) => (
+                        {(reportData.progress_rekap || []).map((row) => (
                           <tr key={row.no}>
                             <td className="border border-slate-300 p-1 text-center">{row.no}</td>
                             <td className="border border-slate-300 p-1 font-semibold">{row.uraian}</td>
@@ -734,7 +743,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        {reportData.rekap_lokasi?.map((row) => (
+                        {(reportData.rekap_lokasi || []).map((row) => (
                           <tr key={row.no}>
                             <td className="border border-slate-300 p-1 text-center">{row.no}</td>
                             <td className="border border-slate-300 p-1 font-semibold">{row.status}</td>
@@ -760,7 +769,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </div>
 
                     <div className="space-y-2 text-[9.5px]">
-                      {reportData.progress_klaster?.map((klaster) => (
+                      {(reportData.progress_klaster || []).map((klaster) => (
                         <div key={klaster.code}>
                           <div className="flex justify-between font-bold text-slate-800 mb-0.5">
                             <span>{klaster.code}. {klaster.name}</span>
@@ -871,7 +880,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        {reportData.work_plans?.map((plan) => (
+                        {(reportData.work_plans || []).map((plan) => (
                           <tr key={plan.no}>
                             <td className="border border-slate-300 p-1 text-center">{plan.no}</td>
                             <td className="border border-slate-300 p-1 truncate max-w-[140px]">{plan.uraian}</td>
@@ -892,7 +901,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </div>
 
                     <div className="grid grid-cols-6 gap-2">
-                      {reportData.photos?.map((item, idx) => (
+                      {(reportData.photos || []).map((item, idx) => (
                         <div key={idx} className="space-y-1 text-center">
                           <div className="h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-300 flex items-center justify-center">
                             <img
