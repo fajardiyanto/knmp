@@ -83,6 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           badge: unreadTotal,
         },
         { name: "Lokasi KNMP", href: "/knmp", icon: MapPin, show: hasPermission("knmp_read") },
+        { name: "Notulensi Rapat", href: "/notulen", icon: ClipboardList, show: true },
       ],
     },
     {
