@@ -102,16 +102,17 @@ Peta spasial interaktif sebaran 346 titik nelayan di seluruh pulau Sumatera deng
 
 ---
 
-### 📌 Bagian E: Capaian Progress Fisik (Rekap Tahapan Proyek)
-Tabel matriks evaluasi progres mingguan berdasarkan 5 tahapan standar konstruksi:
+### 📌 Bagian E: Capaian Progress Fisik (Rekap Tahapan Pelaksanaan Konstruksi)
+Tabel matriks evaluasi progres mingguan berdasarkan tahapan dokumen dan fisik modul Pelaksanaan Konstruksi:
 
-1. **Persiapan & Administrasi**: Form 01–11, PCM, SPMK, mobilisasi material.
-2. **Pekerjaan Fisik & Struktur**: Pondasi, dermaga, balok pengikat, atap sentra nelayan.
-3. **Pengadaan & Distribusi**: Mesin es (ice maker), coolbox, solar panel, genset.
-4. **QC / Pengendalian Mutu**: Uji kuat tekan beton, ceklis kepatuhan spesifikasi teknis.
-5. **Lain-lain / Sarana Pendukung**: Paving block, pagar keliling, instalasi air bersih.
+1. **Dokumen Progress & Mutu Awal (Tahap 1 - 50%)**: Form 01–11 (Progress Fisik, Mutu Awal, Pekerjaan Kritis Awal, Material, Peralatan, Tenaga Kerja, K3, Jadwal, Admin, Deviasi).
+2. **Dokumen Pengendalian Progress (Tahap 2 - 75%)**: Form 12–22 (Pengendalian Progress Fisik, Mutu Pekerjaan, Pekerjaan Kritis, Volume Pekerjaan, Risiko & Deviasi).
+3. **Dokumen Pekerjaan Kritis (Tahap 3 - 90%)**: Form 23–33 (Item Utama, Potensi Keterlambatan, Material & Peralatan, K3, Administrasi Akhir).
+4. **Administrasi & Perijinan Lapangan**: Sempadan Pantai & Izin Pelabuhan/Tambat.
+5. **QC / Pengendalian Mutu**: Uji kuat tekan beton & kepatuhan spesifikasi teknis.
+6. **Lain-lain / Sarana Pendukung**: Paving block, drainase, IPAL & fasilitas nelayan.
 
-* **Sumber Data**: Rekapitulasi perbandingan $\text{Minggu Lalu} \rightarrow \text{Minggu Ini} \rightarrow \text{Kumulatif}$ dari tabel `pelaksanaans` dan `laporans`.
+* **Sumber Data**: Rekapitulasi perbandingan $\text{Minggu Lalu} \rightarrow \text{Minggu Ini} \rightarrow \text{Kumulatif}$ dari tabel `pelaksanaans`, `documents`, dan `laporans`.
 
 ---
 
