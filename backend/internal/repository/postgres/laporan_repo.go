@@ -1,11 +1,15 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -957,8 +961,19 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 
 	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
 		gisQuery := `
-			SELECT k.id, k.name, k.lat, k.long,
-			       COALESCE(k.realisasi_progres_fisik, 0) as progress,
+			SELECT k.id, k.name,
+			       CAST(NULLIF(k.lat, '') AS DOUBLE PRECISION) as lat,
+			       CAST(NULLIF(k.long, '') AS DOUBLE PRECISION) as long,
+			       COALESCE((
+			           SELECT MAX(p.realisasi_progres_fisik)
+			           FROM pelaksanaans p
+			           WHERE p.knmp_id = k.id AND p.deleted_at IS NULL
+			       ), (
+			           SELECT MAX(l.realisasi_progres_fisik)
+			           FROM laporans l
+			           JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
+			           WHERE p.knmp_id = k.id AND l.deleted_at IS NULL
+			       ), 0.0) as progress,
 			       COALESCE(rg.name, '-') as regency_name,
 			       COALESCE(pr.name, '-') as province_name
 			FROM knmps k
@@ -972,8 +987,19 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 
 	if len(knmpList) == 0 {
 		gisQuery := `
-			SELECT k.id, k.name, k.lat, k.long,
-			       COALESCE(k.realisasi_progres_fisik, 0) as progress,
+			SELECT k.id, k.name,
+			       CAST(NULLIF(k.lat, '') AS DOUBLE PRECISION) as lat,
+			       CAST(NULLIF(k.long, '') AS DOUBLE PRECISION) as long,
+			       COALESCE((
+			           SELECT MAX(p.realisasi_progres_fisik)
+			           FROM pelaksanaans p
+			           WHERE p.knmp_id = k.id AND p.deleted_at IS NULL
+			       ), (
+			           SELECT MAX(l.realisasi_progres_fisik)
+			           FROM laporans l
+			           JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
+			           WHERE p.knmp_id = k.id AND l.deleted_at IS NULL
+			       ), 0.0) as progress,
 			       COALESCE(rg.name, '-') as regency_name,
 			       COALESCE(pr.name, '-') as province_name
 			FROM knmps k
@@ -1474,12 +1500,153 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 	data.K3Pelatihan = 12
 	data.K3KepatuhanAPD = 98.5
 
-	// 13. Section B: Dynamic Executive Summary Narrative
-	data.RingkasanNarasi = fmt.Sprintf(
-		"Pada minggu ini, pelaksanaan Program KNMP %s menunjukkan kemajuan positif dengan capaian fisik kumulatif sebesar %.2f%%. Sebanyak %d lokasi on progress, %d lokasi selesai, dan %d lokasi masih dalam tahap persiapan. Terdapat %d isu/kendala utama yang sedang ditindaklanjuti dengan solusi dan rencana aksi yang terencana. Secara umum, pelaksanaan proyek berjalan sesuai rencana dengan komitmen untuk menjaga kualitas, keselamatan, dan ketepatan waktu.",
-		data.Wilayah, data.CapaianFisikKumulatif, data.LokasiOnProgress, data.LokasiSelesai, data.LokasiPersiapan, len(data.Issues),
-	)
+	// 13. Section B: DeepSeek AI Executive Summary with Offline Auto-Generate Fallback
+	data.RingkasanNarasi = generateExecutiveSummary(ctx, data)
 
 	return data, nil
+}
+
+type deepSeekMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type deepSeekRequest struct {
+	Model       string            `json:"model"`
+	Messages    []deepSeekMessage `json:"messages"`
+	MaxTokens   int               `json:"max_tokens"`
+	Temperature float64           `json:"temperature"`
+}
+
+type deepSeekResponse struct {
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
+}
+
+func generateExecutiveSummary(ctx context.Context, data *domain.WeeklyPPKReportData) string {
+	apiKey := os.Getenv("DEEPSEEK_API_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("DEEPSEEK_KEY")
+	}
+
+	if apiKey != "" {
+		apiURL := os.Getenv("DEEPSEEK_API_URL")
+		if apiURL == "" {
+			apiURL = os.Getenv("DEEPSEEK_ENDPOINT")
+		}
+		if apiURL == "" {
+			apiURL = "https://api.deepseek.com/chat/completions"
+		}
+
+		summary, err := callDeepSeekAPI(ctx, apiURL, apiKey, data)
+		if err == nil && len(strings.TrimSpace(summary)) > 30 {
+			return strings.TrimSpace(summary)
+		}
+	}
+
+	// Fallback when DeepSeek is offline / not configured
+	return generateAutoSummary(data)
+}
+
+func callDeepSeekAPI(ctx context.Context, apiURL, apiKey string, data *domain.WeeklyPPKReportData) (string, error) {
+	prompt := fmt.Sprintf(`Buatlah ringkasan eksekutif formal bahasa Indonesia (1-2 paragraf padat, profesional dan lugas) untuk dokumen resmi:
+- Jenis Laporan: %s
+- Periode/Tanggal: %s s.d. %s (%s)
+- Wilayah: %s (%d Titik Lokasi)
+- Capaian Fisik Kumulatif: %.2f%%
+- Realisasi Keuangan: Rp %.0f (%.2f%% dari Pagu Rp %.0f)
+- Status Lokasi: %d On Progress, %d Selesai 100%%, %d Dalam Persiapan, %d Tertunda
+- Isu/Kendala Aktif: %d Isu
+- K3/Keselamatan: Zero Accident (%d Kejadian), Kepatuhan APD %.1f%%
+Fokuskan pada capaian, tren kemajuan, mitigasi kendala, dan komitmen mutu tanpa menyebutkan prompt ini.`,
+		data.JenisLaporan, data.TanggalAwal, data.TanggalAkhir, data.TanggalLaporan,
+		data.Wilayah, data.TotalLokasi,
+		data.CapaianFisikKumulatif,
+		data.RealisasiKeuangan, data.RealisasiKeuanganPct, data.NilaiKontrakKumulatif,
+		data.LokasiOnProgress, data.LokasiSelesai, data.LokasiPersiapan, data.LokasiTertunda,
+		len(data.Issues),
+		data.K3Kecelakaan, data.K3KepatuhanAPD,
+	)
+
+	reqBody := deepSeekRequest{
+		Model: "deepseek-chat",
+		Messages: []deepSeekMessage{
+			{
+				Role:    "system",
+				Content: "Anda adalah Lead Project Analyst & Engineering Specialist untuk Program Kampung Nelayan Merah Putih (KNMP) Kementerian Kelautan dan Perikanan Republik Indonesia. Hasilkan ringkasan eksekutif profesional, lugas, presisi, dan berbasis data.",
+			},
+			{
+				Role:    "user",
+				Content: prompt,
+			},
+		},
+		MaxTokens:   350,
+		Temperature: 0.3,
+	}
+
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", err
+	}
+
+	client := &http.Client{Timeout: 4 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("deepseek status code: %d", resp.StatusCode)
+	}
+
+	var dsResp deepSeekResponse
+	if err := json.NewDecoder(resp.Body).Decode(&dsResp); err != nil {
+		return "", err
+	}
+
+	if len(dsResp.Choices) > 0 {
+		return strings.TrimSpace(dsResp.Choices[0].Message.Content), nil
+	}
+
+	return "", fmt.Errorf("empty choices from deepseek")
+}
+
+func generateAutoSummary(data *domain.WeeklyPPKReportData) string {
+	issueSummary := "tidak terdapat kendala kritis lapangan dan seluruh pekerjaan berjalan sesuai jadwal"
+	if len(data.Issues) > 0 {
+		issueSummary = fmt.Sprintf("terdapat %d isu/kendala aktif yang sedang dalam mitigasi bersama Konsultan Pengawas dan Tim Teknis", len(data.Issues))
+	}
+
+	if data.JenisLaporan == "harian" {
+		return fmt.Sprintf(
+			"Pada pelaksanaan harian tanggal %s, kegiatan fisik Program KNMP %s mencatatkan progres kumulatif %.2f%%. Dari total %d titik lokasi nelayan, tercatat %d lokasi aktif beroperasi (on progress) dan %d lokasi telah selesai. Terkait operasional lapangan, %s. Pelaksanaan K3 berlangsung tertib dengan tingkat kepatuhan APD %.1f%% serta zero accident.",
+			data.TanggalLaporan, data.Wilayah, data.CapaianFisikKumulatif, data.TotalLokasi, data.LokasiOnProgress, data.LokasiSelesai, issueSummary, data.K3KepatuhanAPD,
+		)
+	}
+
+	if data.JenisLaporan == "bulanan" {
+		return fmt.Sprintf(
+			"Sepanjang periode %s, pelaksanaan terpadu Program KNMP %s mencatatkan capaian progres fisik kumulatif sebesar %.2f%% dengan realisasi penyerapan anggaran mencapai %.2f%% (sisa anggaran %.2f%%). Dari sebaran %d titik lokasi nelayan, %d lokasi berstatus on progress, %d lokasi telah selesai 100%%, dan %d lokasi dalam persiapan. Penanganan kendala berjalan konsisten di mana %s dengan komitmen zero incident K3 (kepatuhan APD %.1f%%).",
+			data.TanggalLaporan, data.Wilayah, data.CapaianFisikKumulatif, data.RealisasiKeuanganPct, data.SisaAnggaranPct, data.TotalLokasi, data.LokasiOnProgress, data.LokasiSelesai, data.LokasiPersiapan, issueSummary, data.K3KepatuhanAPD,
+		)
+	}
+
+	// Default: Mingguan
+	return fmt.Sprintf(
+		"Pada Minggu ke-%d (%s s.d. %s), pelaksanaan Program KNMP %s menunjukkan tren kemajuan dengan capaian fisik kumulatif mencapai %.2f%% serta realisasi penyerapan keuangan sebesar %.2f%%. Dari total %d lokasi sentra nelayan, %d lokasi berstatus on progress, %d lokasi selesai 100%%, dan %d lokasi dalam tahap persiapan. Mengenai kendala lapangan, %s. Aspek K3 dan keselamatan kerja mencatatkan nihil kecelakaan (Zero Accident) dengan tingkat kepatuhan APD %.1f%%.",
+		data.MingguKe, data.TanggalAwal, data.TanggalAkhir, data.Wilayah, data.CapaianFisikKumulatif, data.RealisasiKeuanganPct, data.TotalLokasi, data.LokasiOnProgress, data.LokasiSelesai, data.LokasiPersiapan, issueSummary, data.K3KepatuhanAPD,
+	)
 }
 
