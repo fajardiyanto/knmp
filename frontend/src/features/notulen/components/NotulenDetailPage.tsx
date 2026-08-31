@@ -114,7 +114,7 @@ export const NotulenDetailPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-24 max-w-5xl mx-auto">
       {/* Top Confluence Command Bar */}
-      <div className="sticky top-16 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-5 py-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center space-x-3 w-full sm:w-auto">
           <Link
             to="/notulen"
