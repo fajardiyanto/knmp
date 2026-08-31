@@ -998,7 +998,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 	if countWithProg > 0 {
 		data.CapaianFisikKumulatif = math.Round((sumProgress/float64(countWithProg))*100) / 100
 	} else {
-		data.CapaianFisikKumulatif = 33.52
+		data.CapaianFisikKumulatif = 0.0
 	}
 
 	// 4. Persiapans & Kontraktor with Scoping
@@ -1039,7 +1039,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 	if realKeuangan > 0 {
 		data.RealisasiKeuangan = realKeuangan
 	} else {
-		data.RealisasiKeuangan = data.NilaiKontrakKumulatif * 0.5408
+		data.RealisasiKeuangan = 0.0
 	}
 
 	if data.NilaiKontrakKumulatif > 0 {
@@ -1048,60 +1048,129 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 		data.SisaAnggaranPct = math.Round((data.SisaAnggaran/data.NilaiKontrakKumulatif)*10000) / 100
 	}
 
-	// 6. Section E: Capaian Progress Fisik Rekap (Direct Query from Pelaksanaan & Laporan with Scoping)
-	var avgFisikReal float64
+	// 6. Section E: Capaian Progress Fisik Rekap (Based strictly on uploaded documents in Pelaksanaan Konstruksi)
+	var countP1, countP2, countP3, countP4, countP5, countP6 int
 	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
-		_ = r.db.GetContext(ctx, &avgFisikReal, `
-			SELECT COALESCE(AVG(l.realisasi_progres_fisik), 0)
-			FROM laporans l
-			JOIN pelaksanaans p ON l.pelaksanaan_id = p.id
-			WHERE l.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		_ = r.db.GetContext(ctx, &countP1, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND d.category LIKE 'p1_%' AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+
+		_ = r.db.GetContext(ctx, &countP2, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND d.category LIKE 'p2_%' AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+
+		_ = r.db.GetContext(ctx, &countP3, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND d.category LIKE 'p3_%' AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+
+		_ = r.db.GetContext(ctx, &countP4, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND (d.category LIKE '%admin%' OR d.category LIKE '%izin%' OR d.category LIKE '%jadwal%') AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+
+		_ = r.db.GetContext(ctx, &countP5, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND (d.category LIKE '%mutu%' OR d.category LIKE '%qc%' OR d.category LIKE '%metode%') AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+
+		_ = r.db.GetContext(ctx, &countP6, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND (d.category LIKE '%k3%' OR d.category LIKE '%lingkungan%' OR d.category LIKE '%sarana%') AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
 		`, pq.Array(filter.UserKnmpIDs))
 	} else {
-		_ = r.db.GetContext(ctx, &avgFisikReal, `SELECT COALESCE(AVG(realisasi_progres_fisik), 0) FROM laporans WHERE deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP1, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND category LIKE 'p1_%' AND deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP2, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND category LIKE 'p2_%' AND deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP3, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND category LIKE 'p3_%' AND deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP4, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND (category LIKE '%admin%' OR category LIKE '%izin%' OR category LIKE '%jadwal%') AND deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP5, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND (category LIKE '%mutu%' OR category LIKE '%qc%' OR category LIKE '%metode%') AND deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP6, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND (category LIKE '%k3%' OR category LIKE '%lingkungan%' OR category LIKE '%sarana%') AND deleted_at IS NULL`)
 	}
 
-	if avgFisikReal == 0 && data.CapaianFisikKumulatif > 0 {
-		avgFisikReal = data.CapaianFisikKumulatif
+	// 1. Dokumen Progress & Mutu Awal (11 required items)
+	p1Kum := math.Round((float64(countP1)/11.0)*1000) / 10
+	if p1Kum > 100 {
+		p1Kum = 100
 	}
-	if avgFisikReal == 0 {
-		avgFisikReal = 33.52
+	p1Ini := 0.0
+	if p1Kum > 0 {
+		p1Ini = math.Round((p1Kum*0.1)*10) / 10
 	}
-
-	// 1. Dokumen Progress & Mutu Awal (50%)
-	p1Kum := math.Min(100.0, math.Round((avgFisikReal*1.30)*10)/10)
-	p1Ini := math.Round((p1Kum*0.05)*10) / 10
 	p1Lalu := math.Round((p1Kum-p1Ini)*10) / 10
 
-	// 2. Dokumen Pengendalian Progress (75%)
-	p2Kum := math.Round(avgFisikReal*10) / 10
-	p2Ini := math.Round((p2Kum*0.09)*10) / 10
+	// 2. Dokumen Pengendalian Progress (11 required items)
+	p2Kum := math.Round((float64(countP2)/11.0)*1000) / 10
+	if p2Kum > 100 {
+		p2Kum = 100
+	}
+	p2Ini := 0.0
+	if p2Kum > 0 {
+		p2Ini = math.Round((p2Kum*0.1)*10) / 10
+	}
 	p2Lalu := math.Round((p2Kum-p2Ini)*10) / 10
 
-	// 3. Dokumen Pekerjaan Kritis (90%)
-	p3Kum := math.Round((avgFisikReal*0.87)*10) / 10
-	p3Ini := math.Round((p3Kum*0.08)*10) / 10
+	// 3. Dokumen Pekerjaan Kritis (11 required items)
+	p3Kum := math.Round((float64(countP3)/11.0)*1000) / 10
+	if p3Kum > 100 {
+		p3Kum = 100
+	}
+	p3Ini := 0.0
+	if p3Kum > 0 {
+		p3Ini = math.Round((p3Kum*0.1)*10) / 10
+	}
 	p3Lalu := math.Round((p3Kum-p3Ini)*10) / 10
 
 	// 4. Administrasi & Perijinan Lapangan
-	p4Kum := math.Min(100.0, math.Round((avgFisikReal*1.08)*10)/10)
-	p4Ini := math.Round((p4Kum*0.06)*10) / 10
+	p4Kum := math.Round((float64(countP4)/3.0)*1000) / 10
+	if p4Kum > 100 {
+		p4Kum = 100
+	}
+	p4Ini := 0.0
+	if p4Kum > 0 {
+		p4Ini = math.Round((p4Kum*0.1)*10) / 10
+	}
 	p4Lalu := math.Round((p4Kum-p4Ini)*10) / 10
 
 	// 5. QC / Pengendalian Mutu & Uji Bahan
-	p5Kum := math.Round((avgFisikReal*0.94)*10) / 10
-	p5Ini := math.Round((p5Kum*0.07)*10) / 10
+	p5Kum := math.Round((float64(countP5)/3.0)*1000) / 10
+	if p5Kum > 100 {
+		p5Kum = 100
+	}
+	p5Ini := 0.0
+	if p5Kum > 0 {
+		p5Ini = math.Round((p5Kum*0.1)*10) / 10
+	}
 	p5Lalu := math.Round((p5Kum-p5Ini)*10) / 10
 
 	// 6. Lain-lain / Sarana Pendukung
-	p6Kum := math.Round((avgFisikReal*0.81)*10) / 10
-	p6Ini := math.Round((p6Kum*0.06)*10) / 10
+	p6Kum := math.Round((float64(countP6)/3.0)*1000) / 10
+	if p6Kum > 100 {
+		p6Kum = 100
+	}
+	p6Ini := 0.0
+	if p6Kum > 0 {
+		p6Ini = math.Round((p6Kum*0.1)*10) / 10
+	}
 	p6Lalu := math.Round((p6Kum-p6Ini)*10) / 10
 
 	data.ProgressRekap = []domain.WeeklyProgressRekapItem{
-		{No: 1, Uraian: "Dokumen Progress & Mutu Awal", Lokasi: data.TotalLokasi, MingguLalu: p1Lalu, MingguIni: p1Ini, Kumulatif: p1Kum, Keterangan: "Tahap 1 (50%) - Form 01-11"},
-		{No: 2, Uraian: "Dokumen Pengendalian Progress", Lokasi: data.TotalLokasi, MingguLalu: p2Lalu, MingguIni: p2Ini, Kumulatif: p2Kum, Keterangan: "Tahap 2 (75%) - Form 12-22"},
-		{No: 3, Uraian: "Dokumen Pekerjaan Kritis", Lokasi: data.TotalLokasi, MingguLalu: p3Lalu, MingguIni: p3Ini, Kumulatif: p3Kum, Keterangan: "Tahap 3 (90%) - Form 23-33"},
+		{No: 1, Uraian: "Dokumen Progress & Mutu Awal", Lokasi: data.TotalLokasi, MingguLalu: p1Lalu, MingguIni: p1Ini, Kumulatif: p1Kum, Keterangan: fmt.Sprintf("%d dari 11 Dokumen Diunggah", countP1)},
+		{No: 2, Uraian: "Dokumen Pengendalian Progress", Lokasi: data.TotalLokasi, MingguLalu: p2Lalu, MingguIni: p2Ini, Kumulatif: p2Kum, Keterangan: fmt.Sprintf("%d dari 11 Dokumen Diunggah", countP2)},
+		{No: 3, Uraian: "Dokumen Pekerjaan Kritis", Lokasi: data.TotalLokasi, MingguLalu: p3Lalu, MingguIni: p3Ini, Kumulatif: p3Kum, Keterangan: fmt.Sprintf("%d dari 11 Dokumen Diunggah", countP3)},
 		{No: 4, Uraian: "Administrasi & Perijinan", Lokasi: data.TotalLokasi, MingguLalu: p4Lalu, MingguIni: p4Ini, Kumulatif: p4Kum, Keterangan: "Sempadan & Izin Pelabuhan"},
 		{No: 5, Uraian: "QC / Pengendalian Mutu", Lokasi: data.TotalLokasi, MingguLalu: p5Lalu, MingguIni: p5Ini, Kumulatif: p5Kum, Keterangan: "Uji Tekan Beton & Mutu"},
 		{No: 6, Uraian: "Lain-lain / Sarana Pendukung", Lokasi: data.TotalLokasi, MingguLalu: p6Lalu, MingguIni: p6Ini, Kumulatif: p6Kum, Keterangan: "Drainase, Paving & IPAL"},
@@ -1114,7 +1183,9 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 	data.ProgressTotalLalu = math.Round(sumLalu*100) / 100
 	data.ProgressTotalIni = math.Round(sumIni*100) / 100
 	data.ProgressTotalKumulatif = math.Round(sumKum*100) / 100
-	data.CapaianFisikKumulatif = data.ProgressTotalKumulatif
+	if sumKum > 0 {
+		data.CapaianFisikKumulatif = data.ProgressTotalKumulatif
+	}
 
 	// 7. Section F: Rekap Lokasi Status
 	tot := float64(data.TotalLokasi)
@@ -1129,12 +1200,13 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 	}
 
 	// 8. Section G: Progress Per Klaster
+	progBase := data.CapaianFisikKumulatif
 	data.ProgressKlaster = []domain.WeeklyKlasterProgressItem{
-		{Code: "A", Name: "Infrastruktur Darat", Progress: math.Round(avgFisikReal*1.08*100) / 100},
-		{Code: "B", Name: "Infrastruktur Laut", Progress: math.Round(avgFisikReal*0.98*100) / 100},
-		{Code: "C", Name: "Sarana & Prasarana Produksi", Progress: math.Round(avgFisikReal*0.90*100) / 100},
-		{Code: "D", Name: "Sarana Pendukung & UMKM", Progress: math.Round(avgFisikReal*0.81*100) / 100},
-		{Code: "E", Name: "Penguatan Kelembagaan & Sosial", Progress: math.Round(avgFisikReal*0.87*100) / 100},
+		{Code: "A", Name: "Infrastruktur Darat", Progress: math.Min(100.0, math.Round(progBase*1.08*100)/100)},
+		{Code: "B", Name: "Infrastruktur Laut", Progress: math.Min(100.0, math.Round(progBase*0.98*100)/100)},
+		{Code: "C", Name: "Sarana & Prasarana Produksi", Progress: math.Min(100.0, math.Round(progBase*0.90*100)/100)},
+		{Code: "D", Name: "Sarana Pendukung & UMKM", Progress: math.Min(100.0, math.Round(progBase*0.81*100)/100)},
+		{Code: "E", Name: "Penguatan Kelembagaan & Sosial", Progress: math.Min(100.0, math.Round(progBase*0.87*100)/100)},
 	}
 
 	// 9. Section H & I: Real Issues with Scoping
