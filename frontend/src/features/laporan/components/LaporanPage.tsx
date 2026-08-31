@@ -701,18 +701,6 @@ export const LaporanPage: React.FC = () => {
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() => {
-                              setSelectedLaporanId(item.id);
-                              setMonthlyReportKnmpId(item.pelaksanaan_id);
-                              setIsExecutiveReportV2Open(true);
-                            }}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                            title="Laporan Proyek Terpadu (Executive Report)"
-                          >
-                            <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
-                          </button>
-                          <button
-                            type="button"
                             onClick={() => navigate(`/laporan/${item.id}/documents`)}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-[#0d6efd] hover:bg-blue-50 transition-colors"
                             title="Lihat Detail"
