@@ -379,7 +379,9 @@ func (h *LaporanHandler) GetMonthlyProjectReportData(c *fiber.Ctx) error {
 func (h *LaporanHandler) GetWeeklyPPKReportData(c *fiber.Ctx) error {
 	reportType := c.Query("type", "mingguan")
 	date := c.Query("date", "")
-	month, _ := strconv.Atoi(c.Query("month", "9"))
+	startDate := c.Query("start_date", "")
+	endDate := c.Query("end_date", "")
+	month, _ := strconv.Atoi(c.Query("month", "8"))
 	week, _ := strconv.Atoi(c.Query("week", "14"))
 	year, _ := strconv.Atoi(c.Query("year", "2026"))
 
@@ -399,6 +401,8 @@ func (h *LaporanHandler) GetWeeklyPPKReportData(c *fiber.Ctx) error {
 	filter := repository.WeeklyReportFilter{
 		Type:        reportType,
 		Date:        date,
+		StartDate:   startDate,
+		EndDate:     endDate,
 		Week:        week,
 		Month:       month,
 		Year:        year,

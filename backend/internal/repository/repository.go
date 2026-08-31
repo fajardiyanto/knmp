@@ -110,6 +110,8 @@ type ProjectReportFilter struct {
 type WeeklyReportFilter struct {
 	Type        string
 	Date        string
+	StartDate   string
+	EndDate     string
 	Week        int
 	Month       int
 	Year        int

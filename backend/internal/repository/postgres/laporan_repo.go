@@ -846,7 +846,20 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 	monthName := monthNames[monthIdx-1]
 
 	var tglAwal, tglAkhir, tglLaporan string
-	if reportType == "harian" {
+	if filter.StartDate != "" && filter.EndDate != "" {
+		t1, err1 := time.Parse("2006-01-02", filter.StartDate)
+		t2, err2 := time.Parse("2006-01-02", filter.EndDate)
+		if err1 == nil && err2 == nil {
+			tglAwal = fmt.Sprintf("%02d %s %d", t1.Day(), monthNames[t1.Month()-1], t1.Year())
+			tglAkhir = fmt.Sprintf("%02d %s %d", t2.Day(), monthNames[t2.Month()-1], t2.Year())
+			tglLaporan = tglAkhir
+			year = t2.Year()
+		} else {
+			tglAwal = filter.StartDate
+			tglAkhir = filter.EndDate
+			tglLaporan = filter.EndDate
+		}
+	} else if reportType == "harian" {
 		if filter.Date != "" {
 			t, err := time.Parse("2006-01-02", filter.Date)
 			if err == nil {
@@ -869,7 +882,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 		tglAkhir = fmt.Sprintf("30 %s", monthName)
 		tglLaporan = fmt.Sprintf("30 %s %d", monthName, year)
 	} else {
-		// Mingguan
+		// Mingguan / Periode
 		startDay := (week-1)*7 + 1
 		endDay := week * 7
 		if endDay > 30 {

@@ -7,8 +7,6 @@ import {
   FileText,
   Calendar,
   Layers,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { useAuth } from "../../auth/hooks/useAuth";
@@ -143,11 +141,11 @@ const MONTHS = [
 export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = ({
   isOpen,
   onClose,
-  initialWeek = 14,
 }) => {
   const [reportType, setReportType] = useState<"harian" | "mingguan" | "bulanan">("mingguan");
   const [selectedDate, setSelectedDate] = useState<string>("2026-08-24");
-  const [mingguKe, setMingguKe] = useState<number>(initialWeek);
+  const [startDate, setStartDate] = useState<string>("2026-08-17");
+  const [endDate, setEndDate] = useState<string>("2026-08-24");
   const [bulan, setBulan] = useState<number>(8); // Agustus (1-indexed: 8)
   const [tahun] = useState<number>(2026);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
@@ -164,7 +162,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
     setLoading(true);
     setErrorMsg("");
     apiFetch<WeeklyPPKReportData>(
-      `/api/v1/laporan/weekly-ppk-report?type=${reportType}&date=${selectedDate}&week=${mingguKe}&month=${bulan}&year=${tahun}`
+      `/api/v1/laporan/weekly-ppk-report?type=${reportType}&date=${selectedDate}&start_date=${startDate}&end_date=${endDate}&month=${bulan}&year=${tahun}`
     )
       .then((data) => {
         if (data) {
@@ -174,6 +172,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
             progress_rekap: Array.isArray(data.progress_rekap) ? data.progress_rekap : [],
             rekap_lokasi: Array.isArray(data.rekap_lokasi) ? data.rekap_lokasi : [],
             progress_klaster: Array.isArray(data.progress_klaster) ? data.progress_klaster : [],
+            laporan_lapangan: Array.isArray(data.laporan_lapangan) ? data.laporan_lapangan : [],
             issues: Array.isArray(data.issues) ? data.issues : [],
             work_plans: Array.isArray(data.work_plans) ? data.work_plans : [],
             photos: Array.isArray(data.photos) ? data.photos : [],
@@ -192,7 +191,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
     if (isOpen) {
       loadReportData();
     }
-  }, [isOpen, reportType, selectedDate, mingguKe, bulan, tahun]);
+  }, [isOpen, reportType, selectedDate, startDate, endDate, bulan, tahun]);
 
   if (!isOpen) return null;
 
@@ -211,13 +210,13 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
   const getReportTitle = () => {
     if (reportType === "harian") return "LAPORAN HARIAN PROYEK TERPADU";
     if (reportType === "bulanan") return "LAPORAN BULANAN PROYEK TERPADU";
-    return "TEMPLATE LAPORAN MINGGUAN PPK";
+    return "LAPORAN MINGGUAN / PERIODIK PPK";
   };
 
   const getReportSubtitle = () => {
     if (reportType === "harian") return `Laporan Harian – ${reportData?.tanggal_laporan || selectedDate}`;
     if (reportType === "bulanan") return `Laporan Bulanan – ${MONTHS[bulan - 1]} ${tahun}`;
-    return `Laporan Minggu ke-${mingguKe} – Wilayah Sumatera`;
+    return `Periode: ${reportData?.tanggal_awal || startDate} s.d. ${reportData?.tanggal_akhir || endDate}`;
   };
 
   return (
@@ -297,34 +296,20 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
 
             {reportType === "mingguan" && (
               <div className="flex items-center space-x-2 bg-black/25 px-3 py-1 rounded-xl border border-white/15 text-xs animate-fade-in">
-                <span className="text-blue-200 font-medium">Minggu ke:</span>
-                <button
-                  onClick={() => setMingguKe((prev) => Math.max(1, prev - 1))}
-                  className="p-1 hover:bg-white/10 rounded text-white cursor-pointer"
-                  title="Minggu Sebelumnya"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <span className="font-bold text-amber-400 px-1">{mingguKe}</span>
-                <button
-                  onClick={() => setMingguKe((prev) => Math.min(52, prev + 1))}
-                  className="p-1 hover:bg-white/10 rounded text-white cursor-pointer"
-                  title="Minggu Berikutnya"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-                <span className="text-blue-200 font-medium ml-2">Bulan:</span>
-                <select
-                  value={bulan}
-                  onChange={(e) => setBulan(Number(e.target.value))}
-                  className="bg-black/50 text-white text-xs px-2.5 py-1 rounded-lg border border-white/20 focus:outline-none cursor-pointer"
-                >
-                  {MONTHS.map((m, idx) => (
-                    <option key={idx} value={idx + 1} className="bg-slate-900 text-white">
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                <span className="text-blue-200 font-medium">Rentang Tanggal:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-black/50 text-white text-xs px-2.5 py-1 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-blue-400 font-medium cursor-pointer"
+                />
+                <span className="text-white/60 text-xs font-bold">s.d.</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-black/50 text-white text-xs px-2.5 py-1 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-blue-400 font-medium cursor-pointer"
+                />
               </div>
             )}
 
@@ -450,11 +435,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                       ) : reportType === "bulanan" ? (
                         <span>Laporan Bulanan Periode: <strong>{MONTHS[bulan - 1]} {reportData.tahun_anggaran}</strong></span>
                       ) : (
-                        <>
-                          <span>Laporan Minggu ke- <strong>{reportData.minggu_ke}</strong></span>
-                          <span>|</span>
-                          <span>Periode: <strong>{reportData.tanggal_awal}</strong> s.d. <strong>{reportData.tanggal_akhir} {reportData.tahun_anggaran}</strong></span>
-                        </>
+                        <span>Periode Laporan: <strong>{reportData.tanggal_awal || startDate}</strong> s.d. <strong>{reportData.tanggal_akhir || endDate} {reportData.tahun_anggaran}</strong></span>
                       )}
                     </div>
                   </div>
@@ -529,10 +510,10 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </div>
                   </div>
 
-                  {/* C. Dashboard Capaian Mingguan */}
+                  {/* C. Dashboard Capaian Proyek */}
                   <div className="col-span-4 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>C. DASHBOARD CAPAIAN MINGGUAN</span>
+                      <span>C. DASHBOARD CAPAIAN PROYEK</span>
                     </div>
 
                     <div className="grid grid-cols-3 gap-1.5 text-center">
