@@ -605,14 +605,16 @@ export const IssuePage: React.FC = () => {
                           >
                             <Edit className="w-4 h-4 text-slate-600" />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenVerify(item)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
-                            title="Verifikasi Pengawas"
-                          >
-                            <CheckCircle className="w-4 h-4 text-emerald-500" />
-                          </button>
+                          {isAdminOrPengawas && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenVerify(item)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                              title="Verifikasi Pengawas"
+                            >
+                              <CheckCircle className="w-4 h-4 text-emerald-500" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
