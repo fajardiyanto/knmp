@@ -29,6 +29,7 @@ import { formatDate } from "../../../lib/utils";
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 import { MonthlyProjectReportModal } from "./MonthlyProjectReportModal";
 import { ExecutiveProjectReportModalV2 } from "./ExecutiveProjectReportModalV2";
+import { LaporanMingguanPPKModal } from "./LaporanMingguanPPKModal";
 
 interface LaporanItem {
   id: number;
@@ -102,6 +103,7 @@ export const LaporanPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMonthlyReportModalOpen, setIsMonthlyReportModalOpen] = useState(false);
   const [isExecutiveReportV2Open, setIsExecutiveReportV2Open] = useState(false);
+  const [isWeeklyPpkModalOpen, setIsWeeklyPpkModalOpen] = useState(false);
   const [monthlyReportKnmpId, setMonthlyReportKnmpId] = useState<number | undefined>(undefined);
   const [selectedLaporanId, setSelectedLaporanId] = useState<number | undefined>(undefined);
   const [editingItem, setEditingItem] = useState<LaporanItem | null>(null);
@@ -498,6 +500,17 @@ export const LaporanPage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={() => {
+              setIsWeeklyPpkModalOpen(true);
+            }}
+            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-bold bg-[#002060] hover:bg-[#001848] text-white rounded-xl transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-950/20 cursor-pointer border border-blue-900"
+            title="Buka Template Laporan Mingguan PPK (Program KNMP Wilayah Sumatra)"
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>Template Laporan Mingguan PPK</span>
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -1165,6 +1178,12 @@ export const LaporanPage: React.FC = () => {
         }}
         initialKnmpId={monthlyReportKnmpId}
         laporanId={selectedLaporanId}
+      />
+
+      {/* Official PPK Weekly Report Modal (Template Wilayah Sumatra) */}
+      <LaporanMingguanPPKModal
+        isOpen={isWeeklyPpkModalOpen}
+        onClose={() => setIsWeeklyPpkModalOpen(false)}
       />
     </div>
   );
