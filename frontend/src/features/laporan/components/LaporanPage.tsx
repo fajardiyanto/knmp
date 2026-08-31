@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
+import { useAuth } from "../../auth/hooks/useAuth";
 import { formatDate } from "../../../lib/utils";
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 import { MonthlyProjectReportModal } from "./MonthlyProjectReportModal";
@@ -86,6 +87,11 @@ export const LaporanPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showAlert, showConfirm } = useAlert();
+  const { user } = useAuth();
+
+  const isAdminOrPengawas = user?.roles?.some((r) =>
+    ["superadmin", "super admin", "admin_ppk", "admin", "pengawas", "ppk", "wakil_ppk", "wakil ppk"].includes(r.toLowerCase())
+  );
 
   // Filters
   const [search, setSearch] = useState("");
@@ -715,32 +721,36 @@ export const LaporanPage: React.FC = () => {
                           >
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              verifyMutation.mutate({
-                                id: item.id,
-                                status: "terverifikasi",
-                              })
-                            }
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
-                            title="Verifikasi"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              verifyMutation.mutate({
-                                id: item.id,
-                                status: "menunggu_pengawas",
-                              })
-                            }
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                            title="Batal Verifikasi"
-                          >
-                            <UndoIcon className="w-4 h-4" />
-                          </button>
+                          {isAdminOrPengawas && item.status !== "terverifikasi" && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                verifyMutation.mutate({
+                                  id: item.id,
+                                  status: "terverifikasi",
+                                })
+                              }
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                              title="Verifikasi"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                          )}
+                          {isAdminOrPengawas && item.status === "terverifikasi" && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                verifyMutation.mutate({
+                                  id: item.id,
+                                  status: "menunggu_pengawas",
+                                })
+                              }
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                              title="Batal Verifikasi"
+                            >
+                              <UndoIcon className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
