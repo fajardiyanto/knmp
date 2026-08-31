@@ -22,6 +22,7 @@ import {
   LogOut,
   FileText,
   MessageSquare,
+  ClipboardList,
   X,
 } from "lucide-react";
 import { useAuth } from "../../features/auth/hooks/useAuth";
@@ -107,6 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           show: hasPermission("pelaksanaan_read"),
         },
         { name: "Laporan", href: "/laporan", icon: FileText, show: hasPermission("laporan_read") },
+        { name: "Notulensi Rapat", href: "/notulen", icon: ClipboardList, show: true },
         { name: "PHO", href: "/pho", icon: CheckCircle2, show: hasPermission("pho_read") },
         { name: "Pemeliharaan", href: "/pemeliharaan", icon: Wrench, show: hasPermission("pemeliharaan_read") },
         { name: "FHO", href: "/fho", icon: ShieldCheck, show: hasPermission("fho_read") },

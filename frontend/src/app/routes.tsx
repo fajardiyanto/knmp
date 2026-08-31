@@ -32,6 +32,7 @@ import {
   FHOPage,
 } from "../features/fase/FasePages";
 import { ChatPage } from "../features/chat/components/ChatPage";
+import { NotulenListPage } from "../features/notulen/components/NotulenListPage";
 import { useAuth } from "../features/auth/hooks/useAuth";
 
 const RootRedirect: React.FC = () => {
@@ -296,6 +297,16 @@ export const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute requiredPermission="issue_read">
               <UploadDokumenIssuePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Notulen Rapat (Meeting Minutes) */}
+        <Route
+          path="notulen"
+          element={
+            <ProtectedRoute>
+              <NotulenListPage />
             </ProtectedRoute>
           }
         />

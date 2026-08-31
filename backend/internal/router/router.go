@@ -25,6 +25,7 @@ type Handlers struct {
 	Chat         *handler.ChatHandler
 	Notification *handler.NotificationHandler
 	Perusahaan   *handler.PerusahaanHandler
+	Notulen      *handler.NotulenHandler
 }
 
 func New(cfg *config.Config, h *Handlers) *fiber.App {
@@ -90,6 +91,7 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	protected.Get("/roles", h.Auth.ListRoles)
 	protected.Get("/permissions", h.Auth.ListPermissions)
 	protected.Get("/users", middleware.RequirePermission("user_read"), h.Auth.ListUsers)
+	protected.Get("/users/list", h.Auth.ListUsers)
 	protected.Post("/users", middleware.RequirePermission("user_create"), h.Auth.CreateUser)
 	protected.Put("/users/:id", middleware.RequirePermission("user_update"), h.Auth.UpdateUser)
 	protected.Delete("/users/:id", middleware.RequirePermission("user_delete"), h.Auth.DeleteUser)
@@ -193,6 +195,16 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 		protected.Post("/perusahaan", h.Perusahaan.Create)
 		protected.Put("/perusahaan/:id", h.Perusahaan.Update)
 		protected.Delete("/perusahaan/:id", h.Perusahaan.Delete)
+	}
+
+	// Notulen Rapat (Meeting Minutes)
+	if h.Notulen != nil {
+		protected.Get("/notulen", h.Notulen.List)
+		protected.Get("/notulen/:id", h.Notulen.GetByID)
+		protected.Post("/notulen", h.Notulen.Create)
+		protected.Put("/notulen/:id", h.Notulen.Update)
+		protected.Delete("/notulen/:id", h.Notulen.Delete)
+		protected.Post("/notulen/:id/share", h.Notulen.Share)
 	}
 
 	// Chat & Messaging
