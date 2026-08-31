@@ -108,7 +108,10 @@ type ProjectReportFilter struct {
 }
 
 type WeeklyReportFilter struct {
+	Type        string
+	Date        string
 	Week        int
+	Month       int
 	Year        int
 	IsGlobal    bool
 	UserRoles   []string

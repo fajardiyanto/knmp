@@ -5,13 +5,11 @@ import {
   ZoomIn,
   ZoomOut,
   FileText,
-  Database,
+  Calendar,
+  Layers,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../../../lib/api-client";
 import { useAuth } from "../../auth/hooks/useAuth";
 
@@ -75,6 +73,7 @@ interface WeeklyPhotoItem {
 }
 
 interface WeeklyPPKReportData {
+  jenis_laporan?: string;
   ppk_name: string;
   ppk_nip: string;
   kadis_name: string;
@@ -121,40 +120,37 @@ interface LaporanMingguanPPKModalProps {
   initialWeek?: number;
 }
 
+const MONTHS = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+];
+
 export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = ({
   isOpen,
   onClose,
   initialWeek = 14,
 }) => {
-  const [activeTab, setActiveTab] = useState<"laporan" | "sumber_data">("laporan");
-  const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const [reportType, setReportType] = useState<"harian" | "mingguan" | "bulanan">("mingguan");
+  const [selectedDate, setSelectedDate] = useState<string>("2026-08-24");
   const [mingguKe, setMingguKe] = useState<number>(initialWeek);
+  const [bulan, setBulan] = useState<number>(8); // Agustus (1-indexed: 8)
   const [tahun] = useState<number>(2026);
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
 
   const [reportData, setReportData] = useState<WeeklyPPKReportData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
   const printRef = useRef<HTMLDivElement>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-
   const { user } = useAuth();
-  const isAdminOrPengawas = user?.roles?.some((r) =>
-    ["superadmin", "super admin", "admin_ppk", "admin", "pengawas", "ppk", "wakil_ppk", "wakil ppk"].includes(r.toLowerCase())
-  ) || false;
 
-  const { data: fallbackMapPoints = [] } = useQuery<any[]>({
-    queryKey: ["dashboard-map-fallback"],
-    queryFn: () => apiFetch<any[]>("/api/v1/knmp/map"),
-    enabled: isOpen,
-  });
-
-  // 1. Fetch Real Backend Data from Endpoint with Array Defaults
+  // Fetch Real Backend Data from Endpoint
   const loadReportData = () => {
     setLoading(true);
     setErrorMsg("");
-    apiFetch<WeeklyPPKReportData>(`/api/v1/laporan/weekly-ppk-report?week=${mingguKe}&year=${tahun}`)
+    apiFetch<WeeklyPPKReportData>(
+      `/api/v1/laporan/weekly-ppk-report?type=${reportType}&date=${selectedDate}&week=${mingguKe}&month=${bulan}&year=${tahun}`
+    )
       .then((data) => {
         if (data) {
           setReportData({
@@ -170,7 +166,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
         }
       })
       .catch((err) => {
-        setErrorMsg(err?.message || "Gagal memuat data laporan mingguan PPK dari server");
+        setErrorMsg(err?.message || "Gagal memuat data laporan dari server");
       })
       .finally(() => {
         setLoading(false);
@@ -181,157 +177,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
     if (isOpen) {
       loadReportData();
     }
-  }, [isOpen, mingguKe]);
-
-  // 2. Initialize Real Leaflet Map (Same as Dashboard Satellite & Pin Markers)
-  useEffect(() => {
-    if (!isOpen || activeTab !== "laporan" || !reportData) return;
-
-    const timer = setTimeout(() => {
-      if (!mapContainerRef.current) return;
-
-      if (!mapInstanceRef.current) {
-        const map = L.map(mapContainerRef.current, {
-          center: [0.7893, 105.0], // Center of Sumatra
-          zoom: 5.5,
-          minZoom: 4,
-          maxZoom: 18,
-          zoomControl: false,
-          attributionControl: false,
-        });
-
-        // 1. ArcGIS Satellite Base Layer (Identical to Dashboard)
-        L.tileLayer(
-          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-          {
-            maxZoom: 18,
-          }
-        ).addTo(map);
-
-        // 2. Labels Overlay Layer (Identical to Dashboard)
-        L.tileLayer(
-          "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png",
-          {
-            maxZoom: 18,
-            subdomains: "abcd",
-          }
-        ).addTo(map);
-
-        mapInstanceRef.current = map;
-      }
-
-      const map = mapInstanceRef.current;
-      if (!map) return;
-
-      map.invalidateSize();
-
-      // Clear existing layers
-      map.eachLayer((layer) => {
-        if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
-          map.removeLayer(layer);
-        }
-      });
-
-      // SVG Pin Marker Creation Helper (Identical to Dashboard)
-      const createPin = (fillColor: string) => {
-        return L.divIcon({
-          className: "custom-leaflet-marker",
-          html: `
-            <div style="
-              width: 20px;
-              height: 26px;
-              filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-              cursor: pointer;
-              transition: transform 0.15s ease;
-            " onmouseover="this.style.transform='scale(1.25)'" onmouseout="this.style.transform='scale(1)'">
-              <svg width="20" height="26" viewBox="0 0 20 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M10 0C4.47715 0 0 4.47715 0 10C0 17 10 26 10 26C10 26 20 17 20 10C20 4.47715 15.5228 0 10 0ZM10 14C12.2091 14 14 12.2091 14 10C14 7.79086 12.2091 6 10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14Z" fill="${fillColor}"/>
-              </svg>
-            </div>
-          `,
-          iconSize: [20, 26],
-          iconAnchor: [10, 26],
-          popupAnchor: [0, -26],
-        });
-      };
-
-      const greenIcon = createPin("#10b981"); // >= 75%
-      const blueIcon = createPin("#3b82f6");  // 50% - 74%
-      const yellowIcon = createPin("#f59e0b");// < 50%
-      const redIcon = createPin("#ef4444");   // 0%
-
-      let points = reportData.gis_points && reportData.gis_points.length > 0 ? reportData.gis_points : [];
-
-      // Fallback from /api/v1/knmp/map if reportData points is empty
-      if (points.length === 0 && fallbackMapPoints.length > 0) {
-        let fallback = [...fallbackMapPoints];
-        if (!isAdminOrPengawas && user?.knmp_ids && user.knmp_ids.length > 0) {
-          fallback = fallback.filter((m) => user.knmp_ids?.includes(m.id));
-        }
-        if (!isAdminOrPengawas && fallback.length === 0 && fallbackMapPoints.length > 0) {
-          fallback = [fallbackMapPoints[0]];
-        }
-        points = fallback.map((m: any) => ({
-          id: m.id,
-          name: m.name,
-          lat: parseFloat(m.lat) || 0.7893,
-          long: parseFloat(m.long) || 101.5,
-          progress: m.progress ?? m.realisasi_progres_fisik ?? 0,
-          status: (m.progress ?? 0) >= 100 ? "Selesai (100%)" : (m.progress ?? 0) >= 50 ? `On Progress (${m.progress ?? 0}%)` : (m.progress ?? 0) > 0 ? `On Progress (${m.progress ?? 0}%)` : "Belum Mulai (0%)",
-          regency: m.regency_name || m.regency || "-",
-          province: m.province_name || m.province || "-",
-        }));
-      }
-
-      const bounds = L.latLngBounds([]);
-      let singleMarker: L.Marker | null = null;
-
-      points.forEach((p) => {
-        if (p.lat && p.long && !isNaN(p.lat) && !isNaN(p.long)) {
-          bounds.extend([p.lat, p.long]);
-
-          let icon = redIcon;
-          if (p.progress >= 75) {
-            icon = greenIcon;
-          } else if (p.progress >= 50) {
-            icon = blueIcon;
-          } else if (p.progress > 0) {
-            icon = yellowIcon;
-          }
-
-          const marker = L.marker([p.lat, p.long], { icon }).addTo(map);
-          marker.bindPopup(`
-            <div style="font-size: 11px; font-family: sans-serif; min-width: 160px; line-height: 1.4;">
-              <strong style="color: #002060; font-size: 12.5px;">${p.name}</strong><br/>
-              <span style="color: #64748b;">${p.regency || p.province || "Sumatera"}</span><br/>
-              <div style="margin-top: 5px; font-weight: bold; color: ${
-                p.progress >= 75 ? "#10b981" : p.progress >= 50 ? "#3b82f6" : p.progress > 0 ? "#d97706" : "#ef4444"
-              };">
-                Progres: ${p.progress}% (${p.status})
-              </div>
-              <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2px;">
-                Koord: ${p.lat.toFixed(4)}, ${p.long.toFixed(4)}
-              </div>
-            </div>
-          `);
-          singleMarker = marker;
-        }
-      });
-
-      if (points.length === 1 && points[0].lat && points[0].long) {
-        map.setView([points[0].lat, points[0].long], 13);
-        if (singleMarker) {
-          singleMarker.openPopup();
-        }
-      } else if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [15, 15], maxZoom: 13 });
-      } else {
-        map.setView([0.7893, 101.5], 5.5);
-      }
-    }, 150);
-
-    return () => clearTimeout(timer);
-  }, [isOpen, activeTab, reportData, fallbackMapPoints, isAdminOrPengawas]);
+  }, [isOpen, reportType, selectedDate, mingguKe, bulan, tahun]);
 
   if (!isOpen) return null;
 
@@ -347,11 +193,24 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
     window.print();
   };
 
+  const getReportTitle = () => {
+    if (reportType === "harian") return "LAPORAN HARIAN PROYEK TERPADU";
+    if (reportType === "bulanan") return "LAPORAN BULANAN PROYEK TERPADU";
+    return "TEMPLATE LAPORAN MINGGUAN PPK";
+  };
+
+  const getReportSubtitle = () => {
+    if (reportType === "harian") return `Laporan Harian – ${reportData?.tanggal_laporan || selectedDate}`;
+    if (reportType === "bulanan") return `Laporan Bulanan – ${MONTHS[bulan - 1]} ${tahun}`;
+    return `Laporan Minggu ke-${mingguKe} – Wilayah Sumatera`;
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-[98vw] xl:max-w-[96vw] h-[95vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-100">
         {/* Top Control Bar */}
         <div className="flex flex-wrap items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-[#002060] text-white shrink-0 gap-3">
+          {/* Left: Branding & Subtitle */}
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-white/10 rounded-xl">
               <FileText className="w-5 h-5 text-amber-400" />
@@ -359,97 +218,153 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-mono">
-                  OFFICIAL PPK TEMPLATE
+                  DOKUMEN RESMI PPK
                 </span>
                 <span className="text-xs text-blue-200">Program KNMP Wilayah Sumatra ({reportData?.total_lokasi || 346} Titik)</span>
               </div>
               <h3 className="text-base font-black text-white tracking-tight">
-                Template Laporan Mingguan PPK KNMP – Wilayah Sumatra
+                {getReportTitle()}
               </h3>
             </div>
           </div>
 
-          {/* Week Selector */}
-          <div className="flex items-center space-x-1.5 bg-black/20 px-3 py-1 rounded-xl border border-white/10 text-xs">
-            <span className="text-blue-200 font-medium">Minggu ke:</span>
-            <button
-              onClick={() => setMingguKe((prev) => Math.max(1, prev - 1))}
-              className="p-1 hover:bg-white/10 rounded text-white"
-              title="Minggu Sebelumnya"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <span className="font-bold text-amber-400 px-1">{mingguKe}</span>
-            <button
-              onClick={() => setMingguKe((prev) => Math.min(52, prev + 1))}
-              className="p-1 hover:bg-white/10 rounded text-white"
-              title="Minggu Berikutnya"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          {/* Center: Filter Jenis Laporan (Harian / Mingguan / Bulanan) & Input Spesifik */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Segmented Mode Switcher */}
+            <div className="flex items-center bg-black/30 p-1 rounded-xl border border-white/15 text-xs">
+              <button
+                onClick={() => setReportType("harian")}
+                className={`px-3.5 py-1.5 rounded-lg font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                  reportType === "harian"
+                    ? "bg-amber-400 text-slate-950 shadow-md"
+                    : "text-blue-100 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Harian</span>
+              </button>
+              <button
+                onClick={() => setReportType("mingguan")}
+                className={`px-3.5 py-1.5 rounded-lg font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                  reportType === "mingguan"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "text-blue-100 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Mingguan</span>
+              </button>
+              <button
+                onClick={() => setReportType("bulanan")}
+                className={`px-3.5 py-1.5 rounded-lg font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                  reportType === "bulanan"
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : "text-blue-100 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Bulanan</span>
+              </button>
+            </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex items-center bg-black/20 p-1 rounded-xl border border-white/10">
-            <button
-              onClick={() => setActiveTab("laporan")}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
-                activeTab === "laporan"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-blue-200 hover:text-white"
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Dokumen Cetak Resmi (A3/A4)</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("sumber_data")}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
-                activeTab === "sumber_data"
-                  ? "bg-indigo-600 text-white shadow-md"
-                  : "text-blue-200 hover:text-white"
-              }`}
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span>Kamus & Sumber Data Real (A - M)</span>
-            </button>
-          </div>
-
-          {/* Right Controls */}
-          <div className="flex items-center space-x-2">
-            {activeTab === "laporan" && (
-              <>
-                <div className="hidden sm:flex items-center space-x-1 bg-black/20 px-2 py-1 rounded-xl border border-white/10 text-xs">
-                  <button
-                    onClick={() => setZoomLevel((prev) => Math.max(prev - 10, 60))}
-                    className="p-1 hover:bg-white/10 rounded text-blue-200 hover:text-white"
-                    title="Zoom Out"
-                  >
-                    <ZoomOut className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="font-mono text-[11px] px-1 text-white">{zoomLevel}%</span>
-                  <button
-                    onClick={() => setZoomLevel((prev) => Math.min(prev + 10, 140))}
-                    className="p-1 hover:bg-white/10 rounded text-blue-200 hover:text-white"
-                    title="Zoom In"
-                  >
-                    <ZoomIn className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <button
-                  onClick={handlePrint}
-                  className="flex items-center space-x-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Cetak / PDF A3-A4</span>
-                </button>
-              </>
+            {/* Dynamic Specific Filter Inputs */}
+            {reportType === "harian" && (
+              <div className="flex items-center space-x-2 bg-black/25 px-3 py-1 rounded-xl border border-white/15 text-xs animate-fade-in">
+                <span className="text-blue-200 font-medium">Pilih Tanggal:</span>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="bg-black/50 text-white text-xs px-2.5 py-1 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-amber-400 font-medium cursor-pointer"
+                />
+              </div>
             )}
+
+            {reportType === "mingguan" && (
+              <div className="flex items-center space-x-2 bg-black/25 px-3 py-1 rounded-xl border border-white/15 text-xs animate-fade-in">
+                <span className="text-blue-200 font-medium">Minggu ke:</span>
+                <button
+                  onClick={() => setMingguKe((prev) => Math.max(1, prev - 1))}
+                  className="p-1 hover:bg-white/10 rounded text-white cursor-pointer"
+                  title="Minggu Sebelumnya"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="font-bold text-amber-400 px-1">{mingguKe}</span>
+                <button
+                  onClick={() => setMingguKe((prev) => Math.min(52, prev + 1))}
+                  className="p-1 hover:bg-white/10 rounded text-white cursor-pointer"
+                  title="Minggu Berikutnya"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-blue-200 font-medium ml-2">Bulan:</span>
+                <select
+                  value={bulan}
+                  onChange={(e) => setBulan(Number(e.target.value))}
+                  className="bg-black/50 text-white text-xs px-2.5 py-1 rounded-lg border border-white/20 focus:outline-none cursor-pointer"
+                >
+                  {MONTHS.map((m, idx) => (
+                    <option key={idx} value={idx + 1} className="bg-slate-900 text-white">
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {reportType === "bulanan" && (
+              <div className="flex items-center space-x-2 bg-black/25 px-3 py-1 rounded-xl border border-white/15 text-xs animate-fade-in">
+                <span className="text-blue-200 font-medium">Pilih Bulan:</span>
+                <select
+                  value={bulan}
+                  onChange={(e) => setBulan(Number(e.target.value))}
+                  className="bg-black/50 text-white text-xs px-2.5 py-1 rounded-lg border border-white/20 focus:outline-none cursor-pointer"
+                >
+                  {MONTHS.map((m, idx) => (
+                    <option key={idx} value={idx + 1} className="bg-slate-900 text-white">
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-blue-200 font-medium ml-1">Tahun:</span>
+                <span className="font-bold text-amber-400">{tahun}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Right Controls: Zoom, Print, Close */}
+          <div className="flex items-center space-x-2">
+            <div className="hidden sm:flex items-center space-x-1 bg-black/25 px-2 py-1 rounded-xl border border-white/15 text-xs">
+              <button
+                onClick={() => setZoomLevel((prev) => Math.max(prev - 10, 60))}
+                className="p-1 hover:bg-white/10 rounded text-blue-200 hover:text-white cursor-pointer"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="font-mono text-[11px] px-1 text-white">{zoomLevel}%</span>
+              <button
+                onClick={() => setZoomLevel((prev) => Math.min(prev + 10, 140))}
+                className="p-1 hover:bg-white/10 rounded text-blue-200 hover:text-white cursor-pointer"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <button
+              onClick={handlePrint}
+              className="flex items-center space-x-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Cetak / PDF A3-A4</span>
+            </button>
 
             <button
               onClick={onClose}
-              className="p-1.5 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1.5 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              title="Tutup Modal"
             >
               <X className="w-5 h-5" />
             </button>
@@ -461,7 +376,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
           {loading ? (
             <div className="p-16 text-center text-slate-500 dark:text-slate-400">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
-              <p className="text-xs font-medium">Memuat real data laporan mingguan PPK dari server...</p>
+              <p className="text-xs font-medium">Memuat real data laporan dari server...</p>
             </div>
           ) : errorMsg || !reportData ? (
             <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-800 text-red-600 text-xs max-w-md mx-auto my-12 shadow-sm space-y-2">
@@ -469,94 +384,13 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
               <p>{errorMsg || "Data laporan tidak tersedia"}</p>
               <button
                 onClick={loadReportData}
-                className="px-4 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-all"
+                className="px-4 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-all cursor-pointer"
               >
                 Coba Lagi
               </button>
             </div>
-          ) : activeTab === "sumber_data" ? (
-            /* TAB 2: KAMUS DATA */
-            <div className="max-w-5xl mx-auto space-y-6 pb-12 animate-fade-in">
-              <div className="bg-gradient-to-r from-[#002060] to-indigo-900 text-white p-6 rounded-2xl shadow-md space-y-2">
-                <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-amber-300">
-                  <Database className="w-4 h-4" />
-                  <span>REAL DATABASE INTEGRATION & DATA LINEAGE</span>
-                </div>
-                <h2 className="text-xl font-black">
-                  Matriks Sumber Data Template Laporan Mingguan PPK (A s.d. M)
-                </h2>
-                <p className="text-xs text-blue-100 leading-relaxed">
-                  Semua nilai pada template laporan mingguan ini di-generate secara real-time dari database PostgreSQL backend sistem KNMP v2.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-                  <h4 className="font-bold text-sm text-[#002060] dark:text-blue-400">
-                    A. Identitas Laporan
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Tabel `users` ({reportData.ppk_name}), `knmps` (Total {reportData.total_lokasi} titik), dan `persiapans` ({reportData.total_kontraktor} Kontraktor pelaksana).
-                  </p>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-                  <h4 className="font-bold text-sm text-[#002060] dark:text-blue-400">
-                    B. Ringkasan Eksekutif
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Auto-generator narasi cerdas yang menghitung rata-rata capaian fisik ({reportData.capaian_fisik_kumulatif}%), lokasi selesai ({reportData.lokasi_selesai}), on progress ({reportData.lokasi_on_progress}), dan mitigasi kendala aktif ({(reportData.issues || []).length} isu).
-                  </p>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-                  <h4 className="font-bold text-sm text-[#002060] dark:text-blue-400">
-                    C. Dashboard Capaian Mingguan
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: `AVG(realisasi_progres_fisik)` tabel `laporans`, pagu kontrak ({formatRupiah(reportData.nilai_kontrak_kumulatif)}), dan pencairan termin tabel `pembayarans` ({formatRupiah(reportData.realisasi_keuangan)}).
-                  </p>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-                  <h4 className="font-bold text-sm text-[#002060] dark:text-blue-400">
-                    D. Peta Sebaran Titik KNMP Sumatra (Real GIS)
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Peta interaktif Leaflet dengan titik koordinat asli `latitude` & `longitude` dari tabel `knmps` ({(reportData.gis_points || []).length} titik terplot se-Sumatera).
-                  </p>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-                  <h4 className="font-bold text-sm text-[#002060] dark:text-blue-400">
-                    E - G. Rekap Progres & Klaster Pekerjaan
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Rekapitulasi tabel `pelaksanaans`, `laporans`, dan `laporan_jenis_bangunan` untuk 5 klaster master (*Darat, Laut, Produksi, UMKM, Sosial*).
-                  </p>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-                  <h4 className="font-bold text-sm text-[#002060] dark:text-blue-400">
-                    H - I. Isu Kendala & Solusi Tindak Lanjut
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Tabel `issues` (`tingkat_kendala`, `penyebab`, `rencana_mitigasi`, `pic`, `target_selesai`) dan butir notulensi rapat tabel `notulens`.
-                  </p>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2 md:col-span-2">
-                  <h4 className="font-bold text-sm text-[#002060] dark:text-blue-400">
-                    J - M. Rencana Depan, Foto Geotagging, K3 & Pengesahan
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Rencana kerja harian `pelaksanaans`, foto terverifikasi GPS tabel `documents`, log zero accident K3/HSE, serta lembar tanda tangan resmi PPK & Kepala Dinas KP.
-                  </p>
-                </div>
-              </div>
-            </div>
           ) : (
-            /* TAB 1: DOKUMEN CETAK UTAMA TEMPLATE LAPORAN MINGGUAN PPK (A3/A4) */
+            /* DOKUMEN CETAK UTAMA TEMPLATE LAPORAN RESMI (A3/A4) */
             <div
               className="mx-auto transition-transform duration-200 origin-top"
               style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: "top center" }}
@@ -587,18 +421,26 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </div>
                   </div>
 
-                  {/* Center: Title & Week Period */}
+                  {/* Center: Dynamic Title & Period */}
                   <div className="text-center">
                     <h1 className="text-2xl font-black tracking-tight text-[#002060] uppercase">
-                      TEMPLATE LAPORAN MINGGUAN PPK
+                      {getReportTitle()}
                     </h1>
                     <h2 className="text-xs font-black tracking-wider text-slate-800 uppercase mt-0.5">
-                      PROGRAM KAMPUNG NELAYAN MERAH PUTIH (KNMP) – WILAYAH SUMATRA
+                      PROGRAM KAMPUNG NELAYAN MERAH PUTIH (KNMP) – WILAYAH SUMATERA
                     </h2>
-                    <div className="inline-flex items-center space-x-2 text-[11px] font-bold text-slate-700 bg-slate-100 px-3 py-0.5 rounded-full mt-1 border border-slate-200">
-                      <span>Laporan Minggu ke- <strong>{reportData.minggu_ke}</strong></span>
-                      <span>|</span>
-                      <span>Periode: <strong>{reportData.tanggal_awal}</strong> s.d. <strong>{reportData.tanggal_akhir} {reportData.tahun_anggaran}</strong></span>
+                    <div className="inline-flex items-center space-x-2 text-[11px] font-bold text-slate-700 bg-slate-100 px-3.5 py-0.5 rounded-full mt-1 border border-slate-200">
+                      {reportType === "harian" ? (
+                        <span>Laporan Harian Tanggal: <strong>{reportData.tanggal_laporan || selectedDate}</strong></span>
+                      ) : reportType === "bulanan" ? (
+                        <span>Laporan Bulanan Periode: <strong>{MONTHS[bulan - 1]} {reportData.tahun_anggaran}</strong></span>
+                      ) : (
+                        <>
+                          <span>Laporan Minggu ke- <strong>{reportData.minggu_ke}</strong></span>
+                          <span>|</span>
+                          <span>Periode: <strong>{reportData.tanggal_awal}</strong> s.d. <strong>{reportData.tanggal_akhir} {reportData.tahun_anggaran}</strong></span>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -612,7 +454,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                         KAMPUNG NELAYAN MERAH PUTIH
                       </div>
                       <div className="text-[10px] font-black uppercase text-[#002060] tracking-widest">
-                        SUMATRA
+                        SUMATERA
                       </div>
                     </div>
                     <img

@@ -825,14 +825,56 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 		year = 2026
 	}
 
-	startDay := (week-1)*7 + 1
-	endDay := week * 7
-	if endDay > 30 {
-		endDay = 30
+	reportType := strings.ToLower(strings.TrimSpace(filter.Type))
+	if reportType == "" {
+		reportType = "mingguan"
 	}
-	tglAwal := fmt.Sprintf("%02d September", startDay)
-	tglAkhir := fmt.Sprintf("%02d September", endDay)
-	tglLaporan := fmt.Sprintf("%02d September %d", endDay, year)
+
+	monthNames := []string{
+		"Januari", "Februari", "Maret", "April", "Mei", "Juni",
+		"Juli", "Agustus", "September", "Oktober", "November", "Desember",
+	}
+
+	monthIdx := filter.Month
+	if monthIdx < 1 || monthIdx > 12 {
+		monthIdx = 9
+	}
+	monthName := monthNames[monthIdx-1]
+
+	var tglAwal, tglAkhir, tglLaporan string
+	if reportType == "harian" {
+		if filter.Date != "" {
+			t, err := time.Parse("2006-01-02", filter.Date)
+			if err == nil {
+				tglAwal = fmt.Sprintf("%02d %s %d", t.Day(), monthNames[t.Month()-1], t.Year())
+				tglAkhir = tglAwal
+				tglLaporan = tglAwal
+				year = t.Year()
+			} else {
+				tglAwal = filter.Date
+				tglAkhir = filter.Date
+				tglLaporan = filter.Date
+			}
+		} else {
+			tglAwal = fmt.Sprintf("24 %s %d", monthName, year)
+			tglAkhir = tglAwal
+			tglLaporan = tglAwal
+		}
+	} else if reportType == "bulanan" {
+		tglAwal = fmt.Sprintf("01 %s", monthName)
+		tglAkhir = fmt.Sprintf("30 %s", monthName)
+		tglLaporan = fmt.Sprintf("30 %s %d", monthName, year)
+	} else {
+		// Mingguan
+		startDay := (week-1)*7 + 1
+		endDay := week * 7
+		if endDay > 30 {
+			endDay = 30
+		}
+		tglAwal = fmt.Sprintf("%02d %s", startDay, monthName)
+		tglAkhir = fmt.Sprintf("%02d %s", endDay, monthName)
+		tglLaporan = fmt.Sprintf("%02d %s %d", endDay, year)
+	}
 
 	// Fetch Real PPK User from DB
 	var realPPKName string
@@ -868,6 +910,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 	}
 
 	data := &domain.WeeklyPPKReportData{
+		JenisLaporan:   reportType,
 		PPKName:        realPPKName,
 		PPKNip:         "-",
 		KadisName:      realKadisName,

@@ -194,6 +194,7 @@ type MilestoneItem struct {
 }
 
 type WeeklyPPKReportData struct {
+	JenisLaporan          string                      `json:"jenis_laporan"`
 	PPKName               string                      `json:"ppk_name"`
 	PPKNip                string                      `json:"ppk_nip"`
 	KadisName             string                      `json:"kadis_name"`
