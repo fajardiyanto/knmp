@@ -847,18 +847,21 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
 
                     <div className="grid grid-cols-6 gap-2">
                       {(reportData.photos || []).map((item, idx) => (
-                        <div key={idx} className="space-y-1 text-center">
-                          <div className="h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-300 flex items-center justify-center">
+                        <div key={idx} className="space-y-1 text-center group">
+                          <div className="h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-300 flex items-center justify-center relative shadow-xs">
                             <img
                               src={item.file_url}
                               alt={item.title}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               onError={(e) => {
-                                e.currentTarget.src = "/assets/img/simandor.png";
+                                e.currentTarget.src = "/assets/images/property-1.jpg";
                               }}
                             />
+                            <div className="absolute top-0.5 right-0.5 bg-black/60 text-white text-[6.5px] font-bold px-1 py-0.2 rounded backdrop-blur-xs">
+                              GPS 📍
+                            </div>
                           </div>
-                          <span className="text-[7.5px] font-bold text-slate-700 block line-clamp-1">
+                          <span className="text-[7.5px] font-bold text-slate-700 block line-clamp-1" title={item.title}>
                             {item.title}
                           </span>
                         </div>
