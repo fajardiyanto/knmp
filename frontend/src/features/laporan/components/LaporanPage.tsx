@@ -90,8 +90,8 @@ export const LaporanPage: React.FC = () => {
   const { showAlert, showConfirm } = useAlert();
   const { user } = useAuth();
 
-  const isAdminOrPengawas = user?.roles?.some((r) =>
-    ["superadmin", "super admin", "admin_ppk", "admin", "pengawas", "ppk", "wakil_ppk", "wakil ppk"].includes(r.toLowerCase())
+  const canVerify = user?.roles?.some((r) =>
+    ["pengawas", "kontraktor"].includes(r.toLowerCase())
   );
 
   // Filters
@@ -722,7 +722,7 @@ export const LaporanPage: React.FC = () => {
                           >
                             <Edit className="w-4 h-4" />
                           </button>
-                          {isAdminOrPengawas && item.status !== "terverifikasi" && (
+                          {canVerify && item.status !== "terverifikasi" && (
                             <button
                               type="button"
                               onClick={() =>
@@ -737,7 +737,7 @@ export const LaporanPage: React.FC = () => {
                               <CheckCircle className="w-4 h-4" />
                             </button>
                           )}
-                          {isAdminOrPengawas && item.status === "terverifikasi" && (
+                          {canVerify && item.status === "terverifikasi" && (
                             <button
                               type="button"
                               onClick={() =>

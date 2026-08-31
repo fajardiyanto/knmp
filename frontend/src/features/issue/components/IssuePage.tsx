@@ -59,8 +59,11 @@ export const IssuePage: React.FC = () => {
   const { showAlert, showConfirm } = useAlert();
   const { user } = useAuth();
 
-  const isAdminOrPengawas = user?.roles?.some((r) =>
-    ["superadmin", "super admin", "admin_ppk", "admin", "pengawas"].includes(r.toLowerCase())
+  const canVerify = user?.roles?.some((r) =>
+    ["pengawas", "kontraktor"].includes(r.toLowerCase())
+  );
+  const isAdmin = user?.roles?.some((r) =>
+    ["superadmin", "super admin", "admin_ppk", "admin", "pengawas", "kontraktor"].includes(r.toLowerCase())
   );
   const defaultUserKnmpId = user?.knmp_ids?.[0]?.toString() || "";
 
@@ -114,7 +117,7 @@ export const IssuePage: React.FC = () => {
     mutationFn: async (payload: typeof formData) => {
       const finalKnmpId = payload.knmp_id
         ? Number(payload.knmp_id)
-        : !isAdminOrPengawas && defaultUserKnmpId
+        : !isAdmin && defaultUserKnmpId
           ? Number(defaultUserKnmpId)
           : undefined;
 
@@ -225,7 +228,7 @@ export const IssuePage: React.FC = () => {
   const handleOpenAdd = () => {
     setEditingItem(null);
     setFormData({
-      knmp_id: !isAdminOrPengawas && defaultUserKnmpId ? defaultUserKnmpId : "",
+      knmp_id: !isAdmin && defaultUserKnmpId ? defaultUserKnmpId : "",
       kategori_issue: "K3",
       tingkat: "Lainnya",
       uraian_masalah: "",
@@ -238,7 +241,7 @@ export const IssuePage: React.FC = () => {
     setFormData({
       knmp_id: item.knmp_id
         ? item.knmp_id.toString()
-        : !isAdminOrPengawas && defaultUserKnmpId
+        : !isAdmin && defaultUserKnmpId
           ? defaultUserKnmpId
           : "",
       kategori_issue: item.kategori_issue,
@@ -605,7 +608,7 @@ export const IssuePage: React.FC = () => {
                           >
                             <Edit className="w-4 h-4 text-slate-600" />
                           </button>
-                          {isAdminOrPengawas && (
+                          {canVerify && (
                             <button
                               type="button"
                               onClick={() => handleOpenVerify(item)}
@@ -733,7 +736,7 @@ export const IssuePage: React.FC = () => {
                     <label className="block text-xs font-semibold text-slate-800">
                       KNMP
                     </label>
-                    {!isAdminOrPengawas && defaultUserKnmpId ? (
+                    {!isAdmin && defaultUserKnmpId ? (
                       <div className="w-full px-3.5 py-2.5 text-xs border border-slate-200 rounded-lg bg-slate-50 text-slate-700 font-medium flex items-center justify-between">
                         <span>
                           {knmpOptions.find((k) => k.id.toString() === (formData.knmp_id || defaultUserKnmpId))?.name ||

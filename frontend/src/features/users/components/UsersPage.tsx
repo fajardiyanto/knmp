@@ -77,40 +77,6 @@ export const DEFAULT_ROLE_MENUS: Record<string, string[]> = {
   superadmin: AVAILABLE_MENUS.map((m) => m.key),
   "super admin": AVAILABLE_MENUS.map((m) => m.key),
   Admin_ppk: AVAILABLE_MENUS.map((m) => m.key),
-  PPK: [
-    "dashboard",
-    "chat",
-    "knmp_read",
-    "kontrak_read",
-    "pcm_read",
-    "lapangan_read",
-    "pelaksanaan_read",
-    "laporan_read",
-    "pho_read",
-    "pemeliharaan_read",
-    "fho_read",
-    "anggaran_read",
-    "termin_read",
-    "absensi_read",
-    "issue_read",
-  ],
-  "Wakil PPK": [
-    "dashboard",
-    "chat",
-    "knmp_read",
-    "kontrak_read",
-    "pcm_read",
-    "lapangan_read",
-    "pelaksanaan_read",
-    "laporan_read",
-    "pho_read",
-    "pemeliharaan_read",
-    "fho_read",
-    "anggaran_read",
-    "termin_read",
-    "absensi_read",
-    "issue_read",
-  ],
   Pengawas: [
     "dashboard",
     "chat",
@@ -158,9 +124,9 @@ export const UsersPage: React.FC = () => {
     name: "",
     email: "",
     password: "",
-    role: "Kontraktor",
+    role: "Admin_ppk",
     knmp_id: "",
-    permissions: DEFAULT_ROLE_MENUS["Kontraktor"] || [],
+    permissions: DEFAULT_ROLE_MENUS["Admin_ppk"] || [],
   });
 
   // 1. Fetch Users List
@@ -714,10 +680,8 @@ export const UsersPage: React.FC = () => {
                         }}
                         className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700 font-medium"
                       >
-                        <option value="Wakil PPK">Wakil PPK</option>
-                        <option value="PPK">PPK</option>
+                        <option value="Admin_ppk">Admin</option>
                         <option value="Pengawas">Pengawas</option>
-                        <option value="Admin_ppk">Admin PPK</option>
                         <option value="Kontraktor">Kontraktor</option>
                       </select>
                     </div>
