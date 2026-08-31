@@ -868,6 +868,18 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 	}
 
 	// 2. Fetch KNMP points & status counts with Scoping
+	if !filter.IsGlobal && len(filter.UserKnmpIDs) == 0 && filter.UserID > 0 {
+		var userAssignedKnmpIDs []int64
+		_ = r.db.SelectContext(ctx, &userAssignedKnmpIDs, `
+			SELECT DISTINCT knmp_id FROM pelaksanaans WHERE user_id = $1 AND deleted_at IS NULL AND knmp_id IS NOT NULL
+			UNION
+			SELECT DISTINCT knmp_id FROM persiapans WHERE user_id = $1 AND deleted_at IS NULL AND knmp_id IS NOT NULL
+		`, filter.UserID)
+		if len(userAssignedKnmpIDs) > 0 {
+			filter.UserKnmpIDs = userAssignedKnmpIDs
+		}
+	}
+
 	type knmpRow struct {
 		ID        int64    `db:"id"`
 		Name      string   `db:"name"`
@@ -892,7 +904,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 			ORDER BY k.id ASC
 		`
 		_ = r.db.SelectContext(ctx, &knmpList, gisQuery, pq.Array(filter.UserKnmpIDs))
-	} else {
+	} else if filter.IsGlobal {
 		gisQuery := `
 			SELECT k.id, k.name, k.lat, k.long,
 			       COALESCE(k.realisasi_progres_fisik, 0) as progress,
@@ -905,6 +917,23 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 			ORDER BY k.id ASC
 		`
 		_ = r.db.SelectContext(ctx, &knmpList, gisQuery)
+	}
+
+	if !filter.IsGlobal && len(knmpList) == 0 {
+		var singleKnmp knmpRow
+		if err := r.db.GetContext(ctx, &singleKnmp, `
+			SELECT k.id, k.name, k.lat, k.long,
+			       COALESCE(k.realisasi_progres_fisik, 0) as progress,
+			       COALESCE(rg.name, '-') as regency_name,
+			       COALESCE(pr.name, '-') as province_name
+			FROM knmps k
+			LEFT JOIN regencies rg ON k.regency_id = rg.id
+			LEFT JOIN provinces pr ON k.province_id = pr.id
+			WHERE k.deleted_at IS NULL
+			ORDER BY k.id ASC LIMIT 1
+		`); err == nil {
+			knmpList = append(knmpList, singleKnmp)
+		}
 	}
 
 	data.TotalLokasi = len(knmpList)

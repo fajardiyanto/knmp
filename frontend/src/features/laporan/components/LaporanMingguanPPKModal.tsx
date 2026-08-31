@@ -236,6 +236,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
 
       const points = reportData.gis_points || [];
       const bounds = L.latLngBounds([]);
+      let singleMarker: L.Marker | null = null;
 
       points.forEach((p) => {
         if (p.lat && p.long && !isNaN(p.lat) && !isNaN(p.long)) {
@@ -265,11 +266,19 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
               </div>
             </div>
           `);
+          singleMarker = marker;
         }
       });
 
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [15, 15] });
+      if (points.length === 1 && points[0].lat && points[0].long) {
+        map.setView([points[0].lat, points[0].long], 13);
+        if (singleMarker) {
+          singleMarker.openPopup();
+        }
+      } else if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [15, 15], maxZoom: 13 });
+      } else {
+        map.setView([0.7893, 101.5], 5.5);
       }
     }, 150);
 
@@ -656,10 +665,17 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                   </div>
 
                   {/* D. Peta Sebaran Titik KNMP Sumatra (Real GIS Leaflet Map) */}
-                  <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
+                  <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-2.5 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider flex items-center justify-between">
-                      <span>D. PETA SEBARAN TITIK SUMATRA</span>
-                      <span className="text-[9px] font-normal lowercase">{(reportData.gis_points || []).length} real GIS points</span>
+                      <span>
+                        {reportData.total_lokasi <= 1 && reportData.wilayah !== "SUMATRA"
+                          ? `D. PETA LOKASI KNMP`
+                          : `D. PETA SEBARAN TITIK SUMATRA`}
+                      </span>
+                      <span className="text-[9px] font-normal lowercase">
+                        {(reportData.gis_points || []).length}{" "}
+                        {(reportData.gis_points || []).length === 1 ? "titik lokasi" : "real GIS points"}
+                      </span>
                     </div>
 
                     {/* Real Leaflet Map Container */}
