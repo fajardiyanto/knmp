@@ -363,3 +363,65 @@ html.dark .printable-report-canvas table thead th {
 html.dark .printable-report-canvas table tbody tr:hover {
   background-color: rgba(241, 245, 249, 0.6) !important;
 }
+
+/* Confluence Rich Text Styles */
+.confluence-editor .prose h1,
+.confluence-rendered-content h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #0f172a;
+}
+.confluence-editor .prose h2,
+.confluence-rendered-content h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+.confluence-editor .prose h3,
+.confluence-rendered-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.dark .confluence-editor .prose h1,
+.dark .confluence-rendered-content h1,
+.dark .confluence-editor .prose h2,
+.dark .confluence-rendered-content h2,
+.dark .confluence-editor .prose h3,
+.dark .confluence-rendered-content h3 {
+  color: #f8fafc;
+}
+
+.confluence-table th {
+  background-color: #f1f5f9;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dark .confluence-table th {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
+.confluence-table td,
+.confluence-table th {
+  border: 1px solid #cbd5e1;
+  padding: 8px 12px;
+}
+
+.dark .confluence-table td,
+.dark .confluence-table th {
+  border: 1px solid #334155;
+}
+
+.confluence-callout {
+  border-left-width: 4px;
+  border-radius: 0 12px 12px 0;
+}
+

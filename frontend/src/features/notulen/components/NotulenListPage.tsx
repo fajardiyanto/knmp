@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FileText,
   Plus,
@@ -13,20 +14,18 @@ import {
   Trash2,
   Eye,
   Building,
-  CheckCircle2,
   Filter,
   RefreshCw,
-  Printer,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
-import type { Notulen, NotulenFilter, NotulenFormData } from "../types/notulen.types";
-import { fetchNotulenList, createNotulen, updateNotulen, deleteNotulen } from "../api";
-import { NotulenFormModal } from "./NotulenFormModal";
-import { NotulenDetailModal } from "./NotulenDetailModal";
+import type { Notulen, NotulenFilter } from "../types/notulen.types";
+import { fetchNotulenList, deleteNotulen } from "../api";
 import { NotulenShareModal } from "./NotulenShareModal";
 import { fetchKnmpList } from "../../knmp/api";
 
 export const NotulenListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, hasRole } = useAuth();
 
   // Role Permissions: only superadmin, super admin, admin_ppk, admin can manage (create/edit/delete/share)
@@ -51,9 +50,7 @@ export const NotulenListPage: React.FC = () => {
   const [tglAwal, setTglAwal] = useState("");
   const [tglAkhir, setTglAkhir] = useState("");
 
-  // Modals state
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  // Share modal state
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [selectedNotulen, setSelectedNotulen] = useState<Notulen | null>(null);
 
@@ -94,27 +91,14 @@ export const NotulenListPage: React.FC = () => {
     loadData();
   };
 
-  const handleCreate = () => {
-    setSelectedNotulen(null);
-    setIsFormOpen(true);
-  };
-
-  const handleEdit = (n: Notulen) => {
-    setSelectedNotulen(n);
-    setIsFormOpen(true);
-  };
-
-  const handleDetail = (n: Notulen) => {
-    setSelectedNotulen(n);
-    setIsDetailOpen(true);
-  };
-
-  const handleShare = (n: Notulen) => {
+  const handleShare = (n: Notulen, e: React.MouseEvent) => {
+    e.stopPropagation();
     setSelectedNotulen(n);
     setIsShareOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!window.confirm("Apakah Anda yakin ingin menghapus notulen rapat ini?")) {
       return;
     }
@@ -124,15 +108,6 @@ export const NotulenListPage: React.FC = () => {
     } catch (err: any) {
       alert(err?.message || "Gagal menghapus notulen");
     }
-  };
-
-  const handleFormSubmit = async (data: NotulenFormData) => {
-    if (selectedNotulen) {
-      await updateNotulen(selectedNotulen.id, data);
-    } else {
-      await createNotulen(data);
-    }
-    loadData();
   };
 
   // Metrics calculation
@@ -145,40 +120,43 @@ export const NotulenListPage: React.FC = () => {
   const totalSharedParticipants = notulens.reduce((acc, n) => acc + (n.shared_users?.length || 0), 0);
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 md:p-8 text-white shadow-xl">
+    <div className="space-y-6 pb-16">
+      {/* Header Banner Confluence Style */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-950 via-indigo-950 to-slate-950 p-6 md:p-8 text-white shadow-xl border border-blue-900/30">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">
-              <span className="px-2 py-0.5 bg-blue-500/20 rounded">BUMN Pertamina</span>
+            <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-blue-400 mb-1.5">
+              <span className="px-2.5 py-0.5 bg-blue-500/20 rounded-md">BUMN PERTAMINA</span>
               <span>•</span>
-              <span>Modul Notulensi Rapat & Berita Acara</span>
+              <span className="flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                DOKUMENTASI KOORDINASI & BERITA ACARA RAPAT
+              </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">
               Notulen Rapat KNMP v2
             </h1>
-            <p className="text-sm text-blue-200 mt-1 max-w-2xl">
-              Pusat dokumentasi hasil meeting koordinasi teknis, pimpinan sidang, notulis resmi, dan distribusi tindak lanjut se-Sumatera.
+            <p className="text-xs md:text-sm text-blue-200 mt-1 max-w-2xl leading-relaxed">
+              Ruang kerja terintegrasi ala Confluence untuk menyusun Berita Acara, mengelola pimpinan sidang, mencatat notulis resmi (*Super Admin*), dan mendistribusikan tindak lanjut se-Sumatera.
             </p>
           </div>
 
           {canManage && (
-            <button
-              onClick={handleCreate}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+            <Link
+              to="/notulen/create"
+              className="flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 shrink-0"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <span>Tambah Notulen Rapat</span>
-            </button>
+              <span>Tulis Notulen Baru</span>
+            </Link>
           )}
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center space-x-4">
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center space-x-4">
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400 shrink-0">
             <FileText className="w-6 h-6" />
           </div>
           <div>
@@ -187,8 +165,8 @@ export const NotulenListPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center space-x-4">
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center space-x-4">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400 shrink-0">
             <Calendar className="w-6 h-6" />
           </div>
           <div>
@@ -197,8 +175,8 @@ export const NotulenListPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center space-x-4">
-          <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center space-x-4">
+          <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400 shrink-0">
             <Users className="w-6 h-6" />
           </div>
           <div>
@@ -209,7 +187,7 @@ export const NotulenListPage: React.FC = () => {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-3">
           <div className="md:col-span-4 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -285,33 +263,35 @@ export const NotulenListPage: React.FC = () => {
 
       {/* Main List */}
       {loading ? (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-16 text-center border border-slate-200 dark:border-slate-800">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Memuat data notulen rapat...</p>
         </div>
       ) : error ? (
-        <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-2xl border border-red-200 dark:border-red-800 text-center text-red-700 dark:text-red-300 text-sm">
+        <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-3xl border border-red-200 dark:border-red-800 text-center text-red-700 dark:text-red-300 text-sm">
           {error}
         </div>
       ) : notulens.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-800 space-y-3">
-          <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
-            <FileText className="w-6 h-6" />
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-16 text-center border border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+            <FileText className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Belum Ada Notulen Rapat</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-            {canManage
-              ? "Klik tombol 'Tambah Notulen Rapat' di atas untuk mencatat hasil pertemuan koordinasi baru."
-              : "Belum ada notulen rapat yang dibagikan kepada akun Anda saat ini."}
-          </p>
+          <div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Belum Ada Notulen Rapat</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1">
+              {canManage
+                ? "Klik tombol 'Tulis Notulen Baru' di atas untuk membuka editor ala Confluence."
+                : "Belum ada notulen rapat yang dibagikan kepada akun Anda saat ini."}
+            </p>
+          </div>
           {canManage && (
-            <button
-              onClick={handleCreate}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition-colors"
+            <Link
+              to="/notulen/create"
+              className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow transition-all"
             >
               <Plus className="w-4 h-4" />
-              <span>Buat Notulen Pertama</span>
-            </button>
+              <span>Buka Confluence Editor</span>
+            </Link>
           )}
         </div>
       ) : (
@@ -319,17 +299,18 @@ export const NotulenListPage: React.FC = () => {
           {notulens.map((n) => (
             <div
               key={n.id}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
+              onClick={() => navigate(`/notulen/${n.id}`)}
+              className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all flex flex-col justify-between overflow-hidden cursor-pointer group"
             >
               <div>
-                {/* Card Top Banner */}
+                {/* Card Top Header */}
                 <div className="p-5 border-b border-slate-100 dark:border-slate-800/80 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
                       <Calendar className="w-3 h-3" />
                       <span>{n.tanggal ? n.tanggal.split("T")[0] : "-"}</span>
                     </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 uppercase">
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
                       {n.status}
                     </span>
                   </div>
@@ -339,7 +320,7 @@ export const NotulenListPage: React.FC = () => {
                   </h3>
 
                   {n.knmp_name && (
-                    <div className="flex items-center space-x-1 text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold truncate">
+                    <div className="flex items-center space-x-1.5 text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold truncate">
                       <Building className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">{n.knmp_name}</span>
                     </div>
@@ -369,14 +350,8 @@ export const NotulenListPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {n.hasil_pembahasan && (
-                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-[11px] line-clamp-3 text-slate-700 dark:text-slate-300 border border-slate-100 dark:border-slate-800">
-                      {n.hasil_pembahasan}
-                    </div>
-                  )}
-
                   {/* Shared Users Badge */}
-                  <div className="flex items-center space-x-1.5 text-[11px] text-purple-600 dark:text-purple-400 font-semibold">
+                  <div className="flex items-center space-x-1.5 text-[11px] text-purple-600 dark:text-purple-400 font-semibold pt-1">
                     <Users className="w-3.5 h-3.5 shrink-0" />
                     <span>Dibagikan ke {n.shared_users?.length || 0} Pengguna</span>
                   </div>
@@ -385,33 +360,33 @@ export const NotulenListPage: React.FC = () => {
 
               {/* Card Footer Actions */}
               <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
-                <button
-                  onClick={() => handleDetail(n)}
-                  className="flex items-center space-x-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700"
-                >
+                <span className="flex items-center space-x-1 text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:underline">
                   <Eye className="w-3.5 h-3.5" />
-                  <span>Lihat Dokumen</span>
-                </button>
+                  <span>Buka Dokumen</span>
+                </span>
 
                 <div className="flex items-center space-x-1">
                   {canManage && (
                     <>
                       <button
-                        onClick={() => handleShare(n)}
+                        onClick={(e) => handleShare(n, e)}
                         className="p-1.5 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
                         title="Bagikan Notulen"
                       >
                         <Share2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleEdit(n)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/notulen/${n.id}/edit`);
+                        }}
                         className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
                         title="Edit Notulen"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleDelete(n.id)}
+                        onClick={(e) => handleDelete(n.id, e)}
                         className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                         title="Hapus Notulen"
                       >
@@ -426,26 +401,7 @@ export const NotulenListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modals */}
-      <NotulenFormModal
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        initialData={selectedNotulen}
-        knmpList={knmpList}
-      />
-
-      <NotulenDetailModal
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        notulen={selectedNotulen}
-        onOpenShare={(n) => {
-          setIsDetailOpen(false);
-          handleShare(n);
-        }}
-        canManage={canManage}
-      />
-
+      {/* Share Modal */}
       <NotulenShareModal
         isOpen={isShareOpen}
         onClose={() => setIsShareOpen(false)}

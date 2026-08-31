@@ -32,7 +32,11 @@ import {
   FHOPage,
 } from "../features/fase/FasePages";
 import { ChatPage } from "../features/chat/components/ChatPage";
-import { NotulenListPage } from "../features/notulen/components/NotulenListPage";
+import {
+  NotulenListPage,
+  NotulenEditorPage,
+  NotulenDetailPage,
+} from "../features/notulen";
 import { useAuth } from "../features/auth/hooks/useAuth";
 
 const RootRedirect: React.FC = () => {
@@ -301,12 +305,36 @@ export const AppRoutes: React.FC = () => {
           }
         />
 
-        {/* Notulen Rapat (Meeting Minutes) */}
+        {/* Notulen Rapat (Meeting Minutes - Confluence Style) */}
         <Route
           path="notulen"
           element={
             <ProtectedRoute>
               <NotulenListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="notulen/create"
+          element={
+            <ProtectedRoute>
+              <NotulenEditorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="notulen/:id"
+          element={
+            <ProtectedRoute>
+              <NotulenDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="notulen/:id/edit"
+          element={
+            <ProtectedRoute>
+              <NotulenEditorPage />
             </ProtectedRoute>
           }
         />
