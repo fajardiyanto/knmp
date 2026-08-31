@@ -505,36 +505,11 @@ export const LaporanPage: React.FC = () => {
             onClick={() => {
               setIsWeeklyPpkModalOpen(true);
             }}
-            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-bold bg-[#002060] hover:bg-[#001848] text-white rounded-xl transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-950/20 cursor-pointer border border-blue-900"
-            title="Buka Template Laporan Mingguan PPK (Program KNMP Wilayah Sumatra)"
+            className="flex-1 sm:flex-none px-5 py-2.5 text-[13.5px] font-black bg-gradient-to-r from-[#002060] via-blue-900 to-indigo-900 hover:from-[#001848] hover:to-indigo-950 text-white rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-950/25 cursor-pointer border border-blue-800"
+            title="Buka Template Laporan Mingguan PPK Resmi (Program KNMP Wilayah Sumatra)"
           >
             <Sparkles className="w-4 h-4 text-amber-400" />
             <span>Template Laporan Mingguan PPK</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedLaporanId(undefined);
-              setMonthlyReportKnmpId(undefined);
-              setIsMonthlyReportModalOpen(true);
-            }}
-            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-            title="Buka Laporan Proyek Terpadu Resmi (Format Klasik)"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-white" />
-            <span>Laporan Proyek Terpadu</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedLaporanId(undefined);
-              setMonthlyReportKnmpId(undefined);
-              setIsExecutiveReportV2Open(true);
-            }}
-            className="flex-1 sm:flex-none px-4 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl transition-all flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20 cursor-pointer"
-            title="Buka Laporan Proyek Terpadu v2.0 Executive (Dashboard Analytics & Dokumen Cetak)"
-          >
-            <span>Laporan Proyek Terpadu v2</span>
           </button>
           <button
             type="button"
