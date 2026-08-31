@@ -134,13 +134,23 @@ func TestLaporanService_CreateAndGet(t *testing.T) {
 		t.Errorf("expected default status menunggu_pengawas, got %s", lap.Status)
 	}
 
-	// 2. GetByID
-	fetched, err := svc.GetByID(context.Background(), lap.ID)
+	// 2. Multi-tier Verification Flow
+	// Step A: Pengawas approves -> status becomes menunggu_wakil_ppk
+	err = svc.Verify(context.Background(), lap.ID, "pengawas", true, "Disetujui pengawas lapangan", 101)
 	if err != nil {
-		t.Fatalf("expected fetched laporan, got %v", err)
+		t.Fatalf("pengawas verification failed: %v", err)
 	}
-	if fetched == nil || fetched.Nama != "Laporan Mingguan Ke-4" {
-		t.Fatalf("expected Laporan Mingguan Ke-4, got %+v", fetched)
+	if lap.Status != "menunggu_wakil_ppk" {
+		t.Errorf("expected status menunggu_wakil_ppk, got %s", lap.Status)
+	}
+
+	// Step B: Wakil PPK approves -> status becomes terverifikasi
+	err = svc.Verify(context.Background(), lap.ID, "wakil_ppk", true, "Disetujui wakil PPK", 102)
+	if err != nil {
+		t.Fatalf("wakil_ppk verification failed: %v", err)
+	}
+	if lap.Status != "terverifikasi" {
+		t.Errorf("expected status terverifikasi, got %s", lap.Status)
 	}
 
 	// 3. GetMonthlyProjectReportData
