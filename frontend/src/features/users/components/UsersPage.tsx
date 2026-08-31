@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
+import { SearchableSelect, OptionItem } from "../../../components/ui/SearchableSelect";
 
 interface UserItem {
   id: number;
@@ -179,6 +180,16 @@ export const UsersPage: React.FC = () => {
       return Array.isArray(res) ? res.map((k) => ({ id: k.id, name: k.name || k.nama })) : [];
     },
   });
+
+  const knmpSelectOptions: OptionItem[] = useMemo(() => {
+    return [
+      { value: "", label: "-- Bebas / Tanpa Khusus Titik --" },
+      ...knmpOptions.map((k) => ({
+        value: String(k.id),
+        label: k.name,
+      })),
+    ];
+  }, [knmpOptions]);
 
   // 3. Fetch Roles Options
   const { data: roleOptions = [] } = useQuery<RoleOption[]>({
@@ -716,18 +727,14 @@ export const UsersPage: React.FC = () => {
                       <label className="block text-xs font-semibold text-slate-800">
                         Penugasan Titik KNMP (Opsional)
                       </label>
-                      <select
+                      <SearchableSelect
                         value={formData.knmp_id}
-                        onChange={(e) => setFormData({ ...formData, knmp_id: e.target.value })}
-                        className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700"
-                      >
-                        <option value="">-- Bebas / Tanpa Khusus Titik --</option>
-                        {knmpOptions.map((k) => (
-                          <option key={k.id} value={k.id}>
-                            {k.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(val) => setFormData({ ...formData, knmp_id: val })}
+                        options={knmpSelectOptions}
+                        placeholder="-- Bebas / Tanpa Khusus Titik --"
+                        searchPlaceholder="Ketik untuk mencari / memfilter titik KNMP..."
+                        className="w-full"
+                      />
                     </div>
                   </div>
                 </div>
