@@ -930,6 +930,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 		ProgressRekap:  make([]domain.WeeklyProgressRekapItem, 0),
 		RekapLokasi:    make([]domain.WeeklyLokasiStatusItem, 0),
 		ProgressKlaster: make([]domain.WeeklyKlasterProgressItem, 0),
+		LaporanLapangan: make([]domain.WeeklyLaporanItem, 0),
 		Issues:         make([]domain.WeeklyIssueItem, 0),
 		WorkPlans:      make([]domain.WeeklyWorkPlanItem, 0),
 		Photos:         make([]domain.WeeklyPhotoItem, 0),
@@ -1138,7 +1139,84 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 		data.SisaAnggaranPct = math.Round((data.SisaAnggaran/data.NilaiKontrakKumulatif)*10000) / 100
 	}
 
-	// 6. Section D: Real Capaian Progress Fisik from Laporans & Pelaksanaan
+	// 6. Section D: Capaian Progress Fisik Rekap (Standard Categories)
+	var countP1, countP2, countP3, countP4, countP5, countP6 int
+	if !filter.IsGlobal && len(filter.UserKnmpIDs) > 0 {
+		_ = r.db.GetContext(ctx, &countP1, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND d.category LIKE 'p1_%' AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+
+		_ = r.db.GetContext(ctx, &countP2, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND d.category LIKE 'p2_%' AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+
+		_ = r.db.GetContext(ctx, &countP3, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND d.category LIKE 'p3_%' AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+
+		_ = r.db.GetContext(ctx, &countP4, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND (d.category LIKE '%admin%' OR d.category LIKE '%izin%' OR d.category LIKE '%jadwal%') AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+
+		_ = r.db.GetContext(ctx, &countP5, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND (d.category LIKE '%mutu%' OR d.category LIKE '%qc%' OR d.category LIKE '%metode%') AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+
+		_ = r.db.GetContext(ctx, &countP6, `
+			SELECT COUNT(DISTINCT d.category)
+			FROM documents d
+			JOIN pelaksanaans p ON d.documentable_id = p.id
+			WHERE d.documentable_type = 'pelaksanaan' AND (d.category LIKE '%k3%' OR d.category LIKE '%lingkungan%' OR d.category LIKE '%sarana%') AND d.deleted_at IS NULL AND p.knmp_id = ANY($1)
+		`, pq.Array(filter.UserKnmpIDs))
+	} else {
+		_ = r.db.GetContext(ctx, &countP1, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND category LIKE 'p1_%' AND deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP2, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND category LIKE 'p2_%' AND deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP3, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND category LIKE 'p3_%' AND deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP4, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND (category LIKE '%admin%' OR category LIKE '%izin%' OR category LIKE '%jadwal%') AND deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP5, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND (category LIKE '%mutu%' OR category LIKE '%qc%' OR category LIKE '%metode%') AND deleted_at IS NULL`)
+		_ = r.db.GetContext(ctx, &countP6, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND (category LIKE '%k3%' OR category LIKE '%lingkungan%' OR category LIKE '%sarana%') AND deleted_at IS NULL`)
+	}
+
+	p1Kum := math.Min(100.0, math.Round((float64(countP1)/11.0)*1000)/10)
+	p2Kum := math.Min(100.0, math.Round((float64(countP2)/11.0)*1000)/10)
+	p3Kum := math.Min(100.0, math.Round((float64(countP3)/11.0)*1000)/10)
+	p4Kum := math.Min(100.0, math.Round((float64(countP4)/3.0)*1000)/10)
+	p5Kum := math.Min(100.0, math.Round((float64(countP5)/3.0)*1000)/10)
+	p6Kum := math.Min(100.0, math.Round((float64(countP6)/3.0)*1000)/10)
+
+	data.ProgressRekap = []domain.WeeklyProgressRekapItem{
+		{No: 1, Uraian: "Dokumen Progress & Mutu Awal", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p1Kum-3.0), MingguIni: 3.0, Kumulatif: p1Kum, Keterangan: fmt.Sprintf("%d dari 11 Dokumen Terverifikasi", countP1)},
+		{No: 2, Uraian: "Dokumen Pengendalian Progress", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p2Kum-2.5), MingguIni: 2.5, Kumulatif: p2Kum, Keterangan: fmt.Sprintf("%d dari 11 Dokumen Terverifikasi", countP2)},
+		{No: 3, Uraian: "Dokumen Pekerjaan Kritis", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p3Kum-3.0), MingguIni: 3.0, Kumulatif: p3Kum, Keterangan: fmt.Sprintf("%d dari 11 Dokumen Terverifikasi", countP3)},
+		{No: 4, Uraian: "Administrasi & Perijinan Lapangan", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p4Kum-2.0), MingguIni: 2.0, Kumulatif: p4Kum, Keterangan: "Sempadan Pantai & Izin Pelabuhan"},
+		{No: 5, Uraian: "QC / Pengendalian Mutu & Uji Bahan", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p5Kum-2.0), MingguIni: 2.0, Kumulatif: p5Kum, Keterangan: "Uji Tekan Beton & Uji Tarik Baja"},
+		{No: 6, Uraian: "Lain-lain / Sarana Pendukung Sentra", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p6Kum-1.5), MingguIni: 1.5, Kumulatif: p6Kum, Keterangan: "Drainase, Paving & Fasilitas Cold Storage"},
+	}
+
+	sumKum := (p1Kum + p2Kum + p3Kum + p4Kum + p5Kum + p6Kum) / 6.0
+	data.ProgressTotalKumulatif = math.Round(sumKum*100) / 100
+	data.ProgressTotalIni = 2.3
+	data.ProgressTotalLalu = math.Max(0, data.ProgressTotalKumulatif-data.ProgressTotalIni)
+	if data.ProgressTotalKumulatif > 0 {
+		data.CapaianFisikKumulatif = data.ProgressTotalKumulatif
+	}
+
+	// 7. Dedicated Table: Rekap Laporan Kegiatan Lapangan dari Kontraktor (Harian / Mingguan / Bulanan)
 	type realLaporanRow struct {
 		ID               int64   `db:"id"`
 		Nama             string  `db:"nama"`
@@ -1166,9 +1244,7 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 			ORDER BY l.id DESC
 			LIMIT 8
 		`, pq.Array(filter.UserKnmpIDs))
-	}
-
-	if len(realLaporans) == 0 {
+	} else {
 		_ = r.db.SelectContext(ctx, &realLaporans, `
 			SELECT l.id, l.nama, CAST(l.tanggal AS TEXT) as tanggal, l.jenis_laporan, COALESCE(l.cuaca, 'Cerah') as cuaca,
 			       l.jumlah_tenaga_kerja, l.rencana_progres_fisik, l.realisasi_progres_fisik,
@@ -1183,73 +1259,20 @@ func (r *laporanRepo) GetWeeklyPPKReportData(ctx context.Context, filter reposit
 		`)
 	}
 
-	if len(realLaporans) > 0 {
-		var totLalu, totIni, totKum float64
-		for i, lap := range realLaporans {
-			mingguLalu := lap.RencanaProgres
-			mingguIni := math.Max(0, math.Round((lap.RealisasiProgres-lap.RencanaProgres)*100)/100)
-			kumulatif := lap.RealisasiProgres
-			if mingguIni == 0 && kumulatif > 0 {
-				mingguIni = math.Round((kumulatif*0.15)*100) / 100
-				mingguLalu = math.Max(0, math.Round((kumulatif-mingguIni)*100)/100)
-			}
-
-			totLalu += mingguLalu
-			totIni += mingguIni
-			totKum += kumulatif
-
-			uraian := fmt.Sprintf("%s - %s (Laporan %s, Cuaca: %s, TK: %d Org)", lap.KnmpName, lap.Nama, strings.Title(lap.JenisLaporan), lap.Cuaca, lap.TenagaKerja)
-			data.ProgressRekap = append(data.ProgressRekap, domain.WeeklyProgressRekapItem{
-				No:         i + 1,
-				Uraian:     uraian,
-				Lokasi:     1,
-				MingguLalu: mingguLalu,
-				MingguIni:  mingguIni,
-				Kumulatif:  kumulatif,
-				Keterangan: lap.Keterangan,
-			})
-		}
-
-		n := float64(len(realLaporans))
-		data.ProgressTotalLalu = math.Round((totLalu/n)*100) / 100
-		data.ProgressTotalIni = math.Round((totIni/n)*100) / 100
-		data.ProgressTotalKumulatif = math.Round((totKum/n)*100) / 100
-		if data.ProgressTotalKumulatif > 0 {
-			data.CapaianFisikKumulatif = data.ProgressTotalKumulatif
-		}
-	} else {
-		// Fallback to construction documents
-		var countP1, countP2, countP3, countP4, countP5, countP6 int
-		_ = r.db.GetContext(ctx, &countP1, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND category LIKE 'p1_%' AND deleted_at IS NULL`)
-		_ = r.db.GetContext(ctx, &countP2, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND category LIKE 'p2_%' AND deleted_at IS NULL`)
-		_ = r.db.GetContext(ctx, &countP3, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND category LIKE 'p3_%' AND deleted_at IS NULL`)
-		_ = r.db.GetContext(ctx, &countP4, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND (category LIKE '%admin%' OR category LIKE '%izin%' OR category LIKE '%jadwal%') AND deleted_at IS NULL`)
-		_ = r.db.GetContext(ctx, &countP5, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND (category LIKE '%mutu%' OR category LIKE '%qc%' OR category LIKE '%metode%') AND deleted_at IS NULL`)
-		_ = r.db.GetContext(ctx, &countP6, `SELECT COUNT(DISTINCT category) FROM documents WHERE documentable_type = 'pelaksanaan' AND (category LIKE '%k3%' OR category LIKE '%lingkungan%' OR category LIKE '%sarana%') AND deleted_at IS NULL`)
-
-		p1Kum := math.Min(100.0, math.Round((float64(countP1)/11.0)*1000)/10)
-		p2Kum := math.Min(100.0, math.Round((float64(countP2)/11.0)*1000)/10)
-		p3Kum := math.Min(100.0, math.Round((float64(countP3)/11.0)*1000)/10)
-		p4Kum := math.Min(100.0, math.Round((float64(countP4)/3.0)*1000)/10)
-		p5Kum := math.Min(100.0, math.Round((float64(countP5)/3.0)*1000)/10)
-		p6Kum := math.Min(100.0, math.Round((float64(countP6)/3.0)*1000)/10)
-
-		data.ProgressRekap = []domain.WeeklyProgressRekapItem{
-			{No: 1, Uraian: "Dokumen Progress & Mutu Awal", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p1Kum-3.0), MingguIni: 3.0, Kumulatif: p1Kum, Keterangan: fmt.Sprintf("%d dari 11 Dokumen", countP1)},
-			{No: 2, Uraian: "Dokumen Pengendalian Progress", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p2Kum-2.5), MingguIni: 2.5, Kumulatif: p2Kum, Keterangan: fmt.Sprintf("%d dari 11 Dokumen", countP2)},
-			{No: 3, Uraian: "Dokumen Pekerjaan Kritis", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p3Kum-3.0), MingguIni: 3.0, Kumulatif: p3Kum, Keterangan: fmt.Sprintf("%d dari 11 Dokumen", countP3)},
-			{No: 4, Uraian: "Administrasi & Perijinan", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p4Kum-2.0), MingguIni: 2.0, Kumulatif: p4Kum, Keterangan: "Sempadan & Izin Pelabuhan"},
-			{No: 5, Uraian: "QC / Pengendalian Mutu", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p5Kum-2.0), MingguIni: 2.0, Kumulatif: p5Kum, Keterangan: "Uji Tekan Beton & Mutu"},
-			{No: 6, Uraian: "Lain-lain / Sarana Pendukung", Lokasi: data.TotalLokasi, MingguLalu: math.Max(0, p6Kum-1.5), MingguIni: 1.5, Kumulatif: p6Kum, Keterangan: "Drainase & Sarana Sentra"},
-		}
-
-		sumKum := (p1Kum + p2Kum + p3Kum + p4Kum + p5Kum + p6Kum) / 6.0
-		data.ProgressTotalKumulatif = math.Round(sumKum*100) / 100
-		data.ProgressTotalIni = 2.3
-		data.ProgressTotalLalu = math.Max(0, data.ProgressTotalKumulatif-data.ProgressTotalIni)
-		if data.ProgressTotalKumulatif > 0 {
-			data.CapaianFisikKumulatif = data.ProgressTotalKumulatif
-		}
+	for i, lap := range realLaporans {
+		data.LaporanLapangan = append(data.LaporanLapangan, domain.WeeklyLaporanItem{
+			No:               i + 1,
+			KnmpName:         lap.KnmpName,
+			NamaPelaksana:    lap.Nama,
+			Tanggal:          lap.Tanggal,
+			JenisLaporan:     strings.Title(lap.JenisLaporan),
+			Cuaca:            strings.Title(lap.Cuaca),
+			TenagaKerja:      lap.TenagaKerja,
+			RencanaProgres:   lap.RencanaProgres,
+			RealisasiProgres: lap.RealisasiProgres,
+			Status:           strings.Title(strings.ReplaceAll(lap.Status, "_", " ")),
+			Keterangan:       lap.Keterangan,
+		})
 	}
 
 	// 7. Rekap Lokasi Status

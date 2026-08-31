@@ -72,6 +72,20 @@ interface WeeklyPhotoItem {
   file_url: string;
 }
 
+interface WeeklyLaporanItem {
+  no: number;
+  knmp_name: string;
+  nama_pelaksana: string;
+  tanggal: string;
+  jenis_laporan: string;
+  cuaca: string;
+  tenaga_kerja: number;
+  rencana_progres: number;
+  realisasi_progres: number;
+  status: string;
+  keterangan: string;
+}
+
 interface WeeklyPPKReportData {
   jenis_laporan?: string;
   ppk_name: string;
@@ -105,6 +119,7 @@ interface WeeklyPPKReportData {
   progress_total_kumulatif: number;
   rekap_lokasi: WeeklyLokasiStatusItem[];
   progress_klaster: WeeklyKlasterProgressItem[];
+  laporan_lapangan: WeeklyLaporanItem[];
   issues: WeeklyIssueItem[];
   work_plans: WeeklyWorkPlanItem[];
   photos: WeeklyPhotoItem[];
@@ -600,12 +615,75 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                   </div>
                 </div>
 
-                {/* 4. Bottom Grid: E (Isu), F (Solusi) */}
+                {/* 4. E. Rekapitulasi Laporan Kegiatan Lapangan dari Kontraktor */}
+                <div className="bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2">
+                  <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider flex items-center justify-between">
+                    <span>E. REKAPITULASI LAPORAN KEGIATAN LAPANGAN (HARIAN / MINGGUAN KONTRAKTOR)</span>
+                    <span className="text-[9px] font-normal text-blue-200">
+                      Total: {(reportData.laporan_lapangan || []).length} Laporan Tercatat
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[9px] border-collapse border border-slate-300 text-left bg-white">
+                      <thead>
+                        <tr className="bg-slate-200 text-slate-900 font-black">
+                          <th className="border border-slate-300 p-1 w-6 text-center">No</th>
+                          <th className="border border-slate-300 p-1">Lokasi Titik KNMP</th>
+                          <th className="border border-slate-300 p-1">Nama / Pelaksana</th>
+                          <th className="border border-slate-300 p-1 text-center w-20">Tanggal</th>
+                          <th className="border border-slate-300 p-1 text-center w-16">Jenis</th>
+                          <th className="border border-slate-300 p-1 text-center w-16">Cuaca</th>
+                          <th className="border border-slate-300 p-1 text-center w-16">Tenaga Kerja</th>
+                          <th className="border border-slate-300 p-1 text-center w-16">Rencana</th>
+                          <th className="border border-slate-300 p-1 text-center w-16">Realisasi</th>
+                          <th className="border border-slate-300 p-1 text-center w-24">Status</th>
+                          <th className="border border-slate-300 p-1">Keterangan</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {reportData.laporan_lapangan && reportData.laporan_lapangan.length > 0 ? (
+                          reportData.laporan_lapangan.map((lap) => (
+                            <tr key={lap.no} className="hover:bg-slate-50">
+                              <td className="border border-slate-300 p-1 text-center font-bold">{lap.no}</td>
+                              <td className="border border-slate-300 p-1 font-semibold text-[#002060]">{lap.knmp_name}</td>
+                              <td className="border border-slate-300 p-1">{lap.nama_pelaksana}</td>
+                              <td className="border border-slate-300 p-1 text-center">{lap.tanggal}</td>
+                              <td className="border border-slate-300 p-1 text-center">
+                                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[8px] font-bold">
+                                  {lap.jenis_laporan}
+                                </span>
+                              </td>
+                              <td className="border border-slate-300 p-1 text-center">{lap.cuaca}</td>
+                              <td className="border border-slate-300 p-1 text-center">{lap.tenaga_kerja} Org</td>
+                              <td className="border border-slate-300 p-1 text-center">{lap.rencana_progres}%</td>
+                              <td className="border border-slate-300 p-1 text-center font-bold text-emerald-700 bg-emerald-50/50">{lap.realisasi_progres}%</td>
+                              <td className="border border-slate-300 p-1 text-center">
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 text-[8px] font-semibold">
+                                  {lap.status}
+                                </span>
+                              </td>
+                              <td className="border border-slate-300 p-1 text-[8.5px] text-slate-600">{lap.keterangan || "-"}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={11} className="border border-slate-300 p-3 text-center text-slate-400 italic text-[8.5px]">
+                              Tidak ada entri laporan harian/mingguan kontraktor yang tercatat pada database.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 5. Bottom Grid: F (Isu), G (Solusi) */}
                 <div className="grid grid-cols-12 gap-3 items-start">
-                  {/* E. Isu / Kendala Minggu Ini */}
+                  {/* F. Isu / Kendala Minggu Ini */}
                   <div className="col-span-6 bg-slate-50 rounded-xl border border-slate-300 p-2.5 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>E. ISU / KENDALA MINGGU INI</span>
+                      <span>F. ISU / KENDALA LAPANGAN</span>
                     </div>
 
                     <table className="w-full text-[9px] border-collapse border border-slate-300 text-left bg-white">
@@ -640,10 +718,10 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </table>
                   </div>
 
-                  {/* F. Solusi Dan Tindak Lanjut */}
+                  {/* G. Solusi Dan Tindak Lanjut */}
                   <div className="col-span-6 bg-slate-50 rounded-xl border border-slate-300 p-2.5 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>F. SOLUSI DAN TINDAK LANJUT</span>
+                      <span>G. SOLUSI DAN TINDAK LANJUT</span>
                     </div>
 
                     <table className="w-full text-[9px] border-collapse border border-slate-300 text-left bg-white">
@@ -679,12 +757,12 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                   </div>
                 </div>
 
-                {/* 5. Photos, HSE & Signatures (G, H, I) */}
+                {/* 6. Photos, HSE & Signatures (H, I, J) */}
                 <div className="grid grid-cols-12 gap-3.5 items-stretch">
-                  {/* G. Dokumentasi Kegiatan Lapangan (Sampel Geotagging) */}
+                  {/* H. Dokumentasi Kegiatan Lapangan (Sampel Geotagging) */}
                   <div className="col-span-6 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>G. DOKUMENTASI KEGIATAN LAPANGAN (SAMPEL GEOTAGGING GPS)</span>
+                      <span>H. DOKUMENTASI KEGIATAN LAPANGAN (SAMPEL GEOTAGGING GPS)</span>
                     </div>
 
                     {reportData.photos && reportData.photos.length > 0 ? (
@@ -721,10 +799,10 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     )}
                   </div>
 
-                  {/* H. Kepatuhan & Keselamatan Kerja */}
+                  {/* I. Kepatuhan & Keselamatan Kerja */}
                   <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-2.5 space-y-2">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>H. KEPATUHAN & KESELAMATAN (K3)</span>
+                      <span>I. KEPATUHAN & KESELAMATAN (K3)</span>
                     </div>
 
                     <div className="text-[9.5px] space-y-1.5 text-slate-700 bg-white p-2 rounded-lg border border-slate-200">
@@ -747,10 +825,10 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </div>
                   </div>
 
-                  {/* I. Penutup & Tanda Tangan */}
+                  {/* J. Penutup & Tanda Tangan */}
                   <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider">
-                      <span>I. PENUTUP & PENGESAHAN</span>
+                      <span>J. PENUTUP & PENGESAHAN</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-center text-[8.5px]">

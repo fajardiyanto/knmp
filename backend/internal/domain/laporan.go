@@ -230,6 +230,7 @@ type WeeklyPPKReportData struct {
 
 	RekapLokasi           []WeeklyLokasiStatusItem    `json:"rekap_lokasi"`
 	ProgressKlaster       []WeeklyKlasterProgressItem `json:"progress_klaster"`
+	LaporanLapangan       []WeeklyLaporanItem         `json:"laporan_lapangan"`
 	Issues                []WeeklyIssueItem           `json:"issues"`
 	WorkPlans             []WeeklyWorkPlanItem        `json:"work_plans"`
 	Photos                []WeeklyPhotoItem           `json:"photos"`
@@ -238,6 +239,20 @@ type WeeklyPPKReportData struct {
 	K3NearMiss            int                         `json:"k3_near_miss"`
 	K3Pelatihan           int                         `json:"k3_pelatihan"`
 	K3KepatuhanAPD        float64                     `json:"k3_kepatuhan_apd"`
+}
+
+type WeeklyLaporanItem struct {
+	No               int     `json:"no"`
+	KnmpName         string  `json:"knmp_name"`
+	NamaPelaksana    string  `json:"nama_pelaksana"`
+	Tanggal          string  `json:"tanggal"`
+	JenisLaporan     string  `json:"jenis_laporan"`
+	Cuaca            string  `json:"cuaca"`
+	TenagaKerja      int     `json:"tenaga_kerja"`
+	RencanaProgres   float64 `json:"rencana_progres"`
+	RealisasiProgres float64 `json:"realisasi_progres"`
+	Status           string  `json:"status"`
+	Keterangan       string  `json:"keterangan"`
 }
 
 type WeeklyGISPoint struct {
