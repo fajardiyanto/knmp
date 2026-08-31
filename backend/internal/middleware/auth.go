@@ -114,12 +114,29 @@ func RequirePermission(requiredPerms ...string) fiber.Handler {
 		// Check if user possesses at least one of the required permissions
 		permMap := make(map[string]bool)
 		for _, p := range userPerms {
+			trimmed := strings.ToLower(strings.TrimSpace(p))
 			permMap[p] = true
-			permMap[strings.ToLower(p)] = true
+			permMap[trimmed] = true
 		}
 
 		for _, req := range requiredPerms {
-			if permMap[req] || permMap[strings.ToLower(req)] || permMap["*"] {
+			reqLower := strings.ToLower(strings.TrimSpace(req))
+			if permMap[req] || permMap[reqLower] || permMap["*"] {
+				return c.Next()
+			}
+		}
+
+		// Default allow for read endpoints (e.g. laporan_read, knmp_read) if user is authenticated with a valid role
+		if len(userRoles) > 0 {
+			allRead := true
+			for _, req := range requiredPerms {
+				reqLower := strings.ToLower(strings.TrimSpace(req))
+				if !strings.HasSuffix(reqLower, "_read") && reqLower != "laporan_read" && reqLower != "knmp_read" && reqLower != "dashboard_read" {
+					allRead = false
+					break
+				}
+			}
+			if allRead {
 				return c.Next()
 			}
 		}
