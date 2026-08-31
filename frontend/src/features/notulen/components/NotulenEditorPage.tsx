@@ -14,14 +14,17 @@ import {
   Sparkles,
   Check,
   Search,
-  Eye,
   AlertCircle,
+  ShieldAlert,
+  Edit3,
+  Eye,
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
-import type { Notulen, NotulenFormData, NotulenUser } from "../types/notulen.types";
+import type { Notulen, NotulenFormData, NotulenUser, ShareUserPayload } from "../types/notulen.types";
 import { fetchNotulenDetail, createNotulen, updateNotulen, fetchUsersForShare } from "../api";
 import { fetchKnmpList } from "../../knmp/api";
 import { RichTextEditor } from "./RichTextEditor";
+import { SearchableKnmpSelect } from "./SearchableKnmpSelect";
 
 export const NotulenEditorPage: React.FC = () => {
   const navigate = useNavigate();
@@ -53,13 +56,15 @@ export const NotulenEditorPage: React.FC = () => {
   const [status, setStatus] = useState("published");
 
   const [availableUsers, setAvailableUsers] = useState<NotulenUser[]>([]);
-  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  // Mapping of userId -> access_type ('viewer' | 'editor')
+  const [userAccessMap, setUserAccessMap] = useState<Record<number, "viewer" | "editor">>({});
   const [userSearch, setUserSearch] = useState("");
   const [knmpList, setKnmpList] = useState<Array<{ id: number; name: string }>>([]);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [userAccessLevel, setUserAccessLevel] = useState<string>("owner");
 
   useEffect(() => {
     // Fetch users for sharing
@@ -67,7 +72,7 @@ export const NotulenEditorPage: React.FC = () => {
       .then((users) => setAvailableUsers(users || []))
       .catch(() => setAvailableUsers([]));
 
-    // Fetch KNMP points
+    // Fetch KNMP points (346 points)
     fetchKnmpList()
       .then((res: any) => {
         if (Array.isArray(res)) {
@@ -95,7 +100,20 @@ export const NotulenEditorPage: React.FC = () => {
           setHasilPembahasan(data.hasil_pembahasan || "");
           setTindakLanjut(data.tindak_lanjut || "");
           setStatus(data.status || "published");
-          setSelectedUserIds(data.shared_user_ids || []);
+          setUserAccessLevel(data.user_access || (canManage ? "owner" : "viewer"));
+
+          // Populate userAccessMap
+          const map: Record<number, "viewer" | "editor"> = {};
+          if (data.shared_users && data.shared_users.length > 0) {
+            data.shared_users.forEach((u) => {
+              map[u.user_id] = u.access_type || "viewer";
+            });
+          } else if (data.shared_user_ids) {
+            data.shared_user_ids.forEach((uid) => {
+              map[uid] = "viewer";
+            });
+          }
+          setUserAccessMap(map);
         })
         .catch((err: any) => {
           setErrorMsg(err?.message || "Gagal memuat detail notulen");
@@ -104,19 +122,37 @@ export const NotulenEditorPage: React.FC = () => {
     }
   }, [id, isEditMode]);
 
+  const selectedUserIds = Object.keys(userAccessMap).map(Number);
+
   const toggleUserSelection = (userId: number) => {
-    if (selectedUserIds.includes(userId)) {
-      setSelectedUserIds(selectedUserIds.filter((uid) => uid !== userId));
-    } else {
-      setSelectedUserIds([...selectedUserIds, userId]);
-    }
+    setUserAccessMap((prev) => {
+      const next = { ...prev };
+      if (next[userId]) {
+        delete next[userId];
+      } else {
+        next[userId] = "viewer"; // Default to viewer
+      }
+      return next;
+    });
   };
 
-  const handleSelectAllUsers = () => {
+  const setUserAccessType = (userId: number, accessType: "viewer" | "editor", e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setUserAccessMap((prev) => ({
+      ...prev,
+      [userId]: accessType,
+    }));
+  };
+
+  const handleSelectAllUsers = (accessType: "viewer" | "editor" = "viewer") => {
     if (selectedUserIds.length === availableUsers.length) {
-      setSelectedUserIds([]);
+      setUserAccessMap({});
     } else {
-      setSelectedUserIds(availableUsers.map((u) => u.id));
+      const newMap: Record<number, "viewer" | "editor"> = {};
+      availableUsers.forEach((u) => {
+        newMap[u.id] = accessType;
+      });
+      setUserAccessMap(newMap);
     }
   };
 
@@ -138,6 +174,11 @@ export const NotulenEditorPage: React.FC = () => {
     setSaving(true);
     setErrorMsg("");
 
+    const sharedPayload: ShareUserPayload[] = Object.entries(userAccessMap).map(([uidStr, access]) => ({
+      user_id: Number(uidStr),
+      access_type: access,
+    }));
+
     const payload: NotulenFormData = {
       knmp_id: knmpId,
       judul: judul.trim(),
@@ -151,7 +192,7 @@ export const NotulenEditorPage: React.FC = () => {
       hasil_pembahasan: hasilPembahasan.trim(),
       tindak_lanjut: tindakLanjut.trim(),
       status: publishStatus,
-      shared_user_ids: selectedUserIds,
+      shared_users: sharedPayload,
     };
 
     try {
@@ -176,18 +217,42 @@ export const NotulenEditorPage: React.FC = () => {
       (u.role_name && u.role_name.toLowerCase().includes(userSearch.toLowerCase()))
   );
 
-  if (!canManage) {
+  // Permission verification:
+  // If in create mode -> only superadmin/admin_ppk can create.
+  // If in edit mode -> superadmin/admin_ppk OR user with 'editor' access level can edit.
+  const canEditCurrent = canManage || userAccessLevel === "owner" || userAccessLevel === "editor";
+
+  if (!isEditMode && !canManage) {
     return (
       <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm max-w-lg mx-auto my-12 shadow-sm space-y-3">
         <div className="font-bold text-base">Akses Ditolak (403 Forbidden)</div>
         <p className="text-slate-600 dark:text-slate-400 text-xs">
-          Hanya Super Admin dan Admin PPK yang memiliki hak akses untuk membuat atau mengedit notulen rapat.
+          Hanya Super Admin dan Admin PPK yang memiliki hak akses untuk membuat notulen rapat baru.
         </p>
         <Link
           to="/notulen"
           className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-all inline-block"
         >
           Kembali ke Daftar Notulen
+        </Link>
+      </div>
+    );
+  }
+
+  if (isEditMode && !canEditCurrent && !loading) {
+    return (
+      <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-sm max-w-lg mx-auto my-12 shadow-sm space-y-3">
+        <div className="font-bold text-base flex items-center justify-center gap-2">
+          <ShieldAlert className="w-5 h-5" /> Mode Read Only
+        </div>
+        <p className="text-slate-600 dark:text-slate-400 text-xs">
+          Anda hanya memiliki hak akses Viewer (Read-Only) pada dokumen notulen ini.
+        </p>
+        <Link
+          to={`/notulen/${id}`}
+          className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-all inline-block"
+        >
+          Buka Halaman Dokumen
         </Link>
       </div>
     );
@@ -345,22 +410,18 @@ export const NotulenEditorPage: React.FC = () => {
             </h3>
 
             <div className="space-y-3.5">
+              {/* Searchable KNMP Points Combobox (346 Titik) */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                  Titik Lokasi KNMP Terkait
+                  Titik Lokasi KNMP (Bisa Cari 346 Titik)
                 </label>
-                <select
-                  value={knmpId || ""}
-                  onChange={(e) => setKnmpId(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs dark:text-white"
-                >
-                  <option value="">-- Koordinasi Seluruh Sumatera --</option>
-                  {knmpList.map((k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.name}
-                    </option>
-                  ))}
-                </select>
+                <SearchableKnmpSelect
+                  options={knmpList}
+                  value={knmpId}
+                  onChange={(val) => setKnmpId(val)}
+                  placeholder="Cari titik lokasi nelayan..."
+                  allOptionLabel="-- Koordinasi Seluruh Sumatera --"
+                />
               </div>
 
               <div>
@@ -437,71 +498,116 @@ export const NotulenEditorPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Distribution & Multi-User Sharing Panel */}
+          {/* Distribution & Multi-User Sharing Panel (Editor vs Viewer Roles) */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-purple-600" />
                 <span>Distribusi Akses ({selectedUserIds.length})</span>
               </h3>
-              <button
-                type="button"
-                onClick={handleSelectAllUsers}
-                className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                {selectedUserIds.length === availableUsers.length ? "Batal Semua" : "Pilih Semua"}
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => handleSelectAllUsers("viewer")}
+                  className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  {selectedUserIds.length === availableUsers.length ? "Batal Semua" : "Pilih Semua"}
+                </button>
+              </div>
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Pilih pengguna yang berhak membaca dan menerima hasil notulensi ini.
+              Pilih pengguna dan tentukan hak akses: <strong className="text-emerald-600 dark:text-emerald-400">Editor (Bisa Edit)</strong> atau <strong className="text-slate-600 dark:text-slate-300">Viewer (Read-Only)</strong>.
             </p>
 
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Cari nama atau email..."
+                placeholder="Cari nama atau email pengguna..."
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs dark:text-white"
               />
             </div>
 
-            <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/40 p-2">
+            <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/40 p-2 space-y-1">
               {filteredUsers.length === 0 ? (
                 <p className="text-xs text-slate-400 text-center py-4">Tidak ada pengguna yang cocok</p>
               ) : (
                 filteredUsers.map((u) => {
-                  const isChecked = selectedUserIds.includes(u.id);
+                  const isChecked = Boolean(userAccessMap[u.id]);
+                  const accessType = userAccessMap[u.id] || "viewer";
+
                   return (
                     <div
                       key={u.id}
                       onClick={() => toggleUserSelection(u.id)}
-                      className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
+                      className={`p-2.5 rounded-xl cursor-pointer transition-colors space-y-2 ${
                         isChecked
-                          ? "bg-blue-50 dark:bg-blue-900/40 text-blue-900 dark:text-blue-200"
-                          : "hover:bg-slate-100/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                          ? "bg-blue-50/80 dark:bg-blue-900/30 border border-blue-200/60 dark:border-blue-800/60"
+                          : "hover:bg-slate-100/80 dark:hover:bg-slate-800 border border-transparent text-slate-700 dark:text-slate-300"
                       }`}
                     >
-                      <div className="flex items-center space-x-2.5 truncate">
-                        <div
-                          className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 ${
-                            isChecked
-                              ? "bg-blue-600 border-blue-600 text-white"
-                              : "border-slate-300 dark:border-slate-600"
-                          }`}
-                        >
-                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2.5 truncate flex-1">
+                          <div
+                            className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 ${
+                              isChecked
+                                ? "bg-blue-600 border-blue-600 text-white"
+                                : "border-slate-300 dark:border-slate-600"
+                            }`}
+                          >
+                            {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                          <div className="truncate">
+                            <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                              {u.name}
+                            </div>
+                            <div className="text-[10px] text-slate-400 truncate">{u.email}</div>
+                          </div>
                         </div>
-                        <div className="truncate">
-                          <div className="text-xs font-semibold truncate">{u.name}</div>
-                          <div className="text-[10px] text-slate-400 truncate">{u.email}</div>
-                        </div>
+
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-700 uppercase shrink-0">
+                          {u.role_name || "User"}
+                        </span>
                       </div>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-700 uppercase shrink-0">
-                        {u.role_name || "User"}
-                      </span>
+
+                      {/* Granular Permission Selector: Viewer vs Editor */}
+                      {isChecked && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center justify-end space-x-1.5 pt-1 border-t border-blue-100 dark:border-blue-900/50"
+                        >
+                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mr-1">
+                            Hak Akses:
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => setUserAccessType(u.id, "viewer", e)}
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center space-x-1 transition-all ${
+                              accessType === "viewer"
+                                ? "bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white shadow-xs ring-1 ring-slate-400/40"
+                                : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                            }`}
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Read Only</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => setUserAccessType(u.id, "editor", e)}
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center space-x-1 transition-all ${
+                              accessType === "editor"
+                                ? "bg-emerald-600 text-white shadow-xs ring-1 ring-emerald-500"
+                                : "text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                            }`}
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>Bisa Edit</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })

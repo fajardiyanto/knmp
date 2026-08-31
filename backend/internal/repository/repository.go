@@ -213,11 +213,12 @@ type PerusahaanRepository interface {
 type NotulenRepository interface {
 	GetByID(ctx context.Context, id int64) (*domain.Notulen, error)
 	List(ctx context.Context, filter domain.NotulenFilter) ([]*domain.Notulen, error)
-	Create(ctx context.Context, n *domain.Notulen, sharedUserIDs []int64) error
-	Update(ctx context.Context, n *domain.Notulen, sharedUserIDs []int64) error
+	Create(ctx context.Context, n *domain.Notulen, sharedUsers []domain.ShareUserItem) error
+	Update(ctx context.Context, n *domain.Notulen, sharedUsers []domain.ShareUserItem) error
 	Delete(ctx context.Context, id int64) error
-	ShareToUsers(ctx context.Context, notulenID int64, userIDs []int64) error
-	GetSharedUsers(ctx context.Context, notulenID int64) ([]*domain.User, error)
+	ShareToUsers(ctx context.Context, notulenID int64, sharedUsers []domain.ShareUserItem) error
+	GetSharedDetails(ctx context.Context, notulenID int64) ([]*domain.NotulenShareDetail, error)
 	GetSharedUserIDs(ctx context.Context, notulenID int64) ([]int64, error)
+	GetUserAccess(ctx context.Context, notulenID int64, userID int64) (string, error)
 }
 

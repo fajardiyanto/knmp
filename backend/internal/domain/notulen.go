@@ -22,18 +22,34 @@ type Notulen struct {
 	DeletedAt       *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	// Relational details
-	KnmpName      *string     `db:"knmp_name" json:"knmp_name,omitempty"`
-	CreatedByName *string     `db:"created_by_name" json:"created_by_name,omitempty"`
-	SharedUsers   []*User     `db:"-" json:"shared_users,omitempty"`
-	SharedUserIDs []int64     `db:"-" json:"shared_user_ids,omitempty"`
-	Documents     []*Document `db:"-" json:"documents,omitempty"`
+	KnmpName      *string               `db:"knmp_name" json:"knmp_name,omitempty"`
+	CreatedByName *string               `db:"created_by_name" json:"created_by_name,omitempty"`
+	SharedUsers   []*NotulenShareDetail `db:"-" json:"shared_users,omitempty"`
+	SharedUserIDs []int64               `db:"-" json:"shared_user_ids,omitempty"`
+	UserAccess    string                `db:"-" json:"user_access,omitempty"` // 'owner' | 'editor' | 'viewer'
+	Documents     []*Document           `db:"-" json:"documents,omitempty"`
 }
 
 type NotulenShare struct {
-	ID        int64     `db:"id" json:"id"`
-	NotulenID int64     `db:"notulen_id" json:"notulen_id"`
-	UserID    int64     `db:"user_id" json:"user_id"`
-	SharedAt  time.Time `db:"shared_at" json:"shared_at"`
+	ID         int64     `db:"id" json:"id"`
+	NotulenID  int64     `db:"notulen_id" json:"notulen_id"`
+	UserID     int64     `db:"user_id" json:"user_id"`
+	AccessType string    `db:"access_type" json:"access_type"` // 'viewer' | 'editor'
+	SharedAt   time.Time `db:"shared_at" json:"shared_at"`
+}
+
+type NotulenShareDetail struct {
+	UserID     int64     `db:"user_id" json:"user_id"`
+	Name       string    `db:"name" json:"name"`
+	Email      string    `db:"email" json:"email"`
+	RoleName   string    `db:"role_name" json:"role_name"`
+	AccessType string    `db:"access_type" json:"access_type"` // 'viewer' | 'editor'
+	SharedAt   time.Time `db:"shared_at" json:"shared_at"`
+}
+
+type ShareUserItem struct {
+	UserID     int64  `json:"user_id"`
+	AccessType string `json:"access_type"` // 'viewer' | 'editor'
 }
 
 type NotulenFilter struct {

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"knmp-v2-backend/internal/domain"
 	"knmp-v2-backend/internal/repository"
@@ -33,10 +32,38 @@ func CanManageNotulen(userRole string) bool {
 	return domain.IsAdminRole(userRole)
 }
 
-func (s *NotulenService) GetByID(ctx context.Context, id int64) (*domain.Notulen, error) {
+func (s *NotulenService) CanEdit(ctx context.Context, notulenID int64, userID int64, userRole string) bool {
+	if domain.IsAdminRole(userRole) {
+		return true
+	}
+	if notulenID <= 0 || userID <= 0 {
+		return false
+	}
+	access, err := s.notulenRepo.GetUserAccess(ctx, notulenID, userID)
+	if err == nil && access == "editor" {
+		return true
+	}
+	return false
+}
+
+func (s *NotulenService) GetByID(ctx context.Context, id int64, currentUserID int64, currentUserRole string) (*domain.Notulen, error) {
 	n, err := s.notulenRepo.GetByID(ctx, id)
 	if err != nil || n == nil {
 		return nil, err
+	}
+
+	// Compute UserAccess level for current user
+	if domain.IsAdminRole(currentUserRole) {
+		n.UserAccess = "owner"
+	} else if n.CreatedBy != nil && *n.CreatedBy == currentUserID {
+		n.UserAccess = "owner"
+	} else {
+		access, _ := s.notulenRepo.GetUserAccess(ctx, n.ID, currentUserID)
+		if access == "editor" {
+			n.UserAccess = "editor"
+		} else {
+			n.UserAccess = "viewer"
+		}
 	}
 
 	// Fetch documents attached to this notulen
@@ -58,6 +85,17 @@ func (s *NotulenService) List(ctx context.Context, filter domain.NotulenFilter) 
 	}
 
 	for _, n := range list {
+		if domain.IsAdminRole(filter.UserRole) {
+			n.UserAccess = "owner"
+		} else {
+			access, _ := s.notulenRepo.GetUserAccess(ctx, n.ID, filter.UserID)
+			if access == "editor" {
+				n.UserAccess = "editor"
+			} else {
+				n.UserAccess = "viewer"
+			}
+		}
+
 		docs, err := s.docRepo.ListByEntity(ctx, "notulen", n.ID)
 		if err == nil {
 			for _, doc := range docs {
@@ -70,7 +108,7 @@ func (s *NotulenService) List(ctx context.Context, filter domain.NotulenFilter) 
 	return list, nil
 }
 
-func (s *NotulenService) Create(ctx context.Context, n *domain.Notulen, sharedUserIDs []int64, userRole string) error {
+func (s *NotulenService) Create(ctx context.Context, n *domain.Notulen, sharedUsers []domain.ShareUserItem, userRole string) error {
 	if !CanManageNotulen(userRole) {
 		return errors.New("hanya Super Admin dan Admin PPK yang memiliki hak akses untuk menambahkan notulen rapat")
 	}
@@ -88,17 +126,18 @@ func (s *NotulenService) Create(ctx context.Context, n *domain.Notulen, sharedUs
 		n.Notulis = "Super Admin"
 	}
 
-	return s.notulenRepo.Create(ctx, n, sharedUserIDs)
+	return s.notulenRepo.Create(ctx, n, sharedUsers)
 }
 
-func (s *NotulenService) Update(ctx context.Context, n *domain.Notulen, sharedUserIDs []int64, userRole string) error {
-	if !CanManageNotulen(userRole) {
-		return errors.New("hanya Super Admin dan Admin PPK yang memiliki hak akses untuk mengubah notulen rapat")
+func (s *NotulenService) Update(ctx context.Context, n *domain.Notulen, sharedUsers []domain.ShareUserItem, userID int64, userRole string) error {
+	canEdit := s.CanEdit(ctx, n.ID, userID, userRole)
+	if !canEdit {
+		return errors.New("anda tidak memiliki hak akses editor untuk mengubah notulen rapat ini")
 	}
 
 	existing, err := s.notulenRepo.GetByID(ctx, n.ID)
 	if err != nil || existing == nil {
-		return errors.New("data notulen tidak ditemukan")
+		return errors.New("notulen tidak ditemukan")
 	}
 
 	if n.Judul == "" {
@@ -110,37 +149,22 @@ func (s *NotulenService) Update(ctx context.Context, n *domain.Notulen, sharedUs
 	if n.HasilPembahasan == "" {
 		return errors.New("poin pembahasan / hasil rapat wajib diisi")
 	}
-	if n.Notulis == "" {
-		n.Notulis = "Super Admin"
-	}
 
-	return s.notulenRepo.Update(ctx, n, sharedUserIDs)
+	return s.notulenRepo.Update(ctx, n, sharedUsers)
 }
 
 func (s *NotulenService) Delete(ctx context.Context, id int64, userRole string) error {
 	if !CanManageNotulen(userRole) {
 		return errors.New("hanya Super Admin dan Admin PPK yang memiliki hak akses untuk menghapus notulen rapat")
 	}
+
 	return s.notulenRepo.Delete(ctx, id)
 }
 
-func (s *NotulenService) ShareToUsers(ctx context.Context, notulenID int64, userIDs []int64, userRole string) error {
+func (s *NotulenService) Share(ctx context.Context, notulenID int64, sharedUsers []domain.ShareUserItem, userRole string) error {
 	if !CanManageNotulen(userRole) {
-		return errors.New("hanya Super Admin dan Admin PPK yang dapat membagikan notulen rapat")
+		return errors.New("hanya Super Admin dan Admin PPK yang memiliki hak akses untuk membagikan notulen rapat")
 	}
 
-	existing, err := s.notulenRepo.GetByID(ctx, notulenID)
-	if err != nil || existing == nil {
-		return errors.New("data notulen tidak ditemukan")
-	}
-
-	if len(userIDs) == 0 {
-		return fmt.Errorf("pilih minimal 1 user untuk dibagikan")
-	}
-
-	return s.notulenRepo.ShareToUsers(ctx, notulenID, userIDs)
-}
-
-func (s *NotulenService) GetSharedUsers(ctx context.Context, notulenID int64) ([]*domain.User, error) {
-	return s.notulenRepo.GetSharedUsers(ctx, notulenID)
+	return s.notulenRepo.ShareToUsers(ctx, notulenID, sharedUsers)
 }

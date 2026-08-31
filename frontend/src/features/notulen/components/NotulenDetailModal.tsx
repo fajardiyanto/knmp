@@ -212,16 +212,27 @@ export const NotulenDetailModal: React.FC<NotulenDetailModalProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                   {notulen.shared_users.map((u) => (
                     <div
-                      key={u.id}
-                      className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs flex items-center space-x-2"
+                      key={u.user_id}
+                      className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between space-x-2"
                     >
-                      <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center text-[10px]">
-                        {u.name.substring(0, 1).toUpperCase()}
+                      <div className="flex items-center space-x-2 truncate">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center text-[10px] shrink-0">
+                          {u.name.substring(0, 1).toUpperCase()}
+                        </div>
+                        <div className="truncate">
+                          <div className="font-semibold text-slate-900 dark:text-white truncate">{u.name}</div>
+                          <div className="text-[10px] text-slate-400 capitalize">{u.role_name || "User"}</div>
+                        </div>
                       </div>
-                      <div className="truncate flex-1">
-                        <div className="font-semibold text-slate-900 dark:text-white truncate">{u.name}</div>
-                        <div className="text-[10px] text-slate-400 capitalize">{u.role_name || "User"}</div>
-                      </div>
+                      <span
+                        className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded shrink-0 ${
+                          u.access_type === "editor"
+                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                        }`}
+                      >
+                        {u.access_type || "viewer"}
+                      </span>
                     </div>
                   ))}
                 </div>

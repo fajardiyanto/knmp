@@ -5,39 +5,50 @@ export interface NotulenUser {
   role_name?: string;
 }
 
-export interface NotulenDocument {
-  id: number;
-  file_name: string;
-  file_path: string;
-  file_url?: string;
-  file_type?: string;
-  category?: string;
-  status: string;
-  created_at: string;
+export interface NotulenShareDetail {
+  user_id: number;
+  name: string;
+  email: string;
+  role_name?: string;
+  access_type: "viewer" | "editor";
+  shared_at?: string;
+}
+
+export interface ShareUserPayload {
+  user_id: number;
+  access_type: "viewer" | "editor";
 }
 
 export interface Notulen {
   id: number;
   knmp_id?: number | null;
-  knmp_name?: string | null;
   judul: string;
   tanggal: string;
-  waktu_mulai?: string | null;
-  waktu_selesai?: string | null;
-  lokasi?: string | null;
-  pimpinan_rapat?: string | null;
-  notulis: string;
-  agenda?: string | null;
+  waktu_mulai?: string;
+  waktu_selesai?: string;
+  lokasi?: string;
+  pimpinan_rapat?: string;
+  notulis?: string;
+  agenda?: string;
   hasil_pembahasan: string;
-  tindak_lanjut?: string | null;
-  status: string; // 'published' | 'draft'
-  created_by?: number | null;
-  created_by_name?: string | null;
-  created_at: string;
-  updated_at: string;
-  shared_users?: NotulenUser[];
+  tindak_lanjut?: string;
+  status: "published" | "draft" | string;
+  created_by?: number;
+  created_at?: string;
+  updated_at?: string;
+
+  // Joined relational data
+  knmp_name?: string;
+  created_by_name?: string;
+  shared_users?: NotulenShareDetail[];
   shared_user_ids?: number[];
-  documents?: NotulenDocument[];
+  user_access?: "owner" | "editor" | "viewer" | string;
+  documents?: Array<{
+    id: number;
+    file_path: string;
+    file_url?: string;
+    original_name: string;
+  }>;
 }
 
 export interface NotulenFormData {
@@ -48,16 +59,17 @@ export interface NotulenFormData {
   waktu_selesai?: string;
   lokasi?: string;
   pimpinan_rapat?: string;
-  notulis: string;
+  notulis?: string;
   agenda?: string;
   hasil_pembahasan: string;
   tindak_lanjut?: string;
-  status: string;
+  status?: string;
+  shared_users?: ShareUserPayload[];
   shared_user_ids?: number[];
 }
 
 export interface NotulenFilter {
-  knmp_id?: number | null;
+  knmp_id?: number;
   search?: string;
   tanggal_awal?: string;
   tanggal_akhir?: string;

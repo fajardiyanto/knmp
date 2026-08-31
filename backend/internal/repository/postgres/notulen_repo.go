@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 	"knmp-v2-backend/internal/domain"
@@ -42,11 +41,11 @@ func (r *notulenRepo) GetByID(ctx context.Context, id int64) (*domain.Notulen, e
 		return nil, fmt.Errorf("get notulen by id: %w", err)
 	}
 
-	// Fetch shared user IDs and users
-	sharedUsers, _ := r.GetSharedUsers(ctx, n.ID)
+	// Fetch shared user details
+	sharedUsers, _ := r.GetSharedDetails(ctx, n.ID)
 	n.SharedUsers = sharedUsers
 	for _, u := range sharedUsers {
-		n.SharedUserIDs = append(n.SharedUserIDs, u.ID)
+		n.SharedUserIDs = append(n.SharedUserIDs, u.UserID)
 	}
 
 	return &n, nil
@@ -114,31 +113,24 @@ func (r *notulenRepo) List(ctx context.Context, filter domain.NotulenFilter) ([]
 		return nil, fmt.Errorf("list notulens: %w", err)
 	}
 
-	// Populate shared users for each notulen
+	// Populate shared user details for each notulen
 	for _, n := range results {
-		users, _ := r.GetSharedUsers(ctx, n.ID)
+		users, _ := r.GetSharedDetails(ctx, n.ID)
 		n.SharedUsers = users
 		for _, u := range users {
-			n.SharedUserIDs = append(n.SharedUserIDs, u.ID)
+			n.SharedUserIDs = append(n.SharedUserIDs, u.UserID)
 		}
 	}
 
 	return results, nil
 }
 
-func (r *notulenRepo) Create(ctx context.Context, n *domain.Notulen, sharedUserIDs []int64) error {
+func (r *notulenRepo) Create(ctx context.Context, n *domain.Notulen, sharedUsers []domain.ShareUserItem) error {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 	defer tx.Rollback()
-
-	if n.Notulis == "" {
-		n.Notulis = "Super Admin"
-	}
-	if n.Status == "" {
-		n.Status = "published"
-	}
 
 	query := `
 		INSERT INTO notulens (
@@ -149,32 +141,30 @@ func (r *notulenRepo) Create(ctx context.Context, n *domain.Notulen, sharedUserI
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW()
 		) RETURNING id, created_at, updated_at
 	`
-	var notulenID int64
-	var createdAt, updatedAt time.Time
 	err = tx.QueryRowxContext(
 		ctx, query,
 		n.KnmpID, n.Judul, n.Tanggal, n.WaktuMulai, n.WaktuSelesai, n.Lokasi,
 		n.PimpinanRapat, n.Notulis, n.Agenda, n.HasilPembahasan, n.TindakLanjut,
 		n.Status, n.CreatedBy,
-	).Scan(&notulenID, &createdAt, &updatedAt)
+	).Scan(&n.ID, &n.CreatedAt, &n.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("insert notulen: %w", err)
 	}
 
-	n.ID = notulenID
-	n.CreatedAt = createdAt
-	n.UpdatedAt = updatedAt
-
-	// Insert shared users
-	if len(sharedUserIDs) > 0 {
+	// Insert shared users with access_type
+	if len(sharedUsers) > 0 {
 		shareQuery := `
-			INSERT INTO notulen_shares (notulen_id, user_id, shared_at)
-			VALUES ($1, $2, NOW())
-			ON CONFLICT (notulen_id, user_id) DO NOTHING
+			INSERT INTO notulen_shares (notulen_id, user_id, access_type, shared_at)
+			VALUES ($1, $2, $3, NOW())
+			ON CONFLICT (notulen_id, user_id) DO UPDATE SET access_type = EXCLUDED.access_type, shared_at = NOW()
 		`
-		for _, uid := range sharedUserIDs {
-			if uid > 0 {
-				if _, err := tx.ExecContext(ctx, shareQuery, n.ID, uid); err != nil {
+		for _, item := range sharedUsers {
+			if item.UserID > 0 {
+				accessType := item.AccessType
+				if accessType != "editor" {
+					accessType = "viewer"
+				}
+				if _, err := tx.ExecContext(ctx, shareQuery, n.ID, item.UserID, accessType); err != nil {
 					return fmt.Errorf("insert notulen share: %w", err)
 				}
 			}
@@ -184,10 +174,10 @@ func (r *notulenRepo) Create(ctx context.Context, n *domain.Notulen, sharedUserI
 	return tx.Commit()
 }
 
-func (r *notulenRepo) Update(ctx context.Context, n *domain.Notulen, sharedUserIDs []int64) error {
+func (r *notulenRepo) Update(ctx context.Context, n *domain.Notulen, sharedUsers []domain.ShareUserItem) error {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -199,28 +189,41 @@ func (r *notulenRepo) Update(ctx context.Context, n *domain.Notulen, sharedUserI
 			tindak_lanjut = $11, status = $12, updated_at = NOW()
 		WHERE id = $13 AND deleted_at IS NULL
 	`
-	_, err = tx.ExecContext(
+	res, err := tx.ExecContext(
 		ctx, query,
-		n.KnmpID, n.Judul, n.Tanggal, n.WaktuMulai, n.WaktuSelesai, n.Lokasi,
-		n.PimpinanRapat, n.Notulis, n.Agenda, n.HasilPembahasan, n.TindakLanjut,
-		n.Status, n.ID,
+		n.KnmpID, n.Judul, n.Tanggal, n.WaktuMulai, n.WaktuSelesai,
+		n.Lokasi, n.PimpinanRapat, n.Notulis, n.Agenda,
+		n.HasilPembahasan, n.TindakLanjut, n.Status, n.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("update notulen: %w", err)
 	}
 
-	// Update shared users if provided
-	if sharedUserIDs != nil {
-		_, _ = tx.ExecContext(ctx, `DELETE FROM notulen_shares WHERE notulen_id = $1`, n.ID)
-		if len(sharedUserIDs) > 0 {
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return errors.New("notulen tidak ditemukan atau sudah dihapus")
+	}
+
+	// Synchronize shared users if provided
+	if sharedUsers != nil {
+		// Delete old shares
+		if _, err := tx.ExecContext(ctx, `DELETE FROM notulen_shares WHERE notulen_id = $1`, n.ID); err != nil {
+			return fmt.Errorf("delete old shares: %w", err)
+		}
+
+		if len(sharedUsers) > 0 {
 			shareQuery := `
-				INSERT INTO notulen_shares (notulen_id, user_id, shared_at)
-				VALUES ($1, $2, NOW())
-				ON CONFLICT (notulen_id, user_id) DO NOTHING
+				INSERT INTO notulen_shares (notulen_id, user_id, access_type, shared_at)
+				VALUES ($1, $2, $3, NOW())
+				ON CONFLICT (notulen_id, user_id) DO UPDATE SET access_type = EXCLUDED.access_type, shared_at = NOW()
 			`
-			for _, uid := range sharedUserIDs {
-				if uid > 0 {
-					if _, err := tx.ExecContext(ctx, shareQuery, n.ID, uid); err != nil {
+			for _, item := range sharedUsers {
+				if item.UserID > 0 {
+					accessType := item.AccessType
+					if accessType != "editor" {
+						accessType = "viewer"
+					}
+					if _, err := tx.ExecContext(ctx, shareQuery, n.ID, item.UserID, accessType); err != nil {
 						return fmt.Errorf("insert notulen share on update: %w", err)
 					}
 				}
@@ -237,40 +240,46 @@ func (r *notulenRepo) Delete(ctx context.Context, id int64) error {
 	return err
 }
 
-func (r *notulenRepo) ShareToUsers(ctx context.Context, notulenID int64, userIDs []int64) error {
-	if len(userIDs) == 0 {
+func (r *notulenRepo) ShareToUsers(ctx context.Context, notulenID int64, sharedUsers []domain.ShareUserItem) error {
+	if len(sharedUsers) == 0 {
 		return nil
 	}
 	query := `
-		INSERT INTO notulen_shares (notulen_id, user_id, shared_at)
-		VALUES ($1, $2, NOW())
-		ON CONFLICT (notulen_id, user_id) DO NOTHING
+		INSERT INTO notulen_shares (notulen_id, user_id, access_type, shared_at)
+		VALUES ($1, $2, $3, NOW())
+		ON CONFLICT (notulen_id, user_id) DO UPDATE SET access_type = EXCLUDED.access_type, shared_at = NOW()
 	`
-	for _, uid := range userIDs {
-		if uid > 0 {
-			if _, err := r.db.ExecContext(ctx, query, notulenID, uid); err != nil {
-				return fmt.Errorf("share notulen to user %d: %w", uid, err)
+	for _, item := range sharedUsers {
+		if item.UserID > 0 {
+			accessType := item.AccessType
+			if accessType != "editor" {
+				accessType = "viewer"
+			}
+			if _, err := r.db.ExecContext(ctx, query, notulenID, item.UserID, accessType); err != nil {
+				return fmt.Errorf("share notulen to user %d: %w", item.UserID, err)
 			}
 		}
 	}
 	return nil
 }
 
-func (r *notulenRepo) GetSharedUsers(ctx context.Context, notulenID int64) ([]*domain.User, error) {
-	var users []*domain.User
+func (r *notulenRepo) GetSharedDetails(ctx context.Context, notulenID int64) ([]*domain.NotulenShareDetail, error) {
+	var details []*domain.NotulenShareDetail
 	query := `
-		SELECT u.id, u.name, u.email, u.created_at, u.updated_at,
+		SELECT u.id as user_id, u.name, u.email,
+		       COALESCE(ns.access_type, 'viewer') as access_type,
+		       ns.shared_at,
 		       COALESCE((SELECT r.name FROM model_has_roles mhr JOIN roles r ON mhr.role_id = r.id WHERE mhr.model_id = u.id LIMIT 1), 'User') as role_name
-		FROM users u
-		JOIN notulen_shares ns ON u.id = ns.user_id
+		FROM notulen_shares ns
+		JOIN users u ON ns.user_id = u.id
 		WHERE ns.notulen_id = $1 AND u.deleted_at IS NULL
 		ORDER BY u.name ASC
 	`
-	err := r.db.SelectContext(ctx, &users, query, notulenID)
+	err := r.db.SelectContext(ctx, &details, query, notulenID)
 	if err != nil {
 		return nil, err
 	}
-	return users, nil
+	return details, nil
 }
 
 func (r *notulenRepo) GetSharedUserIDs(ctx context.Context, notulenID int64) ([]int64, error) {
@@ -281,4 +290,17 @@ func (r *notulenRepo) GetSharedUserIDs(ctx context.Context, notulenID int64) ([]
 		return nil, err
 	}
 	return ids, nil
+}
+
+func (r *notulenRepo) GetUserAccess(ctx context.Context, notulenID int64, userID int64) (string, error) {
+	var accessType string
+	query := `SELECT COALESCE(access_type, 'viewer') FROM notulen_shares WHERE notulen_id = $1 AND user_id = $2 LIMIT 1`
+	err := r.db.GetContext(ctx, &accessType, query, notulenID, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", nil
+		}
+		return "", err
+	}
+	return accessType, nil
 }

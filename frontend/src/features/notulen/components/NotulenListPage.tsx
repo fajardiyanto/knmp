@@ -23,12 +23,13 @@ import type { Notulen, NotulenFilter } from "../types/notulen.types";
 import { fetchNotulenList, deleteNotulen } from "../api";
 import { NotulenShareModal } from "./NotulenShareModal";
 import { fetchKnmpList } from "../../knmp/api";
+import { SearchableKnmpSelect } from "./SearchableKnmpSelect";
 
 export const NotulenListPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
 
-  // Role Permissions: only superadmin, super admin, admin_ppk, admin can manage (create/edit/delete/share)
+  // Role Permissions: only superadmin, super admin, admin_ppk, admin can manage (create/delete/share)
   const isSuperAdmin =
     hasRole("superadmin") ||
     hasRole("super admin") ||
@@ -186,7 +187,7 @@ export const NotulenListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
+      {/* Filter & Search Bar with Searchable KNMP Points */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-3">
           <div className="md:col-span-4 relative">
@@ -201,18 +202,13 @@ export const NotulenListPage: React.FC = () => {
           </div>
 
           <div className="md:col-span-3">
-            <select
-              value={selectedKnmpId || ""}
-              onChange={(e) => setSelectedKnmpId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs dark:text-white"
-            >
-              <option value="">-- Semua Titik Lokasi --</option>
-              {knmpList.map((k) => (
-                <option key={k.id} value={k.id}>
-                  {k.name}
-                </option>
-              ))}
-            </select>
+            <SearchableKnmpSelect
+              options={knmpList}
+              value={selectedKnmpId}
+              onChange={(val) => setSelectedKnmpId(val)}
+              placeholder="Filter Titik KNMP..."
+              allOptionLabel="-- Semua Titik Lokasi --"
+            />
           </div>
 
           <div className="md:col-span-2">
@@ -296,78 +292,79 @@ export const NotulenListPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {notulens.map((n) => (
-            <div
-              key={n.id}
-              onClick={() => navigate(`/notulen/${n.id}`)}
-              className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all flex flex-col justify-between overflow-hidden cursor-pointer group"
-            >
-              <div>
-                {/* Card Top Header */}
-                <div className="p-5 border-b border-slate-100 dark:border-slate-800/80 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                      <Calendar className="w-3 h-3" />
-                      <span>{n.tanggal ? n.tanggal.split("T")[0] : "-"}</span>
-                    </span>
-                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
-                      {n.status}
-                    </span>
-                  </div>
-
-                  <h3 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {n.judul}
-                  </h3>
-
-                  {n.knmp_name && (
-                    <div className="flex items-center space-x-1.5 text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold truncate">
-                      <Building className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{n.knmp_name}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Card Info Body */}
-                <div className="p-5 space-y-3 text-xs text-slate-600 dark:text-slate-300">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400">
-                      <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span>
-                        {n.waktu_mulai || "09:00"} - {n.waktu_selesai || "Selesai"} WIB
+          {notulens.map((n) => {
+            const canEditThis = canManage || n.user_access === "owner" || n.user_access === "editor";
+            return (
+              <div
+                key={n.id}
+                onClick={() => navigate(`/notulen/${n.id}`)}
+                className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all flex flex-col justify-between overflow-hidden cursor-pointer group"
+              >
+                <div>
+                  {/* Card Top Header */}
+                  <div className="p-5 border-b border-slate-100 dark:border-slate-800/80 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                        <Calendar className="w-3 h-3" />
+                        <span>{n.tanggal ? n.tanggal.split("T")[0] : "-"}</span>
+                      </span>
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                        {n.status}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{n.lokasi || "Ruang Rapat"}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400">
-                      <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">Pimpinan: {n.pimpinan_rapat || "PPK Pertamina"}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 font-medium">
-                      <User className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">Notulis: {n.notulis || "Super Admin"}</span>
-                    </div>
+
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {n.judul}
+                    </h3>
+
+                    {n.knmp_name && (
+                      <div className="flex items-center space-x-1.5 text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold truncate">
+                        <Building className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{n.knmp_name}</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Shared Users Badge */}
-                  <div className="flex items-center space-x-1.5 text-[11px] text-purple-600 dark:text-purple-400 font-semibold pt-1">
-                    <Users className="w-3.5 h-3.5 shrink-0" />
-                    <span>Dibagikan ke {n.shared_users?.length || 0} Pengguna</span>
+                  {/* Card Info Body */}
+                  <div className="p-5 space-y-3 text-xs text-slate-600 dark:text-slate-300">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400">
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>
+                          {n.waktu_mulai || "09:00"} - {n.waktu_selesai || "Selesai"} WIB
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{n.lokasi || "Ruang Rapat"}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400">
+                        <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">Pimpinan: {n.pimpinan_rapat || "PPK Pertamina"}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 font-medium">
+                        <User className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">Notulis: {n.notulis || "Super Admin"}</span>
+                      </div>
+                    </div>
+
+                    {/* Shared Users Badge */}
+                    <div className="flex items-center space-x-1.5 text-[11px] text-purple-600 dark:text-purple-400 font-semibold pt-1">
+                      <Users className="w-3.5 h-3.5 shrink-0" />
+                      <span>Dibagikan ke {n.shared_users?.length || 0} Pengguna</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Card Footer Actions */}
-              <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
-                <span className="flex items-center space-x-1 text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:underline">
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Buka Dokumen</span>
-                </span>
+                {/* Card Footer Actions */}
+                <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
+                  <span className="flex items-center space-x-1 text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:underline">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Buka Dokumen</span>
+                  </span>
 
-                <div className="flex items-center space-x-1">
-                  {canManage && (
-                    <>
+                  <div className="flex items-center space-x-1">
+                    {canManage && (
                       <button
                         onClick={(e) => handleShare(n, e)}
                         className="p-1.5 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
@@ -375,6 +372,8 @@ export const NotulenListPage: React.FC = () => {
                       >
                         <Share2 className="w-3.5 h-3.5" />
                       </button>
+                    )}
+                    {canEditThis && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -385,6 +384,8 @@ export const NotulenListPage: React.FC = () => {
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
+                    )}
+                    {canManage && (
                       <button
                         onClick={(e) => handleDelete(n.id, e)}
                         className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
@@ -392,12 +393,12 @@ export const NotulenListPage: React.FC = () => {
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

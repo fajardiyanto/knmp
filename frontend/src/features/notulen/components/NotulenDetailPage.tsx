@@ -7,16 +7,15 @@ import {
   MapPin,
   User,
   Users,
-  FileText,
   Building,
   Printer,
   Share2,
   Edit2,
   Trash2,
   CheckCircle2,
-  AlertTriangle,
-  Info,
   Sparkles,
+  Edit3,
+  Eye,
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
 import type { Notulen } from "../types/notulen.types";
@@ -111,6 +110,11 @@ export const NotulenDetailPage: React.FC = () => {
     );
   }
 
+  const canEdit =
+    canManage ||
+    notulen.user_access === "owner" ||
+    notulen.user_access === "editor";
+
   return (
     <div className="space-y-6 pb-24 max-w-5xl mx-auto">
       {/* Top Confluence Command Bar */}
@@ -149,13 +153,13 @@ export const NotulenDetailPage: React.FC = () => {
             </button>
           )}
 
-          {canManage && (
+          {canEdit && (
             <Link
               to={`/notulen/${notulen.id}/edit`}
-              className="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors"
+              className="flex items-center space-x-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded-xl text-xs font-bold transition-colors"
             >
               <Edit2 className="w-3.5 h-3.5" />
-              <span>Edit</span>
+              <span>Edit Dokumen</span>
             </Link>
           )}
 
@@ -327,16 +331,39 @@ export const NotulenDetailPage: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
               {notulen.shared_users.map((u) => (
                 <div
-                  key={u.id}
-                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs flex items-center space-x-2.5"
+                  key={u.user_id}
+                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between space-x-2"
                 >
-                  <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center text-xs shrink-0">
-                    {u.name.substring(0, 1).toUpperCase()}
+                  <div className="flex items-center space-x-2 truncate">
+                    <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center text-xs shrink-0">
+                      {u.name.substring(0, 1).toUpperCase()}
+                    </div>
+                    <div className="truncate">
+                      <div className="font-semibold text-slate-900 dark:text-white truncate">{u.name}</div>
+                      <div className="text-[10px] text-slate-400 capitalize">{u.role_name || "User"}</div>
+                    </div>
                   </div>
-                  <div className="truncate flex-1">
-                    <div className="font-semibold text-slate-900 dark:text-white truncate">{u.name}</div>
-                    <div className="text-[10px] text-slate-400 capitalize">{u.role_name || "User"}</div>
-                  </div>
+
+                  {/* Access Badge */}
+                  <span
+                    className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider shrink-0 flex items-center space-x-0.5 ${
+                      u.access_type === "editor"
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
+                        : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                    }`}
+                  >
+                    {u.access_type === "editor" ? (
+                      <>
+                        <Edit3 className="w-2.5 h-2.5 mr-0.5" />
+                        <span>Editor</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-2.5 h-2.5 mr-0.5" />
+                        <span>Viewer</span>
+                      </>
+                    )}
+                  </span>
                 </div>
               ))}
             </div>

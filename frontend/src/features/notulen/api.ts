@@ -1,5 +1,5 @@
 import { apiFetch } from "../../lib/api-client";
-import type { Notulen, NotulenFilter, NotulenFormData, NotulenUser } from "./types/notulen.types";
+import type { Notulen, NotulenFilter, NotulenFormData, NotulenUser, ShareUserPayload } from "./types/notulen.types";
 
 export function fetchNotulenList(params?: NotulenFilter): Promise<Notulen[]> {
   const query = new URLSearchParams();
@@ -10,8 +10,8 @@ export function fetchNotulenList(params?: NotulenFilter): Promise<Notulen[]> {
   if (params?.limit) query.append("limit", params.limit.toString());
   if (params?.offset) query.append("offset", params.offset.toString());
 
-  const qStr = query.toString() ? `?${query.toString()}` : "";
-  return apiFetch<Notulen[]>(`/api/v1/notulen${qStr}`);
+  const qs = query.toString();
+  return apiFetch<Notulen[]>(`/api/v1/notulen${qs ? "?" + qs : ""}`);
 }
 
 export function fetchNotulenDetail(id: number): Promise<Notulen> {
@@ -38,10 +38,15 @@ export function deleteNotulen(id: number): Promise<{ message: string }> {
   });
 }
 
-export function shareNotulen(id: number, userIds: number[]): Promise<{ message: string }> {
+export function shareNotulen(id: number, sharedUsers: ShareUserPayload[] | number[]): Promise<{ message: string }> {
+  const payload =
+    sharedUsers.length > 0 && typeof sharedUsers[0] === "number"
+      ? { user_ids: sharedUsers }
+      : { shared_users: sharedUsers };
+
   return apiFetch<{ message: string }>(`/api/v1/notulen/${id}/share`, {
     method: "POST",
-    body: JSON.stringify({ user_ids: userIds }),
+    body: JSON.stringify(payload),
   });
 }
 

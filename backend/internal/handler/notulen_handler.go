@@ -72,16 +72,16 @@ func (h *NotulenHandler) GetByID(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse("ID tidak valid"))
 	}
 
-	n, err := h.notulenSvc.GetByID(c.Context(), id)
+	userID, _ := c.Locals(middleware.CtxUserIDKey).(int64)
+	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
+	primaryRole := getUserPrimaryRole(userRoles)
+
+	n, err := h.notulenSvc.GetByID(c.Context(), id, userID, primaryRole)
 	if err != nil || n == nil {
 		return c.Status(fiber.StatusNotFound).JSON(ErrorResponse("Data notulen tidak ditemukan"))
 	}
 
 	// Check access if non-admin
-	userID, _ := c.Locals(middleware.CtxUserIDKey).(int64)
-	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
-	primaryRole := getUserPrimaryRole(userRoles)
-
 	if !domain.IsAdminRole(primaryRole) {
 		isAuthorized := false
 		if n.CreatedBy != nil && *n.CreatedBy == userID {
@@ -103,19 +103,36 @@ func (h *NotulenHandler) GetByID(c *fiber.Ctx) error {
 }
 
 type CreateNotulenRequest struct {
-	KnmpID          *int64   `json:"knmp_id"`
-	Judul           string   `json:"judul"`
-	Tanggal         string   `json:"tanggal"`
-	WaktuMulai      *string  `json:"waktu_mulai"`
-	WaktuSelesai    *string  `json:"waktu_selesai"`
-	Lokasi          *string  `json:"lokasi"`
-	PimpinanRapat   *string  `json:"pimpinan_rapat"`
-	Notulis         string   `json:"notulis"`
-	Agenda          *string  `json:"agenda"`
-	HasilPembahasan string   `json:"hasil_pembahasan"`
-	TindakLanjut    *string  `json:"tindak_lanjut"`
-	Status          string   `json:"status"`
-	SharedUserIDs   []int64  `json:"shared_user_ids"`
+	KnmpID          *int64                 `json:"knmp_id"`
+	Judul           string                 `json:"judul"`
+	Tanggal         string                 `json:"tanggal"`
+	WaktuMulai      *string                `json:"waktu_mulai"`
+	WaktuSelesai    *string                `json:"waktu_selesai"`
+	Lokasi          *string                `json:"lokasi"`
+	PimpinanRapat   *string                `json:"pimpinan_rapat"`
+	Notulis         string                 `json:"notulis"`
+	Agenda          *string                `json:"agenda"`
+	HasilPembahasan string                 `json:"hasil_pembahasan"`
+	TindakLanjut    *string                `json:"tindak_lanjut"`
+	Status          string                 `json:"status"`
+	SharedUserIDs   []int64                `json:"shared_user_ids"`
+	SharedUsers     []domain.ShareUserItem `json:"shared_users"`
+}
+
+func parseSharedUsers(req CreateNotulenRequest) []domain.ShareUserItem {
+	if len(req.SharedUsers) > 0 {
+		return req.SharedUsers
+	}
+	var items []domain.ShareUserItem
+	for _, uid := range req.SharedUserIDs {
+		if uid > 0 {
+			items = append(items, domain.ShareUserItem{
+				UserID:     uid,
+				AccessType: "viewer",
+			})
+		}
+	}
+	return items
 }
 
 func (h *NotulenHandler) Create(c *fiber.Ctx) error {
@@ -153,7 +170,8 @@ func (h *NotulenHandler) Create(c *fiber.Ctx) error {
 		CreatedBy:       &userID,
 	}
 
-	if err := h.notulenSvc.Create(c.Context(), n, req.SharedUserIDs, primaryRole); err != nil {
+	sharedItems := parseSharedUsers(req)
+	if err := h.notulenSvc.Create(c.Context(), n, sharedItems, primaryRole); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse(err.Error()))
 	}
 
@@ -171,12 +189,9 @@ func (h *NotulenHandler) Update(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse("Format data tidak valid"))
 	}
 
+	userID, _ := c.Locals(middleware.CtxUserIDKey).(int64)
 	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
 	primaryRole := getUserPrimaryRole(userRoles)
-
-	if !domain.IsAdminRole(primaryRole) {
-		return c.Status(fiber.StatusForbidden).JSON(ErrorResponse("Hanya Super Admin dan Admin PPK yang dapat mengubah notulen rapat"))
-	}
 
 	notulis := req.Notulis
 	if notulis == "" {
@@ -199,7 +214,8 @@ func (h *NotulenHandler) Update(c *fiber.Ctx) error {
 		Status:          req.Status,
 	}
 
-	if err := h.notulenSvc.Update(c.Context(), n, req.SharedUserIDs, primaryRole); err != nil {
+	sharedItems := parseSharedUsers(req)
+	if err := h.notulenSvc.Update(c.Context(), n, sharedItems, userID, primaryRole); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse(err.Error()))
 	}
 
@@ -227,7 +243,8 @@ func (h *NotulenHandler) Delete(c *fiber.Ctx) error {
 }
 
 type ShareNotulenRequest struct {
-	UserIDs []int64 `json:"user_ids"`
+	UserIDs     []int64                `json:"user_ids"`
+	SharedUsers []domain.ShareUserItem `json:"shared_users"`
 }
 
 func (h *NotulenHandler) Share(c *fiber.Ctx) error {
@@ -248,7 +265,21 @@ func (h *NotulenHandler) Share(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusForbidden).JSON(ErrorResponse("Hanya Super Admin dan Admin PPK yang dapat membagikan notulen rapat"))
 	}
 
-	if err := h.notulenSvc.ShareToUsers(c.Context(), id, req.UserIDs, primaryRole); err != nil {
+	var items []domain.ShareUserItem
+	if len(req.SharedUsers) > 0 {
+		items = req.SharedUsers
+	} else {
+		for _, uid := range req.UserIDs {
+			if uid > 0 {
+				items = append(items, domain.ShareUserItem{
+					UserID:     uid,
+					AccessType: "viewer",
+				})
+			}
+		}
+	}
+
+	if err := h.notulenSvc.Share(c.Context(), id, items, primaryRole); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse(err.Error()))
 	}
 

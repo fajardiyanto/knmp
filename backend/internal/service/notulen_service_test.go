@@ -3,20 +3,31 @@ package service
 import (
 	"context"
 	"testing"
-	"time"
 
 	"knmp-v2-backend/internal/domain"
 )
 
 type mockNotulenRepo struct {
 	notulens []*domain.Notulen
-	shares   map[int64][]int64 // notulenID -> []userID
+	shares   map[int64][]domain.ShareUserItem // notulenID -> []ShareUserItem
 }
 
 func (m *mockNotulenRepo) GetByID(ctx context.Context, id int64) (*domain.Notulen, error) {
 	for _, n := range m.notulens {
 		if n.ID == id {
-			n.SharedUserIDs = m.shares[id]
+			var details []*domain.NotulenShareDetail
+			var uids []int64
+			for _, s := range m.shares[id] {
+				details = append(details, &domain.NotulenShareDetail{
+					UserID:     s.UserID,
+					Name:       "User Test",
+					Email:      "user@test.com",
+					AccessType: s.AccessType,
+				})
+				uids = append(uids, s.UserID)
+			}
+			n.SharedUsers = details
+			n.SharedUserIDs = uids
 			return n, nil
 		}
 	}
@@ -33,8 +44,8 @@ func (m *mockNotulenRepo) List(ctx context.Context, filter domain.NotulenFilter)
 		} else {
 			// Check if user is creator or in shared list
 			isShared := false
-			for _, uid := range m.shares[n.ID] {
-				if uid == filter.UserID {
+			for _, s := range m.shares[n.ID] {
+				if s.UserID == filter.UserID {
 					isShared = true
 					break
 				}
@@ -47,24 +58,30 @@ func (m *mockNotulenRepo) List(ctx context.Context, filter domain.NotulenFilter)
 	return res, nil
 }
 
-func (m *mockNotulenRepo) Create(ctx context.Context, n *domain.Notulen, sharedUserIDs []int64) error {
+func (m *mockNotulenRepo) Create(ctx context.Context, n *domain.Notulen, sharedUsers []domain.ShareUserItem) error {
 	n.ID = int64(len(m.notulens) + 1)
 	m.notulens = append(m.notulens, n)
 	if m.shares == nil {
-		m.shares = make(map[int64][]int64)
+		m.shares = make(map[int64][]domain.ShareUserItem)
 	}
-	m.shares[n.ID] = sharedUserIDs
-	n.SharedUserIDs = sharedUserIDs
+	m.shares[n.ID] = sharedUsers
+	for _, s := range sharedUsers {
+		n.SharedUserIDs = append(n.SharedUserIDs, s.UserID)
+	}
 	return nil
 }
 
-func (m *mockNotulenRepo) Update(ctx context.Context, n *domain.Notulen, sharedUserIDs []int64) error {
+func (m *mockNotulenRepo) Update(ctx context.Context, n *domain.Notulen, sharedUsers []domain.ShareUserItem) error {
 	for i, item := range m.notulens {
 		if item.ID == n.ID {
 			m.notulens[i] = n
-			if sharedUserIDs != nil {
-				m.shares[n.ID] = sharedUserIDs
-				n.SharedUserIDs = sharedUserIDs
+			if sharedUsers != nil {
+				m.shares[n.ID] = sharedUsers
+				var uids []int64
+				for _, s := range sharedUsers {
+					uids = append(uids, s.UserID)
+				}
+				n.SharedUserIDs = uids
 			}
 			return nil
 		}
@@ -84,115 +101,136 @@ func (m *mockNotulenRepo) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (m *mockNotulenRepo) ShareToUsers(ctx context.Context, notulenID int64, userIDs []int64) error {
+func (m *mockNotulenRepo) ShareToUsers(ctx context.Context, notulenID int64, sharedUsers []domain.ShareUserItem) error {
 	if m.shares == nil {
-		m.shares = make(map[int64][]int64)
+		m.shares = make(map[int64][]domain.ShareUserItem)
 	}
-	existing := m.shares[notulenID]
-	for _, uid := range userIDs {
-		found := false
-		for _, e := range existing {
-			if e == uid {
-				found = true
-				break
-			}
-		}
-		if !found {
-			existing = append(existing, uid)
-		}
-	}
-	m.shares[notulenID] = existing
+	m.shares[notulenID] = sharedUsers
 	return nil
 }
 
-func (m *mockNotulenRepo) GetSharedUsers(ctx context.Context, notulenID int64) ([]*domain.User, error) {
-	var users []*domain.User
-	for _, uid := range m.shares[notulenID] {
-		users = append(users, &domain.User{ID: uid, Name: "User Shared"})
+func (m *mockNotulenRepo) GetSharedDetails(ctx context.Context, notulenID int64) ([]*domain.NotulenShareDetail, error) {
+	var details []*domain.NotulenShareDetail
+	for _, s := range m.shares[notulenID] {
+		details = append(details, &domain.NotulenShareDetail{
+			UserID:     s.UserID,
+			Name:       "User Test",
+			Email:      "user@test.com",
+			AccessType: s.AccessType,
+		})
 	}
-	return users, nil
+	return details, nil
 }
 
 func (m *mockNotulenRepo) GetSharedUserIDs(ctx context.Context, notulenID int64) ([]int64, error) {
-	return m.shares[notulenID], nil
+	var ids []int64
+	for _, s := range m.shares[notulenID] {
+		ids = append(ids, s.UserID)
+	}
+	return ids, nil
+}
+
+func (m *mockNotulenRepo) GetUserAccess(ctx context.Context, notulenID int64, userID int64) (string, error) {
+	for _, s := range m.shares[notulenID] {
+		if s.UserID == userID {
+			return s.AccessType, nil
+		}
+	}
+	return "", nil
 }
 
 func TestNotulenService_RBACAndScoping(t *testing.T) {
-	mockRepo := &mockNotulenRepo{
+	repo := &mockNotulenRepo{
 		notulens: []*domain.Notulen{},
-		shares:   make(map[int64][]int64),
+		shares:   make(map[int64][]domain.ShareUserItem),
 	}
-	mockDoc := &mockDocRepo{docs: make(map[int64]*domain.Document)}
-	mockSto := &mockStorage{}
+	docRepo := &mockDocRepo{}
+	storageSvc := &mockStorage{}
 
-	svc := NewNotulenService(mockRepo, mockDoc, mockSto)
+	svc := NewNotulenService(repo, docRepo, storageSvc)
 	ctx := context.Background()
 
-	adminID := int64(1)
-	notulen := &domain.Notulen{
-		Judul:           "Rapat Koordinasi Mingguan KNMP Aceh",
-		Tanggal:         time.Now().Format("2006-01-02"),
-		PimpinanRapat:   func() *string { s := "PPK Pertamina"; return &s }(),
-		Notulis:         "Super Admin",
-		Agenda:          func() *string { s := "Evaluasi Progres Fisik & Rantai Pasok"; return &s }(),
-		HasilPembahasan: "1. Pasokan pasir semen berjalan lancar. 2. Target minggu depan 60%.",
-		TindakLanjut:    func() *string { s := "Site engineer koordinasi pengiriman besi"; return &s }(),
-		Status:          "published",
-		CreatedBy:       &adminID,
-	}
+	superAdminRole := "superadmin"
+	adminPPKRole := "admin_ppk"
+	pengawasRole := "pengawas"
+	kontraktorRole := "kontraktor"
 
-	// 1. Negative Test: Kontraktor / Pengawas cannot create notulen
-	err := svc.Create(ctx, notulen, []int64{2, 3}, "kontraktor")
+	// 1. Non-admin (Pengawas/Kontraktor) cannot CREATE notulen
+	err := svc.Create(ctx, &domain.Notulen{
+		Judul:           "Rapat Lapangan Aceh",
+		Tanggal:         "2026-08-31",
+		HasilPembahasan: "Pengecoran selesai",
+	}, nil, pengawasRole)
 	if err == nil {
-		t.Fatalf("expected error when contractor tries to create notulen, got nil")
+		t.Errorf("Expected error when non-admin creates notulen, got nil")
 	}
 
-	// 2. Positive Test: SuperAdmin creates notulen and shares with user 2 (Kontraktor)
-	err = svc.Create(ctx, notulen, []int64{2}, "superadmin")
+	// 2. SuperAdmin CAN create notulen and share with Pengawas (as Editor) & Kontraktor (as Viewer)
+	notulen1 := &domain.Notulen{
+		Judul:           "Rapat Koordinasi Mingguan Progres 346 Titik",
+		Tanggal:         "2026-08-31",
+		HasilPembahasan: "Seluruh kontraktor wajib mengirimkan laporan cuaca dan progres fisik tepat waktu.",
+		Status:          "published",
+	}
+	sharedUsers := []domain.ShareUserItem{
+		{UserID: 10, AccessType: "editor"}, // Pengawas ID 10 is Editor
+		{UserID: 20, AccessType: "viewer"}, // Kontraktor ID 20 is Viewer
+	}
+	err = svc.Create(ctx, notulen1, sharedUsers, superAdminRole)
 	if err != nil {
-		t.Fatalf("expected superadmin to create notulen successfully, got: %v", err)
-	}
-	if notulen.ID == 0 {
-		t.Fatalf("expected generated notulen ID, got 0")
+		t.Fatalf("SuperAdmin failed to create notulen: %v", err)
 	}
 
-	// 3. Positive Test: Admin PPK creates second notulen
+	// 3. Admin PPK creates Notulen 2 (not shared with User 10 or 20)
 	notulen2 := &domain.Notulen{
-		Judul:           "Rapat Evaluasi Khusus PPK",
-		Tanggal:         time.Now().Format("2006-01-02"),
-		Notulis:         "Super Admin",
-		HasilPembahasan: "Pembahasan teknis tertutup",
-		CreatedBy:       &adminID,
+		Judul:           "Rapat Internal PPK Pertamina",
+		Tanggal:         "2026-08-31",
+		HasilPembahasan: "Evaluasi anggaran termin pembayaran termin 1.",
+		Status:          "published",
 	}
-	err = svc.Create(ctx, notulen2, []int64{4}, "admin_ppk")
+	err = svc.Create(ctx, notulen2, nil, adminPPKRole)
 	if err != nil {
-		t.Fatalf("expected admin_ppk to create notulen successfully, got: %v", err)
+		t.Fatalf("Admin PPK failed to create notulen: %v", err)
 	}
 
-	// 4. Scoping Test: SuperAdmin sees all notulens (2 items)
-	adminList, err := svc.List(ctx, domain.NotulenFilter{UserRole: "superadmin", UserID: 1})
-	if err != nil || len(adminList) != 2 {
-		t.Fatalf("expected superadmin to see all 2 notulens, got: %d", len(adminList))
+	// 4. Test Scoping:
+	// SuperAdmin sees ALL 2 notulens
+	listSuper, _ := svc.List(ctx, domain.NotulenFilter{UserRole: superAdminRole})
+	if len(listSuper) != 2 {
+		t.Errorf("SuperAdmin should see all 2 notulens, got %d", len(listSuper))
 	}
 
-	// 5. Scoping Test: Kontraktor (User 2) only sees notulen 1 (which was shared to him)
-	kontraktorList, err := svc.List(ctx, domain.NotulenFilter{UserRole: "kontraktor", UserID: 2})
-	if err != nil || len(kontraktorList) != 1 {
-		t.Fatalf("expected contractor user 2 to see exactly 1 shared notulen, got: %d", len(kontraktorList))
+	// Pengawas (User ID 10) ONLY sees Notulen 1 (which was shared with him)
+	listPengawas, _ := svc.List(ctx, domain.NotulenFilter{UserID: 10, UserRole: pengawasRole})
+	if len(listPengawas) != 1 {
+		t.Errorf("Pengawas (User 10) should only see 1 notulen, got %d", len(listPengawas))
 	}
-	if kontraktorList[0].ID != notulen.ID {
-		t.Errorf("expected notulen ID %d, got %d", notulen.ID, kontraktorList[0].ID)
+	if len(listPengawas) > 0 && listPengawas[0].ID != notulen1.ID {
+		t.Errorf("Pengawas saw wrong notulen ID: %d", listPengawas[0].ID)
 	}
 
-	// 6. ShareToUsers Test: SuperAdmin shares notulen 2 with User 2
-	err = svc.ShareToUsers(ctx, notulen2.ID, []int64{2}, "superadmin")
+	// 5. Test Editor Access:
+	// Pengawas (User 10) has 'editor' access on Notulen 1 -> CAN update
+	notulen1.HasilPembahasan = "Updated hasil pembahasan oleh editor"
+	err = svc.Update(ctx, notulen1, nil, 10, pengawasRole)
 	if err != nil {
-		t.Fatalf("failed to share notulen: %v", err)
+		t.Errorf("Pengawas with 'editor' access should be able to update notulen, got: %v", err)
 	}
 
-	// Kontraktor User 2 should now see both notulens (2 items)
-	kontraktorListUpdated, err := svc.List(ctx, domain.NotulenFilter{UserRole: "kontraktor", UserID: 2})
-	if err != nil || len(kontraktorListUpdated) != 2 {
-		t.Fatalf("expected contractor user 2 to see 2 notulens after sharing, got: %d", len(kontraktorListUpdated))
+	// Kontraktor (User 20) has 'viewer' access on Notulen 1 -> CANNOT update
+	err = svc.Update(ctx, notulen1, nil, 20, kontraktorRole)
+	if err == nil {
+		t.Errorf("Kontraktor with 'viewer' access should NOT be able to update notulen")
+	}
+
+	// 6. Test UserAccess computation on GetByID
+	nDetail, _ := svc.GetByID(ctx, notulen1.ID, 10, pengawasRole)
+	if nDetail.UserAccess != "editor" {
+		t.Errorf("Expected UserAccess 'editor' for User 10, got '%s'", nDetail.UserAccess)
+	}
+
+	nDetailViewer, _ := svc.GetByID(ctx, notulen1.ID, 20, kontraktorRole)
+	if nDetailViewer.UserAccess != "viewer" {
+		t.Errorf("Expected UserAccess 'viewer' for User 20, got '%s'", nDetailViewer.UserAccess)
 	}
 }
