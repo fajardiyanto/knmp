@@ -116,6 +116,7 @@ type LaporanRepository interface {
 	Delete(ctx context.Context, id int64) error
 	GetDetailsByLaporanID(ctx context.Context, laporanID int64) ([]*domain.LaporanJenisBangunan, error)
 	GetMonthlyProjectReportData(ctx context.Context, filter ProjectReportFilter) (*domain.MonthlyProjectReportData, error)
+	GetWeeklyPPKReportData(ctx context.Context, week int, year int) (*domain.WeeklyPPKReportData, error)
 }
 
 type AbsensiFilter struct {

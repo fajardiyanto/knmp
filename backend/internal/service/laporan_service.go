@@ -252,3 +252,7 @@ func (s *LaporanService) Unverify(ctx context.Context, id int64, step string, no
 func (s *LaporanService) GetMonthlyProjectReportData(ctx context.Context, filter repository.ProjectReportFilter) (*domain.MonthlyProjectReportData, error) {
 	return s.laporanRepo.GetMonthlyProjectReportData(ctx, filter)
 }
+
+func (s *LaporanService) GetWeeklyPPKReportData(ctx context.Context, week int, year int) (*domain.WeeklyPPKReportData, error) {
+	return s.laporanRepo.GetWeeklyPPKReportData(ctx, week, year)
+}

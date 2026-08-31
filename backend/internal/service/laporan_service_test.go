@@ -71,6 +71,18 @@ func (m *mockLaporanRepo) GetMonthlyProjectReportData(ctx context.Context, filte
 	}, nil
 }
 
+func (m *mockLaporanRepo) GetWeeklyPPKReportData(ctx context.Context, week int, year int) (*domain.WeeklyPPKReportData, error) {
+	return &domain.WeeklyPPKReportData{
+		PPKName:               "Ir. Hendra Wijaya, M.T.",
+		Wilayah:               "SUMATRA",
+		TotalLokasi:           346,
+		TotalKontraktor:       32,
+		CapaianFisikKumulatif: 72.45,
+		NilaiKontrakKumulatif: 127450000000,
+		RealisasiKeuangan:     68920000000,
+	}, nil
+}
+
 type mockVerifRepo struct {
 	verifs map[int64]*domain.Verification
 }

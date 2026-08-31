@@ -192,3 +192,108 @@ type MilestoneItem struct {
 	DeviasiHari int    `json:"deviasi_hari"`
 	Status      string `json:"status"`
 }
+
+type WeeklyPPKReportData struct {
+	PPKName               string                      `json:"ppk_name"`
+	PPKNip                string                      `json:"ppk_nip"`
+	KadisName             string                      `json:"kadis_name"`
+	KadisNip              string                      `json:"kadis_nip"`
+	Wilayah               string                      `json:"wilayah"`
+	TotalLokasi           int                         `json:"total_lokasi"`
+	TotalKontraktor       int                         `json:"total_kontraktor"`
+	SumberDana            string                      `json:"sumber_dana"`
+	TahunAnggaran         int                         `json:"tahun_anggaran"`
+	MingguKe              int                         `json:"minggu_ke"`
+	TanggalAwal           string                      `json:"tanggal_awal"`
+	TanggalAkhir          string                      `json:"tanggal_akhir"`
+	TanggalLaporan        string                      `json:"tanggal_laporan"`
+
+	RingkasanNarasi       string                      `json:"ringkasan_narasi"`
+
+	CapaianFisikKumulatif float64                     `json:"capaian_fisik_kumulatif"`
+	LokasiOnProgress      int                         `json:"lokasi_on_progress"`
+	LokasiSelesai         int                         `json:"lokasi_selesai"`
+	LokasiPersiapan       int                         `json:"lokasi_persiapan"`
+	LokasiTertunda        int                         `json:"lokasi_tertunda"`
+	NilaiKontrakKumulatif float64                     `json:"nilai_kontrak_kumulatif"`
+	RealisasiKeuangan     float64                     `json:"realisasi_keuangan"`
+	RealisasiKeuanganPct  float64                     `json:"realisasi_keuangan_pct"`
+	SisaAnggaran          float64                     `json:"sisa_anggaran"`
+	SisaAnggaranPct       float64                     `json:"sisa_anggaran_pct"`
+
+	GISPoints             []WeeklyGISPoint            `json:"gis_points"`
+	ProgressRekap         []WeeklyProgressRekapItem   `json:"progress_rekap"`
+	ProgressTotalLalu     float64                     `json:"progress_total_lalu"`
+	ProgressTotalIni      float64                     `json:"progress_total_ini"`
+	ProgressTotalKumulatif float64                    `json:"progress_total_kumulatif"`
+
+	RekapLokasi           []WeeklyLokasiStatusItem    `json:"rekap_lokasi"`
+	ProgressKlaster       []WeeklyKlasterProgressItem `json:"progress_klaster"`
+	Issues                []WeeklyIssueItem           `json:"issues"`
+	WorkPlans             []WeeklyWorkPlanItem        `json:"work_plans"`
+	Photos                []WeeklyPhotoItem           `json:"photos"`
+
+	K3Kecelakaan          int                         `json:"k3_kecelakaan"`
+	K3NearMiss            int                         `json:"k3_near_miss"`
+	K3Pelatihan           int                         `json:"k3_pelatihan"`
+	K3KepatuhanAPD        float64                     `json:"k3_kepatuhan_apd"`
+}
+
+type WeeklyGISPoint struct {
+	ID        int64   `json:"id"`
+	Name      string  `json:"name"`
+	Lat       float64 `json:"lat"`
+	Long      float64 `json:"long"`
+	Progress  float64 `json:"progress"`
+	Status    string  `json:"status"`
+	Regency   string  `json:"regency"`
+	Province  string  `json:"province"`
+}
+
+type WeeklyProgressRekapItem struct {
+	No         int     `json:"no"`
+	Uraian     string  `json:"uraian"`
+	Lokasi     int     `json:"lokasi"`
+	MingguLalu float64 `json:"minggu_lalu"`
+	MingguIni  float64 `json:"minggu_ini"`
+	Kumulatif  float64 `json:"kumulatif"`
+	Keterangan string  `json:"keterangan"`
+}
+
+type WeeklyLokasiStatusItem struct {
+	No         int     `json:"no"`
+	Status     string  `json:"status"`
+	Jumlah     int     `json:"jumlah"`
+	Persentase float64 `json:"persentase"`
+	Keterangan string  `json:"keterangan"`
+}
+
+type WeeklyKlasterProgressItem struct {
+	Code      string  `json:"code"`
+	Name      string  `json:"name"`
+	Progress  float64 `json:"progress"`
+}
+
+type WeeklyIssueItem struct {
+	No              int    `json:"no"`
+	Deskripsi       string `json:"deskripsi"`
+	Lokasi          string `json:"lokasi"`
+	Penyebab        string `json:"penyebab"`
+	Dampak          string `json:"dampak"`
+	TingkatRisiko   string `json:"tingkat_risiko"`
+	RencanaMitigasi string `json:"rencana_mitigasi"`
+	PIC             string `json:"pic"`
+	TargetSelesai   string `json:"target_selesai"`
+	Status          string `json:"status"`
+}
+
+type WeeklyWorkPlanItem struct {
+	No     int     `json:"no"`
+	Uraian string  `json:"uraian"`
+	Target float64 `json:"target"`
+}
+
+type WeeklyPhotoItem struct {
+	Title   string `json:"title"`
+	FileURL string `json:"file_url"`
+}

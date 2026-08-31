@@ -375,3 +375,15 @@ func (h *LaporanHandler) GetMonthlyProjectReportData(c *fiber.Ctx) error {
 
 	return c.JSON(OKResponse(data))
 }
+
+func (h *LaporanHandler) GetWeeklyPPKReportData(c *fiber.Ctx) error {
+	week, _ := strconv.Atoi(c.Query("week", "14"))
+	year, _ := strconv.Atoi(c.Query("year", "2026"))
+
+	data, err := h.laporanSvc.GetWeeklyPPKReportData(c.Context(), week, year)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse(err.Error()))
+	}
+
+	return c.JSON(OKResponse(data))
+}

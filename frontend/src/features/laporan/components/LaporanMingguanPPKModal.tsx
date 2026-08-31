@@ -6,16 +6,113 @@ import {
   ZoomOut,
   FileText,
   Database,
-  Calendar,
-  Layers,
-  MapPin,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { apiFetch } from "../../../lib/api-client";
+
+interface WeeklyGISPoint {
+  id: number;
+  name: string;
+  lat: number;
+  long: number;
+  progress: number;
+  status: string;
+  regency: string;
+  province: string;
+}
+
+interface WeeklyProgressRekapItem {
+  no: number;
+  uraian: string;
+  lokasi: number;
+  minggu_lalu: number;
+  minggu_ini: number;
+  kumulatif: number;
+  keterangan: string;
+}
+
+interface WeeklyLokasiStatusItem {
+  no: number;
+  status: string;
+  jumlah: number;
+  persentase: number;
+  keterangan: string;
+}
+
+interface WeeklyKlasterProgressItem {
+  code: string;
+  name: string;
+  progress: number;
+}
+
+interface WeeklyIssueItem {
+  no: number;
+  deskripsi: string;
+  lokasi: string;
+  penyebab: string;
+  dampak: string;
+  tingkat_risiko: string;
+  rencana_mitigasi: string;
+  pic: string;
+  target_selesai: string;
+  status: string;
+}
+
+interface WeeklyWorkPlanItem {
+  no: number;
+  uraian: string;
+  target: number;
+}
+
+interface WeeklyPhotoItem {
+  title: string;
+  file_url: string;
+}
+
+interface WeeklyPPKReportData {
+  ppk_name: string;
+  ppk_nip: string;
+  kadis_name: string;
+  kadis_nip: string;
+  wilayah: string;
+  total_lokasi: number;
+  total_kontraktor: number;
+  sumber_dana: string;
+  tahun_anggaran: number;
+  minggu_ke: number;
+  tanggal_awal: string;
+  tanggal_akhir: string;
+  tanggal_laporan: string;
+  ringkasan_narasi: string;
+  capaian_fisik_kumulatif: number;
+  lokasi_on_progress: number;
+  lokasi_selesai: number;
+  lokasi_persiapan: number;
+  lokasi_tertunda: number;
+  nilai_kontrak_kumulatif: number;
+  realisasi_keuangan: number;
+  realisasi_keuangan_pct: number;
+  sisa_anggaran: number;
+  sisa_anggaran_pct: number;
+  gis_points: WeeklyGISPoint[];
+  progress_rekap: WeeklyProgressRekapItem[];
+  progress_total_lalu: number;
+  progress_total_ini: number;
+  progress_total_kumulatif: number;
+  rekap_lokasi: WeeklyLokasiStatusItem[];
+  progress_klaster: WeeklyKlasterProgressItem[];
+  issues: WeeklyIssueItem[];
+  work_plans: WeeklyWorkPlanItem[];
+  photos: WeeklyPhotoItem[];
+  k3_kecelakaan: number;
+  k3_near_miss: number;
+  k3_pelatihan: number;
+  k3_kepatuhan_apd: number;
+}
 
 interface LaporanMingguanPPKModalProps {
   isOpen: boolean;
@@ -31,112 +128,41 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
   const [activeTab, setActiveTab] = useState<"laporan" | "sumber_data">("laporan");
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [mingguKe, setMingguKe] = useState<number>(initialWeek);
+  const [tahun] = useState<number>(2026);
 
-  // Dates
-  const [tglAwal, setTglAwal] = useState<string>("01 September");
-  const [tglAkhir, setTglAkhir] = useState<string>("07 September");
-  const [ppkName, setPpkName] = useState<string>("Ir. Hendra Wijaya, M.T.");
-  const [ppkNip, setPpkNip] = useState<string>("19780415 200312 1 002");
-  const [kadisName, setKadisName] = useState<string>("Dr. Ir. H. Syamsul Bahri, M.Si.");
-  const [kadisNip, setKadisNip] = useState<string>("19720819 199803 1 004");
-
-  // Real Database Data State
-  const [gisPoints, setGisPoints] = useState<any[]>([]);
-  const [realTotalTitik, setRealTotalTitik] = useState<number>(346);
-  const [realLokasiSelesai, setRealLokasiSelesai] = useState<number>(58);
-  const [realLokasiOnProgress, setRealLokasiOnProgress] = useState<number>(136);
-  const [realLokasiPersiapan, setRealLokasiPersiapan] = useState<number>(142);
-  const [realLokasiTertunda, setRealLokasiTertunda] = useState<number>(10);
-  const [realCapaianFisik, setRealCapaianFisik] = useState<number>(72.45);
-  const [realNilaiKontrak, setRealNilaiKontrak] = useState<number>(127450000000);
-  const [realRealisasiKeuangan, setRealRealisasiKeuangan] = useState<number>(68920000000);
-  const [realIssues, setRealIssues] = useState<any[]>([]);
-  const [realPhotos, setRealPhotos] = useState<any[]>([]);
+  const [reportData, setReportData] = useState<WeeklyPPKReportData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   const printRef = useRef<HTMLDivElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
-  // 1. Fetch Real Backend Data
-  useEffect(() => {
-    if (!isOpen) return;
-
+  // 1. Fetch Real Backend Data from Endpoint
+  const loadReportData = () => {
     setLoading(true);
-
-    // Fetch GIS Points (346 Titik Se-Sumatera)
-    const fetchGis = apiFetch<any[]>("/api/v1/knmp/gis")
-      .then((res) => {
-        const points = Array.isArray(res) ? res : (res as any)?.data || [];
-        setGisPoints(points);
-        if (points.length > 0) {
-          setRealTotalTitik(points.length);
-          let selesai = 0;
-          let onProgress = 0;
-          let persiapan = 0;
-          let tertunda = 0;
-          let sumProgress = 0;
-
-          points.forEach((p: any) => {
-            const prog = Number(p.progress || p.realisasi_progres_fisik || 0);
-            sumProgress += prog;
-            if (prog >= 100) {
-              selesai++;
-            } else if (prog > 0) {
-              onProgress++;
-            } else {
-              persiapan++;
-            }
-          });
-
-          if (points.length > 0) {
-            setRealLokasiSelesai(selesai > 0 ? selesai : 58);
-            setRealLokasiOnProgress(onProgress > 0 ? onProgress : 136);
-            setRealLokasiPersiapan(persiapan > 0 ? persiapan : 142);
-            setRealLokasiTertunda(tertunda > 0 ? tertunda : 10);
-            setRealCapaianFisik(
-              sumProgress > 0 ? Number((sumProgress / points.length).toFixed(2)) : 72.45
-            );
-          }
-        }
+    setErrorMsg("");
+    apiFetch<WeeklyPPKReportData>(`/api/v1/laporan/weekly-ppk-report?week=${mingguKe}&year=${tahun}`)
+      .then((data) => {
+        setReportData(data);
       })
-      .catch(() => {});
-
-    // Fetch Widget / Financial Summary
-    const fetchWidget = apiFetch<any>("/api/v1/knmp/widget")
-      .then((w) => {
-        if (w) {
-          if (w.total_anggaran) setRealNilaiKontrak(w.total_anggaran);
-          if (w.realisasi_anggaran) setRealRealisasiKeuangan(w.realisasi_anggaran);
-        }
+      .catch((err) => {
+        setErrorMsg(err?.message || "Gagal memuat data laporan mingguan PPK dari server");
       })
-      .catch(() => {});
+      .finally(() => {
+        setLoading(false);
+      });
+  };
 
-    // Fetch Real Issues
-    const fetchIssues = apiFetch<any[]>("/api/v1/issues")
-      .then((res) => {
-        const list = Array.isArray(res) ? res : (res as any)?.data || [];
-        if (list.length > 0) setRealIssues(list);
-      })
-      .catch(() => {});
-
-    // Fetch Real Photos
-    const fetchDocs = apiFetch<any[]>("/api/v1/documents")
-      .then((res) => {
-        const list = Array.isArray(res) ? res : (res as any)?.data || [];
-        const imgs = list.filter((d: any) => d.mime_type?.startsWith("image/"));
-        if (imgs.length > 0) setRealPhotos(imgs);
-      })
-      .catch(() => {});
-
-    Promise.allSettled([fetchGis, fetchWidget, fetchIssues, fetchDocs]).finally(() => {
-      setLoading(false);
-    });
-  }, [isOpen]);
-
-  // 2. Initialize Real Leaflet Map for Sumatra 346 Points
   useEffect(() => {
-    if (!isOpen || activeTab !== "laporan") return;
+    if (isOpen) {
+      loadReportData();
+    }
+  }, [isOpen, mingguKe]);
+
+  // 2. Initialize Real Leaflet Map with Real Coordinates
+  useEffect(() => {
+    if (!isOpen || activeTab !== "laporan" || !reportData) return;
 
     const timer = setTimeout(() => {
       if (!mapContainerRef.current) return;
@@ -151,7 +177,6 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
           attributionControl: false,
         });
 
-        // Use Clean CartoDB Voyager or Esri Topo Tile Layer
         L.tileLayer(
           "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
           {
@@ -168,21 +193,20 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
 
       map.invalidateSize();
 
-      // Clear existing markers
+      // Clear existing layers
       map.eachLayer((layer) => {
         if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
           map.removeLayer(layer);
         }
       });
 
-      // Pin icons helper
       const createDot = (color: string) => {
         return L.divIcon({
           className: "leaflet-custom-dot",
           html: `
             <div style="
-              width: 10px;
-              height: 10px;
+              width: 9px;
+              height: 9px;
               border-radius: 50%;
               background-color: ${color};
               border: 1.5px solid #ffffff;
@@ -190,80 +214,45 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
               cursor: pointer;
             "></div>
           `,
-          iconSize: [10, 10],
-          iconAnchor: [5, 5],
-          popupAnchor: [0, -6],
+          iconSize: [9, 9],
+          iconAnchor: [4.5, 4.5],
+          popupAnchor: [0, -5],
         });
       };
 
-      const greenDot = createDot("#16a34a"); // Selesai
-      const blueDot = createDot("#2563eb"); // On Progress
-      const yellowDot = createDot("#eab308"); // Persiapan
-      const redDot = createDot("#dc2626"); // Masalah
+      const greenDot = createDot("#16a34a");
+      const blueDot = createDot("#2563eb");
+      const yellowDot = createDot("#eab308");
+      const redDot = createDot("#dc2626");
 
-      const pointsToRender =
-        gisPoints.length > 0
-          ? gisPoints
-          : [
-              // Fallback major hub coordinates across Sumatra
-              { name: "KNMP Alue Naga", lat: 5.59, long: 95.35, progress: 100, prov: "Aceh" },
-              { name: "KNMP Pusong Lhokseumawe", lat: 5.18, long: 97.14, progress: 75, prov: "Aceh" },
-              { name: "KNMP Belawan Medan", lat: 3.78, long: 98.69, progress: 65, prov: "Sumut" },
-              { name: "KNMP Teluk Nibung", lat: 2.96, long: 99.81, progress: 45, prov: "Sumut" },
-              { name: "KNMP Sibolga Sambas", lat: 1.74, long: 98.78, progress: 100, prov: "Sumut" },
-              { name: "KNMP Dumai Pesisir", lat: 1.68, long: 101.44, progress: 55, prov: "Riau" },
-              { name: "KNMP Bengkalis Kota", lat: 1.48, long: 102.12, progress: 0, prov: "Riau" },
-              { name: "KNMP Pasir Pengaraian", lat: 0.86, long: 100.31, progress: 80, prov: "Riau" },
-              { name: "KNMP Bungus Teluk Kabung", lat: -1.02, long: 100.41, progress: 100, prov: "Sumbar" },
-              { name: "KNMP Air Bangis Pasaman", lat: 0.21, long: 99.38, progress: 30, prov: "Sumbar" },
-              { name: "KNMP Kuala Tungkal", lat: -0.81, long: 103.46, progress: 60, prov: "Jambi" },
-              { name: "KNMP Muara Sabak", lat: -1.13, long: 103.85, progress: 10, prov: "Jambi" },
-              { name: "KNMP Pasar Bengkulu", lat: -3.79, long: 102.26, progress: 10, prov: "Bengkulu" },
-              { name: "KNMP Sungsang Banyuasin", lat: -2.34, long: 104.91, progress: 70, prov: "Sumsel" },
-              { name: "KNMP Tanjung Api-Api", lat: -2.26, long: 104.79, progress: 100, prov: "Sumsel" },
-              { name: "KNMP Lempasing Teluk Betung", lat: -5.48, long: 105.25, progress: 85, prov: "Lampung" },
-              { name: "KNMP Labuhan Maringgai", lat: -5.33, long: 105.81, progress: 40, prov: "Lampung" },
-              { name: "KNMP Krui Pesisir Barat", lat: -5.19, long: 103.93, progress: 0, prov: "Lampung" },
-            ];
-
+      const points = reportData.gis_points || [];
       const bounds = L.latLngBounds([]);
 
-      pointsToRender.forEach((p: any) => {
-        const lat = parseFloat(p.lat || p.latitude);
-        const lng = parseFloat(p.long || p.longitude);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          bounds.extend([lat, lng]);
+      points.forEach((p) => {
+        if (p.lat && p.long && !isNaN(p.lat) && !isNaN(p.long)) {
+          bounds.extend([p.lat, p.long]);
 
-          const prog = Number(p.progress || p.realisasi_progres_fisik || 0);
           let dot = yellowDot;
-          let statusText = "Dalam Persiapan";
-
-          if (prog >= 100) {
+          if (p.progress >= 100) {
             dot = greenDot;
-            statusText = "Selesai (100%)";
-          } else if (prog >= 50) {
+          } else if (p.progress >= 50) {
             dot = blueDot;
-            statusText = `On Progress (${prog}%)`;
-          } else if (prog > 0) {
+          } else if (p.progress > 0) {
             dot = yellowDot;
-            statusText = `On Progress Awal (${prog}%)`;
-          } else if (p.has_issue) {
-            dot = redDot;
-            statusText = "Tertunda / Kendala Lapangan";
           }
 
-          const marker = L.marker([lat, lng], { icon: dot }).addTo(map);
+          const marker = L.marker([p.lat, p.long], { icon: dot }).addTo(map);
           marker.bindPopup(`
             <div style="font-size: 11px; font-family: sans-serif; min-width: 150px; line-height: 1.4;">
-              <strong style="color: #002060; font-size: 12px;">${p.name || p.nama || "Titik KNMP"}</strong><br/>
-              <span style="color: #64748b;">${p.regency_name || p.prov || "Wilayah Sumatera"}</span><br/>
+              <strong style="color: #002060; font-size: 12px;">${p.name}</strong><br/>
+              <span style="color: #64748b;">${p.regency || p.province || "Sumatera"}</span><br/>
               <div style="margin-top: 4px; font-weight: bold; color: ${
-                prog >= 100 ? "#16a34a" : prog >= 50 ? "#2563eb" : "#d97706"
+                p.progress >= 100 ? "#16a34a" : p.progress >= 50 ? "#2563eb" : "#d97706"
               };">
-                Status: ${statusText}
+                Status: ${p.status}
               </div>
               <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-                Koord: ${lat.toFixed(4)}, ${lng.toFixed(4)}
+                Koord: ${p.lat.toFixed(4)}, ${p.long.toFixed(4)}
               </div>
             </div>
           `);
@@ -276,20 +265,16 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
     }, 150);
 
     return () => clearTimeout(timer);
-  }, [isOpen, activeTab, gisPoints]);
+  }, [isOpen, activeTab, reportData]);
 
   if (!isOpen) return null;
-
-  const realisasiKeuanganPct = ((realRealisasiKeuangan / realNilaiKontrak) * 100).toFixed(2);
-  const sisaAnggaran = realNilaiKontrak - realRealisasiKeuangan;
-  const sisaAnggaranPct = ((sisaAnggaran / realNilaiKontrak) * 100).toFixed(2);
 
   const formatRupiah = (num: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       maximumFractionDigits: 0,
-    }).format(num);
+    }).format(num || 0);
   };
 
   const handlePrint = () => {
@@ -299,7 +284,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-[98vw] xl:max-w-[96vw] h-[95vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-100">
-        {/* Modal Top Command Bar */}
+        {/* Top Control Bar */}
         <div className="flex flex-wrap items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-[#002060] text-white shrink-0 gap-3">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-white/10 rounded-xl">
@@ -310,12 +295,32 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-mono">
                   OFFICIAL PPK TEMPLATE
                 </span>
-                <span className="text-xs text-blue-200">Program KNMP Wilayah Sumatra (346 Titik)</span>
+                <span className="text-xs text-blue-200">Program KNMP Wilayah Sumatra ({reportData?.total_lokasi || 346} Titik)</span>
               </div>
               <h3 className="text-base font-black text-white tracking-tight">
                 Template Laporan Mingguan PPK KNMP – Wilayah Sumatra
               </h3>
             </div>
+          </div>
+
+          {/* Week Selector */}
+          <div className="flex items-center space-x-1.5 bg-black/20 px-3 py-1 rounded-xl border border-white/10 text-xs">
+            <span className="text-blue-200 font-medium">Minggu ke:</span>
+            <button
+              onClick={() => setMingguKe((prev) => Math.max(1, prev - 1))}
+              className="p-1 hover:bg-white/10 rounded text-white"
+              title="Minggu Sebelumnya"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="font-bold text-amber-400 px-1">{mingguKe}</span>
+            <button
+              onClick={() => setMingguKe((prev) => Math.min(52, prev + 1))}
+              className="p-1 hover:bg-white/10 rounded text-white"
+              title="Minggu Berikutnya"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Navigation Tabs */}
@@ -387,10 +392,24 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
 
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto overflow-x-auto p-4 md:p-6 bg-slate-100 dark:bg-slate-950">
-          {activeTab === "sumber_data" ? (
-            /* ========================================================================= */
-            /* TAB 2: KAMUS DATA LENGKAP                                                 */
-            /* ========================================================================= */
+          {loading ? (
+            <div className="p-16 text-center text-slate-500 dark:text-slate-400">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+              <p className="text-xs font-medium">Memuat real data laporan mingguan PPK dari server...</p>
+            </div>
+          ) : errorMsg || !reportData ? (
+            <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-800 text-red-600 text-xs max-w-md mx-auto my-12 shadow-sm space-y-2">
+              <div className="font-bold">Gagal Mengambil Data Real</div>
+              <p>{errorMsg || "Data laporan tidak tersedia"}</p>
+              <button
+                onClick={loadReportData}
+                className="px-4 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-all"
+              >
+                Coba Lagi
+              </button>
+            </div>
+          ) : activeTab === "sumber_data" ? (
+            /* TAB 2: KAMUS DATA */
             <div className="max-w-5xl mx-auto space-y-6 pb-12 animate-fade-in">
               <div className="bg-gradient-to-r from-[#002060] to-indigo-900 text-white p-6 rounded-2xl shadow-md space-y-2">
                 <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-amber-300">
@@ -411,7 +430,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     A. Identitas Laporan
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Tabel `users` (Role PPK), `knmps` (Total {realTotalTitik} titik), dan `persiapans` (Kontraktor pelaksana).
+                    Sumber: Tabel `users` ({reportData.ppk_name}), `knmps` (Total {reportData.total_lokasi} titik), dan `persiapans` ({reportData.total_kontraktor} Kontraktor pelaksana).
                   </p>
                 </div>
 
@@ -420,7 +439,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     B. Ringkasan Eksekutif
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Auto-generator narasi cerdas yang menghitung rata-rata capaian fisik ({realCapaianFisik}%), lokasi selesai ({realLokasiSelesai}), on progress ({realLokasiOnProgress}), dan mitigasi kendala aktif.
+                    Sumber: Auto-generator narasi cerdas yang menghitung rata-rata capaian fisik ({reportData.capaian_fisik_kumulatif}%), lokasi selesai ({reportData.lokasi_selesai}), on progress ({reportData.lokasi_on_progress}), dan mitigasi kendala aktif ({reportData.issues.length} isu).
                   </p>
                 </div>
 
@@ -429,7 +448,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     C. Dashboard Capaian Mingguan
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: `AVG(realisasi_progres_fisik)` tabel `laporans`, pagu kontrak ({formatRupiah(realNilaiKontrak)}), dan pencairan termin tabel `pembayarans` ({formatRupiah(realRealisasiKeuangan)}).
+                    Sumber: `AVG(realisasi_progres_fisik)` tabel `laporans`, pagu kontrak ({formatRupiah(reportData.nilai_kontrak_kumulatif)}), dan pencairan termin tabel `pembayarans` ({formatRupiah(reportData.realisasi_keuangan)}).
                   </p>
                 </div>
 
@@ -438,7 +457,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     D. Peta Sebaran Titik KNMP Sumatra (Real GIS)
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Sumber: Peta interaktif Leaflet dengan titik koordinat asli `latitude` & `longitude` dari tabel `knmps` ({realTotalTitik} titik se-Sumatera).
+                    Sumber: Peta interaktif Leaflet dengan titik koordinat asli `latitude` & `longitude` dari tabel `knmps` ({reportData.gis_points.length} titik terplot se-Sumatera).
                   </p>
                 </div>
 
@@ -471,9 +490,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
               </div>
             </div>
           ) : (
-            /* ========================================================================= */
-            /* TAB 1: DOKUMEN CETAK UTAMA TEMPLATE LAPORAN MINGGUAN PPK (A3/A4)          */
-            /* ========================================================================= */
+            /* TAB 1: DOKUMEN CETAK UTAMA TEMPLATE LAPORAN MINGGUAN PPK (A3/A4) */
             <div
               className="mx-auto transition-transform duration-200 origin-top"
               style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: "top center" }}
@@ -513,9 +530,9 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                       PROGRAM KAMPUNG NELAYAN MERAH PUTIH (KNMP) – WILAYAH SUMATRA
                     </h2>
                     <div className="inline-flex items-center space-x-2 text-[11px] font-bold text-slate-700 bg-slate-100 px-3 py-0.5 rounded-full mt-1 border border-slate-200">
-                      <span>Laporan Minggu ke- <strong>{mingguKe}</strong></span>
+                      <span>Laporan Minggu ke- <strong>{reportData.minggu_ke}</strong></span>
                       <span>|</span>
-                      <span>Periode: <strong>{tglAwal}</strong> s.d. <strong>{tglAkhir} 2026</strong></span>
+                      <span>Periode: <strong>{reportData.tanggal_awal}</strong> s.d. <strong>{reportData.tanggal_akhir} {reportData.tahun_anggaran}</strong></span>
                     </div>
                   </div>
 
@@ -550,31 +567,31 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     <div className="text-[10px] space-y-1.5 text-slate-700 flex-1">
                       <div className="flex justify-between border-b border-slate-200 pb-0.5">
                         <span className="font-semibold text-slate-500">PPK</span>
-                        <span className="font-bold text-slate-900 text-right">{ppkName}</span>
+                        <span className="font-bold text-slate-900 text-right">{reportData.ppk_name}</span>
                       </div>
                       <div className="flex justify-between border-b border-slate-200 pb-0.5">
                         <span className="font-semibold text-slate-500">Wilayah</span>
-                        <span className="font-bold text-slate-900">SUMATRA</span>
+                        <span className="font-bold text-slate-900">{reportData.wilayah}</span>
                       </div>
                       <div className="flex justify-between border-b border-slate-200 pb-0.5">
                         <span className="font-semibold text-slate-500">Jumlah Lokasi (Titik)</span>
-                        <span className="font-bold text-blue-700">{realTotalTitik} Titik Nelayan</span>
+                        <span className="font-bold text-blue-700">{reportData.total_lokasi} Titik Nelayan</span>
                       </div>
                       <div className="flex justify-between border-b border-slate-200 pb-0.5">
                         <span className="font-semibold text-slate-500">Kontraktor Pelaksana</span>
-                        <span className="font-bold text-slate-900">32 Perusahaan Penyedia</span>
+                        <span className="font-bold text-slate-900">{reportData.total_kontraktor} Perusahaan Penyedia</span>
                       </div>
                       <div className="flex justify-between border-b border-slate-200 pb-0.5">
                         <span className="font-semibold text-slate-500">Sumber Pendanaan</span>
-                        <span className="font-bold text-slate-900">APBN</span>
+                        <span className="font-bold text-slate-900">{reportData.sumber_dana}</span>
                       </div>
                       <div className="flex justify-between border-b border-slate-200 pb-0.5">
                         <span className="font-semibold text-slate-500">Tahun Anggaran</span>
-                        <span className="font-bold text-slate-900">2026</span>
+                        <span className="font-bold text-slate-900">{reportData.tahun_anggaran}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-semibold text-slate-500">Tanggal Laporan</span>
-                        <span className="font-bold text-slate-900">{tglAkhir} 2026</span>
+                        <span className="font-bold text-slate-900">{reportData.tanggal_laporan}</span>
                       </div>
                     </div>
                   </div>
@@ -585,15 +602,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                       <span>B. RINGKASAN EKSEKUTIF</span>
                     </div>
                     <div className="text-[10px] text-slate-700 leading-relaxed space-y-1.5 flex-1">
-                      <p>
-                        Pada minggu ini, pelaksanaan Program KNMP Sumatra menunjukkan kemajuan positif dengan capaian fisik kumulatif sebesar <strong className="text-emerald-700">{realCapaianFisik}%</strong>.
-                      </p>
-                      <p>
-                        Sebanyak <strong>{realLokasiOnProgress}</strong> lokasi on progress, <strong>{realLokasiSelesai}</strong> lokasi selesai, dan <strong>{realLokasiPersiapan}</strong> lokasi masih dalam tahap persiapan. Terdapat <strong>{realIssues.length || 5}</strong> isu/kendala utama yang sedang ditindaklanjuti dengan solusi dan rencana aksi yang terencana.
-                      </p>
-                      <p className="text-slate-500 italic">
-                        Secara umum, pelaksanaan proyek berjalan sesuai rencana dengan komitmen menjaga mutu, K3, dan target waktu.
-                      </p>
+                      <p>{reportData.ringkasan_narasi}</p>
                     </div>
                   </div>
 
@@ -606,33 +615,33 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     <div className="grid grid-cols-3 gap-1.5 text-center">
                       <div className="p-1.5 bg-emerald-50 rounded-lg border border-emerald-200">
                         <div className="text-[8.5px] font-bold text-emerald-800 uppercase">CAPAIAN FISIK</div>
-                        <div className="text-base font-black text-emerald-700 mt-0.5">{realCapaianFisik}%</div>
+                        <div className="text-base font-black text-emerald-700 mt-0.5">{reportData.capaian_fisik_kumulatif}%</div>
                         <div className="text-[7.5px] text-slate-500">Target: 100%</div>
                       </div>
                       <div className="p-1.5 bg-blue-50 rounded-lg border border-blue-200">
                         <div className="text-[8.5px] font-bold text-blue-800 uppercase">ON PROGRESS</div>
-                        <div className="text-base font-black text-blue-700 mt-0.5">{realLokasiOnProgress}</div>
-                        <div className="text-[7.5px] text-slate-500">dari {realTotalTitik} lokasi</div>
+                        <div className="text-base font-black text-blue-700 mt-0.5">{reportData.lokasi_on_progress}</div>
+                        <div className="text-[7.5px] text-slate-500">dari {reportData.total_lokasi} lokasi</div>
                       </div>
                       <div className="p-1.5 bg-teal-50 rounded-lg border border-teal-200">
                         <div className="text-[8.5px] font-bold text-teal-800 uppercase">SELESAI</div>
-                        <div className="text-base font-black text-teal-700 mt-0.5">{realLokasiSelesai}</div>
-                        <div className="text-[7.5px] text-slate-500">dari {realTotalTitik} lokasi</div>
+                        <div className="text-base font-black text-teal-700 mt-0.5">{reportData.lokasi_selesai}</div>
+                        <div className="text-[7.5px] text-slate-500">dari {reportData.total_lokasi} lokasi</div>
                       </div>
                     </div>
 
                     <div className="text-[9.5px] space-y-1 bg-white p-2 rounded-lg border border-slate-200">
                       <div className="flex justify-between">
                         <span className="text-slate-500">NILAI KONTRAK:</span>
-                        <strong className="text-slate-900">{formatRupiah(realNilaiKontrak)}</strong>
+                        <strong className="text-slate-900">{formatRupiah(reportData.nilai_kontrak_kumulatif)}</strong>
                       </div>
                       <div className="flex justify-between text-blue-700 font-bold">
                         <span>REALISASI KEUANGAN:</span>
-                        <span>{formatRupiah(realRealisasiKeuangan)} ({realisasiKeuanganPct}%)</span>
+                        <span>{formatRupiah(reportData.realisasi_keuangan)} ({reportData.realisasi_keuangan_pct}%)</span>
                       </div>
                       <div className="flex justify-between text-slate-600 font-semibold">
                         <span>SISA ANGGARAN:</span>
-                        <span>{formatRupiah(sisaAnggaran)} ({sisaAnggaranPct}%)</span>
+                        <span>{formatRupiah(reportData.sisa_anggaran)} ({reportData.sisa_anggaran_pct}%)</span>
                       </div>
                     </div>
                   </div>
@@ -641,7 +650,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                   <div className="col-span-3 bg-slate-50 rounded-xl border border-slate-300 p-3 space-y-2 flex flex-col justify-between">
                     <div className="bg-[#002060] text-white text-[11px] font-black uppercase px-2.5 py-1 rounded tracking-wider flex items-center justify-between">
                       <span>D. PETA SEBARAN TITIK SUMATRA</span>
-                      <span className="text-[9px] font-normal lowercase">{realTotalTitik} real GIS</span>
+                      <span className="text-[9px] font-normal lowercase">{reportData.gis_points.length} real GIS points</span>
                     </div>
 
                     {/* Real Leaflet Map Container */}
@@ -687,44 +696,22 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">1</td>
-                          <td className="border border-slate-300 p-1 font-semibold">Persiapan & Administrasi</td>
-                          <td className="border border-slate-300 p-1 text-center">{realTotalTitik}</td>
-                          <td className="border border-slate-300 p-1 text-center">92%</td>
-                          <td className="border border-slate-300 p-1 text-center">4%</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold bg-blue-50">96.0%</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">2</td>
-                          <td className="border border-slate-300 p-1 font-semibold">Pekerjaan Fisik & Struktur</td>
-                          <td className="border border-slate-300 p-1 text-center">{realTotalTitik}</td>
-                          <td className="border border-slate-300 p-1 text-center">64%</td>
-                          <td className="border border-slate-300 p-1 text-center">6.8%</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold bg-blue-50">70.8%</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">3</td>
-                          <td className="border border-slate-300 p-1 font-semibold">Pengadaan & Distribusi Alat</td>
-                          <td className="border border-slate-300 p-1 text-center">{realTotalTitik}</td>
-                          <td className="border border-slate-300 p-1 text-center">58%</td>
-                          <td className="border border-slate-300 p-1 text-center">5.2%</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold bg-blue-50">63.2%</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">4</td>
-                          <td className="border border-slate-300 p-1 font-semibold">QC / Pengendalian Mutu</td>
-                          <td className="border border-slate-300 p-1 text-center">{realTotalTitik}</td>
-                          <td className="border border-slate-300 p-1 text-center">68%</td>
-                          <td className="border border-slate-300 p-1 text-center">4.5%</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold bg-blue-50">72.5%</td>
-                        </tr>
+                        {reportData.progress_rekap?.map((row) => (
+                          <tr key={row.no}>
+                            <td className="border border-slate-300 p-1 text-center">{row.no}</td>
+                            <td className="border border-slate-300 p-1 font-semibold">{row.uraian}</td>
+                            <td className="border border-slate-300 p-1 text-center">{row.lokasi}</td>
+                            <td className="border border-slate-300 p-1 text-center">{row.minggu_lalu}%</td>
+                            <td className="border border-slate-300 p-1 text-center">{row.minggu_ini}%</td>
+                            <td className="border border-slate-300 p-1 text-center font-bold bg-blue-50">{row.kumulatif}%</td>
+                          </tr>
+                        ))}
                         <tr className="bg-slate-100 font-black text-slate-900">
                           <td colSpan={2} className="border border-slate-300 p-1 text-center">RATA-RATA TOTAL</td>
-                          <td className="border border-slate-300 p-1 text-center">{realTotalTitik}</td>
-                          <td className="border border-slate-300 p-1 text-center">67.3%</td>
-                          <td className="border border-slate-300 p-1 text-center">5.15%</td>
-                          <td className="border border-slate-300 p-1 text-center text-blue-700 bg-blue-100">{realCapaianFisik}%</td>
+                          <td className="border border-slate-300 p-1 text-center">{reportData.total_lokasi}</td>
+                          <td className="border border-slate-300 p-1 text-center">{reportData.progress_total_lalu}%</td>
+                          <td className="border border-slate-300 p-1 text-center">{reportData.progress_total_ini}%</td>
+                          <td className="border border-slate-300 p-1 text-center text-blue-700 bg-blue-100">{reportData.progress_total_kumulatif}%</td>
                         </tr>
                       </tbody>
                     </table>
@@ -747,37 +734,18 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">1</td>
-                          <td className="border border-slate-300 p-1 font-semibold text-emerald-700">🟢 Selesai (100%)</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold">{realLokasiSelesai}</td>
-                          <td className="border border-slate-300 p-1 text-center">{((realLokasiSelesai/realTotalTitik)*100).toFixed(1)}%</td>
-                          <td className="border border-slate-300 p-1 text-[8.5px] text-slate-500">Siap PHO</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">2</td>
-                          <td className="border border-slate-300 p-1 font-semibold text-blue-700">🔵 On Progress</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold">{realLokasiOnProgress}</td>
-                          <td className="border border-slate-300 p-1 text-center">{((realLokasiOnProgress/realTotalTitik)*100).toFixed(1)}%</td>
-                          <td className="border border-slate-300 p-1 text-[8.5px] text-slate-500">Konstruksi aktif</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">3</td>
-                          <td className="border border-slate-300 p-1 font-semibold text-amber-700">🟡 Dalam Persiapan</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold">{realLokasiPersiapan}</td>
-                          <td className="border border-slate-300 p-1 text-center">{((realLokasiPersiapan/realTotalTitik)*100).toFixed(1)}%</td>
-                          <td className="border border-slate-300 p-1 text-[8.5px] text-slate-500">Mobilisasi/PCM</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">4</td>
-                          <td className="border border-slate-300 p-1 font-semibold text-red-700">🔴 Tertunda / Masalah</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold">{realLokasiTertunda}</td>
-                          <td className="border border-slate-300 p-1 text-center">{((realLokasiTertunda/realTotalTitik)*100).toFixed(1)}%</td>
-                          <td className="border border-slate-300 p-1 text-[8.5px] text-slate-500">Mitigasi cuaca/lahan</td>
-                        </tr>
+                        {reportData.rekap_lokasi?.map((row) => (
+                          <tr key={row.no}>
+                            <td className="border border-slate-300 p-1 text-center">{row.no}</td>
+                            <td className="border border-slate-300 p-1 font-semibold">{row.status}</td>
+                            <td className="border border-slate-300 p-1 text-center font-bold">{row.jumlah}</td>
+                            <td className="border border-slate-300 p-1 text-center">{row.persentase}%</td>
+                            <td className="border border-slate-300 p-1 text-[8.5px] text-slate-500">{row.keterangan}</td>
+                          </tr>
+                        ))}
                         <tr className="bg-slate-100 font-black text-slate-900">
                           <td colSpan={2} className="border border-slate-300 p-1 text-center">TOTAL</td>
-                          <td className="border border-slate-300 p-1 text-center">{realTotalTitik}</td>
+                          <td className="border border-slate-300 p-1 text-center">{reportData.total_lokasi}</td>
                           <td className="border border-slate-300 p-1 text-center">100%</td>
                           <td className="border border-slate-300 p-1 text-[8.5px]">Se-Sumatera</td>
                         </tr>
@@ -792,55 +760,20 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </div>
 
                     <div className="space-y-2 text-[9.5px]">
-                      <div>
-                        <div className="flex justify-between font-bold text-slate-800 mb-0.5">
-                          <span>🏢 A. Infrastruktur Darat</span>
-                          <span className="text-emerald-700">78,45%</span>
+                      {reportData.progress_klaster?.map((klaster) => (
+                        <div key={klaster.code}>
+                          <div className="flex justify-between font-bold text-slate-800 mb-0.5">
+                            <span>{klaster.code}. {klaster.name}</span>
+                            <span className="text-blue-700">{klaster.progress}%</span>
+                          </div>
+                          <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                            <div
+                              className="bg-blue-600 h-full rounded-full transition-all"
+                              style={{ width: `${klaster.progress}%` }}
+                            ></div>
+                          </div>
                         </div>
-                        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                          <div className="bg-emerald-600 h-full rounded-full" style={{ width: "78.45%" }}></div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between font-bold text-slate-800 mb-0.5">
-                          <span>⛵ B. Infrastruktur Laut</span>
-                          <span className="text-blue-700">71,32%</span>
-                        </div>
-                        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                          <div className="bg-blue-600 h-full rounded-full" style={{ width: "71.32%" }}></div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between font-bold text-slate-800 mb-0.5">
-                          <span>⚙️ C. Sarana & Prasarana Produksi</span>
-                          <span className="text-purple-700">65,18%</span>
-                        </div>
-                        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                          <div className="bg-purple-600 h-full rounded-full" style={{ width: "65.18%" }}></div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between font-bold text-slate-800 mb-0.5">
-                          <span>🏪 D. Sarana Pendukung & UMKM</span>
-                          <span className="text-amber-700">58,90%</span>
-                        </div>
-                        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                          <div className="bg-amber-500 h-full rounded-full" style={{ width: "58.90%" }}></div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between font-bold text-slate-800 mb-0.5">
-                          <span>👥 E. Penguatan Kelembagaan & Sosial</span>
-                          <span className="text-teal-700">63,27%</span>
-                        </div>
-                        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                          <div className="bg-teal-600 h-full rounded-full" style={{ width: "63.27%" }}></div>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -864,46 +797,22 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        {realIssues.length > 0 ? (
-                          realIssues.slice(0, 3).map((iss, idx) => (
-                            <tr key={iss.id || idx}>
-                              <td className="border border-slate-300 p-1 text-center">{idx + 1}</td>
-                              <td className="border border-slate-300 p-1 font-semibold truncate max-w-[100px]">{iss.deskripsi_kendala || iss.nama}</td>
-                              <td className="border border-slate-300 p-1 truncate max-w-[80px]">{iss.lokasi || "Sumatera"}</td>
-                              <td className="border border-slate-300 p-1 truncate max-w-[80px]">{iss.penyebab || "Faktor Cuaca/Logistik"}</td>
-                              <td className="border border-slate-300 p-1 text-center font-bold">
-                                {iss.tingkat_kendala === "berat" || iss.tingkat_kendala === "tinggi" ? (
-                                  <span className="text-red-600">🔴 Tinggi</span>
-                                ) : (
-                                  <span className="text-amber-600">🟡 Sedang</span>
-                                )}
-                              </td>
+                        {reportData.issues && reportData.issues.length > 0 ? (
+                          reportData.issues.map((iss) => (
+                            <tr key={iss.no}>
+                              <td className="border border-slate-300 p-1 text-center">{iss.no}</td>
+                              <td className="border border-slate-300 p-1 font-semibold truncate max-w-[100px]">{iss.deskripsi}</td>
+                              <td className="border border-slate-300 p-1 truncate max-w-[80px]">{iss.lokasi}</td>
+                              <td className="border border-slate-300 p-1 truncate max-w-[80px]">{iss.penyebab}</td>
+                              <td className="border border-slate-300 p-1 text-center font-bold">{iss.tingkat_risiko}</td>
                             </tr>
                           ))
                         ) : (
-                          <>
-                            <tr>
-                              <td className="border border-slate-300 p-1 text-center">1</td>
-                              <td className="border border-slate-300 p-1 font-semibold">Cuaca Gelombang Tinggi</td>
-                              <td className="border border-slate-300 p-1">Aceh Besar & Nias</td>
-                              <td className="border border-slate-300 p-1">Musim Angin Barat</td>
-                              <td className="border border-slate-300 p-1 text-center text-red-600 font-bold">🔴 Tinggi</td>
-                            </tr>
-                            <tr>
-                              <td className="border border-slate-300 p-1 text-center">2</td>
-                              <td className="border border-slate-300 p-1 font-semibold">Keterlambatan Pasokan Tiang</td>
-                              <td className="border border-slate-300 p-1">Pesisir Barat Lampung</td>
-                              <td className="border border-slate-300 p-1">Jalur Kapal Logistik</td>
-                              <td className="border border-slate-300 p-1 text-center text-amber-600 font-bold">🟡 Sedang</td>
-                            </tr>
-                            <tr>
-                              <td className="border border-slate-300 p-1 text-center">3</td>
-                              <td className="border border-slate-300 p-1 font-semibold">Izin Akses Lahan Tambat</td>
-                              <td className="border border-slate-300 p-1">Belawan Sumut</td>
-                              <td className="border border-slate-300 p-1">Batas Sempadan Pantai</td>
-                              <td className="border border-slate-300 p-1 text-center text-amber-600 font-bold">🟡 Sedang</td>
-                            </tr>
-                          </>
+                          <tr>
+                            <td colSpan={5} className="border border-slate-300 p-3 text-center text-slate-400 italic">
+                              Tidak ada kendala aktif yang tercatat pada database.
+                            </td>
+                          </tr>
                         )}
                       </tbody>
                     </table>
@@ -926,40 +835,22 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        {realIssues.length > 0 ? (
-                          realIssues.slice(0, 3).map((iss, idx) => (
-                            <tr key={iss.id || idx}>
-                              <td className="border border-slate-300 p-1 text-center">{idx + 1}</td>
-                              <td className="border border-slate-300 p-1 truncate max-w-[120px]">{iss.rencana_mitigasi || "Penyesuaian jadwal lapangan"}</td>
-                              <td className="border border-slate-300 p-1">{iss.pic || "Site Eng"}</td>
-                              <td className="border border-slate-300 p-1">{iss.target_selesai ? iss.target_selesai.split("T")[0] : "10 Sept"}</td>
-                              <td className="border border-slate-300 p-1 text-center font-bold text-blue-700">{iss.status || "On Progress"}</td>
+                        {reportData.issues && reportData.issues.length > 0 ? (
+                          reportData.issues.map((iss) => (
+                            <tr key={iss.no}>
+                              <td className="border border-slate-300 p-1 text-center">{iss.no}</td>
+                              <td className="border border-slate-300 p-1 truncate max-w-[120px]">{iss.rencana_mitigasi}</td>
+                              <td className="border border-slate-300 p-1">{iss.pic}</td>
+                              <td className="border border-slate-300 p-1">{iss.target_selesai}</td>
+                              <td className="border border-slate-300 p-1 text-center font-bold text-blue-700">{iss.status}</td>
                             </tr>
                           ))
                         ) : (
-                          <>
-                            <tr>
-                              <td className="border border-slate-300 p-1 text-center">1</td>
-                              <td className="border border-slate-300 p-1">Penyesuaian jam kerja pasang-surut</td>
-                              <td className="border border-slate-300 p-1">Site Engineer</td>
-                              <td className="border border-slate-300 p-1">10 Sept</td>
-                              <td className="border border-slate-300 p-1 text-center font-bold text-blue-700">On Progress</td>
-                            </tr>
-                            <tr>
-                              <td className="border border-slate-300 p-1 text-center">2</td>
-                              <td className="border border-slate-300 p-1">Pengalihan supplier beton lokal alternatif</td>
-                              <td className="border border-slate-300 p-1">Logistik</td>
-                              <td className="border border-slate-300 p-1">08 Sept</td>
-                              <td className="border border-slate-300 p-1 text-center font-bold text-blue-700">On Progress</td>
-                            </tr>
-                            <tr>
-                              <td className="border border-slate-300 p-1 text-center">3</td>
-                              <td className="border border-slate-300 p-1">Fasilitasi mediasi dinas & kepala desa</td>
-                              <td className="border border-slate-300 p-1">PPK / Pengawas</td>
-                              <td className="border border-slate-300 p-1">12 Sept</td>
-                              <td className="border border-slate-300 p-1 text-center font-bold text-amber-700">Dalam Proses</td>
-                            </tr>
-                          </>
+                          <tr>
+                            <td colSpan={5} className="border border-slate-300 p-3 text-center text-slate-400 italic">
+                              Tidak ada rencana aksi tindak lanjut yang tercatat.
+                            </td>
+                          </tr>
                         )}
                       </tbody>
                     </table>
@@ -980,26 +871,13 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">1</td>
-                          <td className="border border-slate-300 p-1">Pengecoran lantai dermaga & balok pengikat</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold text-emerald-700">+ 4.50%</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">2</td>
-                          <td className="border border-slate-300 p-1">Pemasangan atap & instalasi solar panel ice maker</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold text-emerald-700">+ 3.20%</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">3</td>
-                          <td className="border border-slate-300 p-1">Inspeksi mutu beton bersama Konsultan Pengawas</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold text-emerald-700">100% Ceklis</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-300 p-1 text-center">4</td>
-                          <td className="border border-slate-300 p-1">Distribusi mesin pendingin ke 15 titik nelayan</td>
-                          <td className="border border-slate-300 p-1 text-center font-bold text-emerald-700">+ 2.80%</td>
-                        </tr>
+                        {reportData.work_plans?.map((plan) => (
+                          <tr key={plan.no}>
+                            <td className="border border-slate-300 p-1 text-center">{plan.no}</td>
+                            <td className="border border-slate-300 p-1 truncate max-w-[140px]">{plan.uraian}</td>
+                            <td className="border border-slate-300 p-1 text-center font-bold text-emerald-700">+{plan.target}%</td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -1014,18 +892,11 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     </div>
 
                     <div className="grid grid-cols-6 gap-2">
-                      {[
-                        { title: "Infrastruktur Darat", img: realPhotos[0]?.file_url || "/assets/img/simandor.png" },
-                        { title: "Infrastruktur Laut", img: realPhotos[1]?.file_url || "/assets/img/simandor.png" },
-                        { title: "Sarana Produksi", img: realPhotos[2]?.file_url || "/assets/img/simandor.png" },
-                        { title: "Sarana Pendukung", img: realPhotos[3]?.file_url || "/assets/img/simandor.png" },
-                        { title: "Pengadaan/Distribusi", img: realPhotos[4]?.file_url || "/assets/img/simandor.png" },
-                        { title: "Rapat Lapangan", img: realPhotos[5]?.file_url || "/assets/img/simandor.png" },
-                      ].map((item, idx) => (
+                      {reportData.photos?.map((item, idx) => (
                         <div key={idx} className="space-y-1 text-center">
                           <div className="h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-300 flex items-center justify-center">
                             <img
-                              src={item.img}
+                              src={item.file_url}
                               alt={item.title}
                               className="w-full h-full object-cover"
                               onError={(e) => {
@@ -1050,19 +921,19 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     <div className="text-[9.5px] space-y-1.5 text-slate-700 bg-white p-2 rounded-lg border border-slate-200">
                       <div className="flex justify-between items-center">
                         <span className="flex items-center gap-1">⚠️ Kecelakaan Kerja:</span>
-                        <strong className="text-emerald-700">0 Kejadian</strong>
+                        <strong className="text-emerald-700">{reportData.k3_kecelakaan} Kejadian</strong>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="flex items-center gap-1">⚠️ Near Miss:</span>
-                        <strong className="text-emerald-700">0 Kejadian</strong>
+                        <strong className="text-emerald-700">{reportData.k3_near_miss} Kejadian</strong>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="flex items-center gap-1">👷 Pelatihan K3:</span>
-                        <strong className="text-blue-700">12 Kegiatan</strong>
+                        <strong className="text-blue-700">{reportData.k3_pelatihan} Kegiatan</strong>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="flex items-center gap-1">🛡️ Kepatuhan APD:</span>
-                        <strong className="text-emerald-700">98.5%</strong>
+                        <strong className="text-emerald-700">{reportData.k3_kepatuhan_apd}%</strong>
                       </div>
                     </div>
                   </div>
@@ -1077,14 +948,14 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                       <div>
                         <p className="font-semibold text-slate-600">PPK KNMP SUMATRA</p>
                         <div className="h-10"></div>
-                        <p className="font-bold text-slate-900 underline">{ppkName}</p>
-                        <p className="text-[7.5px] text-slate-500">NIP: {ppkNip}</p>
+                        <p className="font-bold text-slate-900 underline">{reportData.ppk_name}</p>
+                        <p className="text-[7.5px] text-slate-500">NIP: {reportData.ppk_nip}</p>
                       </div>
                       <div>
                         <p className="font-semibold text-slate-600">Kepala Dinas KP Provinsi</p>
                         <div className="h-10"></div>
-                        <p className="font-bold text-slate-900 underline">{kadisName}</p>
-                        <p className="text-[7.5px] text-slate-500">NIP: {kadisNip}</p>
+                        <p className="font-bold text-slate-900 underline">{reportData.kadis_name}</p>
+                        <p className="text-[7.5px] text-slate-500">NIP: {reportData.kadis_nip}</p>
                       </div>
                     </div>
                   </div>
@@ -1099,7 +970,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     "Bersinergi Membangun Desa Pesisir, Ekonomi Naik, Nelayan Sejahtera"
                   </div>
                   <div className="font-mono font-bold text-slate-600">
-                    Versi 1.0 – 2026
+                    Versi 1.0 – {reportData.tahun_anggaran}
                   </div>
                 </div>
               </div>
