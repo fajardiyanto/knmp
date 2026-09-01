@@ -48,7 +48,7 @@ export const NewGroupModal: React.FC<NewGroupModalProps> = ({
 
   const getRoleColor = (roleName?: string) => {
     const r = (roleName || "").toLowerCase();
-    if (r.includes("superadmin") || r.includes("admin")) {
+    if (r.includes("superadmin") || r.includes("super_admin") || r.includes("admin")) {
       return "bg-purple-50 text-purple-700 border-purple-200/80";
     }
     if (r.includes("pengawas") || r.includes("ppk")) {

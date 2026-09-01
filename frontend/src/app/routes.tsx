@@ -40,16 +40,8 @@ import {
 import { useAuth } from "../features/auth/hooks/useAuth";
 
 const RootRedirect: React.FC = () => {
-  const { user } = useAuth();
-  const isManagement = user?.roles?.some((r) => {
-    const lower = r.toLowerCase();
-    return (
-      lower.includes("super") ||
-      lower.includes("admin") ||
-      lower.includes("ppk") ||
-      lower.includes("pengawas")
-    );
-  });
+  const { user, hasPermission } = useAuth();
+  const isManagement = user?.permissions?.includes("*") || hasPermission("dashboard");
   return <Navigate to={isManagement ? "/dashboard" : "/pelaksanaan"} replace />;
 };
 
@@ -127,7 +119,7 @@ export const AppRoutes: React.FC = () => {
         <Route
           path="dashboard"
           element={
-            <ProtectedRoute requiredRoles={["superadmin", "super admin", "admin_ppk", "admin", "pengawas", "wakil_ppk", "wakil ppk", "ppk"]}>
+            <ProtectedRoute requiredPermission="dashboard">
               <DashboardPage />
             </ProtectedRoute>
           }

@@ -75,7 +75,9 @@ export const AVAILABLE_MENUS: MenuItemOption[] = [
 
 export const DEFAULT_ROLE_MENUS: Record<string, string[]> = {
   superadmin: AVAILABLE_MENUS.map((m) => m.key),
+  super_admin: AVAILABLE_MENUS.map((m) => m.key),
   "super admin": AVAILABLE_MENUS.map((m) => m.key),
+  admin_ppk: AVAILABLE_MENUS.map((m) => m.key),
   Admin_ppk: AVAILABLE_MENUS.map((m) => m.key),
   Pengawas: [
     "dashboard",
@@ -106,6 +108,14 @@ export const DEFAULT_ROLE_MENUS: Record<string, string[]> = {
   ],
 };
 
+const normalizeRoleValue = (roleName?: string) => {
+  const role = (roleName || "admin_ppk").trim().toLowerCase();
+  if (role === "admin ppk") return "admin_ppk";
+  if (role === "superadmin" || role === "super admin") return "super_admin";
+  if (role === "wakil ppk") return "wakil_ppk";
+  return role;
+};
+
 export const UsersPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { showAlert, showConfirm } = useAlert();
@@ -124,9 +134,9 @@ export const UsersPage: React.FC = () => {
     name: "",
     email: "",
     password: "",
-    role: "Admin_ppk",
+    role: "admin_ppk",
     knmp_id: "",
-    permissions: DEFAULT_ROLE_MENUS["Admin_ppk"] || [],
+    permissions: DEFAULT_ROLE_MENUS["admin_ppk"] || [],
   });
 
   // 1. Fetch Users List
@@ -170,7 +180,8 @@ export const UsersPage: React.FC = () => {
           { id: 2, name: "PPK" },
           { id: 3, name: "Pengawas" },
           { id: 4, name: "Admin_ppk" },
-          { id: 5, name: "Kontraktor" },
+          { id: 5, name: "super_admin" },
+          { id: 6, name: "Kontraktor" },
         ];
       }
     },
@@ -182,7 +193,7 @@ export const UsersPage: React.FC = () => {
       const body: any = {
         name: payload.name,
         email: payload.email,
-        role: payload.role,
+        role: normalizeRoleValue(payload.role),
         knmp_ids: payload.knmp_id ? [Number(payload.knmp_id)] : [],
         permissions: payload.permissions,
       };
@@ -250,20 +261,20 @@ export const UsersPage: React.FC = () => {
       name: "",
       email: "",
       password: "",
-      role: "Kontraktor",
+      role: "admin_ppk",
       knmp_id: "",
-      permissions: DEFAULT_ROLE_MENUS["Kontraktor"] || [],
+      permissions: DEFAULT_ROLE_MENUS["admin_ppk"] || [],
     });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (item: UserItem) => {
     setEditingItem(item);
-    const role = item.role_name || item.roles?.[0] || "Kontraktor";
+    const role = normalizeRoleValue(item.role_name || item.roles?.[0]);
     const initialPermissions =
       item.permissions && item.permissions.length > 0
         ? item.permissions
-        : DEFAULT_ROLE_MENUS[role] || DEFAULT_ROLE_MENUS["Kontraktor"] || [];
+        : DEFAULT_ROLE_MENUS[role] || DEFAULT_ROLE_MENUS["admin_ppk"] || [];
 
     setFormData({
       name: item.name,
@@ -303,7 +314,8 @@ export const UsersPage: React.FC = () => {
 
   const handleResetToRolePermissions = (roleName?: string) => {
     const targetRole = roleName || formData.role;
-    const defaults = DEFAULT_ROLE_MENUS[targetRole] || DEFAULT_ROLE_MENUS["Kontraktor"] || [];
+    const normalizedRole = normalizeRoleValue(targetRole);
+    const defaults = DEFAULT_ROLE_MENUS[normalizedRole] || DEFAULT_ROLE_MENUS["admin_ppk"] || [];
     setFormData((prev) => ({
       ...prev,
       permissions: [...defaults],
@@ -333,7 +345,14 @@ export const UsersPage: React.FC = () => {
   const currentData = filteredData.slice(startIndex, startIndex + perPage);
 
   const getRoleBadge = (roleName?: string) => {
-    const r = (roleName || "Kontraktor").toLowerCase();
+    const r = (roleName || "Admin_ppk").toLowerCase();
+    if (r.includes("super")) {
+      return (
+        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-600 border border-violet-200">
+          Super Admin
+        </span>
+      );
+    }
     if (r.includes("pengawas")) {
       return (
         <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">
@@ -348,7 +367,7 @@ export const UsersPage: React.FC = () => {
         </span>
       );
     }
-    // PPK, Wakil PPK, Admin_ppk, admin, superadmin → semua tampil sebagai Admin
+    // PPK, Wakil PPK, Admin_ppk, admin -> semua tampil sebagai Admin
     return (
       <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
         Admin
@@ -386,9 +405,10 @@ export const UsersPage: React.FC = () => {
             className="w-full lg:w-auto px-3.5 py-2.5 text-[13.5px] bg-white border border-slate-200 rounded-xl outline-none text-slate-700 sm:min-w-[140px]"
           >
             <option value="">Role</option>
-            <option value="Admin_ppk">Admin</option>
-            <option value="Pengawas">Pengawas</option>
-            <option value="Kontraktor">Kontraktor</option>
+            <option value="super_admin">Super Admin</option>
+            <option value="admin_ppk">Admin</option>
+            <option value="pengawas">Pengawas</option>
+            <option value="kontraktor">Kontraktor</option>
           </select>
         </div>
 
@@ -660,14 +680,15 @@ export const UsersPage: React.FC = () => {
                           setFormData({
                             ...formData,
                             role: newRole,
-                            permissions: DEFAULT_ROLE_MENUS[newRole] || formData.permissions,
+                            permissions: DEFAULT_ROLE_MENUS[normalizeRoleValue(newRole)] || formData.permissions,
                           });
                         }}
                         className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700 font-medium"
                       >
-                        <option value="Admin_ppk">Admin</option>
-                        <option value="Pengawas">Pengawas</option>
-                        <option value="Kontraktor">Kontraktor</option>
+                        <option value="super_admin">Super Admin</option>
+                        <option value="admin_ppk">Admin</option>
+                        <option value="pengawas">Pengawas</option>
+                        <option value="kontraktor">Kontraktor</option>
                       </select>
                     </div>
 

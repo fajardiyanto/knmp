@@ -103,10 +103,10 @@ func RequirePermission(requiredPerms ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userPerms, _ := c.Locals(CtxUserPermsKey).([]string)
 
-		// Superadmin & Admin bypass
+		// Super admin bypass
 		userRoles, _ := c.Locals(CtxUserRolesKey).([]string)
 		for _, r := range userRoles {
-			if domain.IsAdminRole(r) {
+			if domain.IsSuperAdminRole(r) {
 				return c.Next()
 			}
 		}
@@ -122,21 +122,6 @@ func RequirePermission(requiredPerms ...string) fiber.Handler {
 		for _, req := range requiredPerms {
 			reqLower := strings.ToLower(strings.TrimSpace(req))
 			if permMap[req] || permMap[reqLower] || permMap["*"] {
-				return c.Next()
-			}
-		}
-
-		// Default allow for read endpoints (e.g. laporan_read, knmp_read) if user is authenticated with a valid role
-		if len(userRoles) > 0 {
-			allRead := true
-			for _, req := range requiredPerms {
-				reqLower := strings.ToLower(strings.TrimSpace(req))
-				if !strings.HasSuffix(reqLower, "_read") && reqLower != "laporan_read" && reqLower != "knmp_read" && reqLower != "dashboard_read" {
-					allRead = false
-					break
-				}
-			}
-			if allRead {
 				return c.Next()
 			}
 		}
@@ -157,8 +142,7 @@ func RequireRole(requiredRoles ...string) fiber.Handler {
 		}
 
 		for _, ur := range userRoles {
-			lower := strings.ToLower(strings.TrimSpace(ur))
-			if lower == "superadmin" || lower == "super admin" {
+			if domain.IsSuperAdminRole(ur) {
 				return c.Next()
 			}
 			for _, rr := range requiredRoles {

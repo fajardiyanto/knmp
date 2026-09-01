@@ -144,26 +144,40 @@ func (r *userRepo) GetUserRoles(ctx context.Context, userID int64) ([]string, er
 
 func (r *userRepo) GetUserPermissions(ctx context.Context, userID int64) ([]string, error) {
 	var permissions []string
+	directQuery := `
+		SELECT DISTINCT p.name FROM permissions p
+		JOIN model_has_permissions mhp ON p.id = mhp.permission_id
+		WHERE mhp.model_id = $1
+		ORDER BY p.name
+	`
+	if err := r.db.SelectContext(ctx, &permissions, directQuery, userID); err == nil && len(permissions) > 0 {
+		return permissions, nil
+	}
+
+	var userRoles []string
+	rolesQuery := `
+		SELECT r.name FROM roles r
+		JOIN model_has_roles mhr ON r.id = mhr.role_id
+		WHERE mhr.model_id = $1
+	`
+	if err := r.db.SelectContext(ctx, &userRoles, rolesQuery, userID); err == nil {
+		for _, role := range userRoles {
+			if domain.IsAdminRole(role) && !domain.IsSuperAdminRole(role) {
+				return []string{}, nil
+			}
+		}
+	}
+
 	query := `
 		SELECT DISTINCT p.name FROM permissions p
 		JOIN role_has_permissions rhp ON p.id = rhp.permission_id
 		JOIN model_has_roles mhr ON rhp.role_id = mhr.role_id
 		WHERE mhr.model_id = $1
-		UNION
-		SELECT DISTINCT p.name FROM permissions p
-		JOIN model_has_permissions mhp ON p.id = mhp.permission_id
-		WHERE mhp.model_id = $1
+		ORDER BY p.name
 	`
 	err := r.db.SelectContext(ctx, &permissions, query, userID)
 	if err != nil {
-		// Fallback if model_has_permissions is not yet queried
-		fallbackQuery := `
-			SELECT DISTINCT p.name FROM permissions p
-			JOIN role_has_permissions rhp ON p.id = rhp.permission_id
-			JOIN model_has_roles mhr ON rhp.role_id = mhr.role_id
-			WHERE mhr.model_id = $1
-		`
-		_ = r.db.SelectContext(ctx, &permissions, fallbackQuery, userID)
+		return []string{}, nil
 	}
 	return permissions, nil
 }
@@ -180,7 +194,13 @@ func (r *userRepo) GetUserKnmpIDs(ctx context.Context, userID int64) ([]int64, e
 
 func (r *userRepo) AssignRole(ctx context.Context, userID int64, roleName string) error {
 	var roleID int64
-	err := r.db.GetContext(ctx, &roleID, `SELECT id FROM roles WHERE name = $1`, roleName)
+	err := r.db.GetContext(ctx, &roleID, `
+		SELECT id
+		FROM roles
+		WHERE LOWER(name) = LOWER($1)
+		ORDER BY CASE WHEN name = $1 THEN 0 ELSE 1 END, id
+		LIMIT 1
+	`, roleName)
 	if err != nil {
 		return fmt.Errorf("role %s not found: %w", roleName, err)
 	}

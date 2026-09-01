@@ -94,7 +94,7 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   const isAdminOrPengawas = user?.roles?.some((r) =>
-    ["superadmin", "super admin", "admin_ppk", "admin", "pengawas"].includes(r.toLowerCase())
+    ["superadmin", "super_admin", "super admin", "admin_ppk", "admin", "pengawas"].includes(r.toLowerCase())
   ) || false;
 
   const [selectedDetailKnmp, setSelectedDetailKnmp] = useState<any | null>(null);

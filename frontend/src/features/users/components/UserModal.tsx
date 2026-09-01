@@ -19,7 +19,7 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, initialDa
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("kontraktor");
+  const [role, setRole] = useState("admin_ppk");
   const [selectedKnmpIds, setSelectedKnmpIds] = useState<number[]>([]);
 
   useEffect(() => {
@@ -27,13 +27,13 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, initialDa
       setName(initialData.name);
       setEmail(initialData.email);
       setPassword("");
-      setRole(initialData.roles?.[0] || "kontraktor");
+      setRole(initialData.roles?.[0] || "admin_ppk");
       setSelectedKnmpIds(initialData.knmp_ids || []);
     } else {
       setName("");
       setEmail("");
       setPassword("");
-      setRole("kontraktor");
+      setRole("admin_ppk");
       setSelectedKnmpIds([]);
     }
   }, [initialData, isOpen]);

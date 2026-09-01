@@ -967,6 +967,7 @@ VALUES
 ('PPK', 'api', NOW(), NOW()),
 ('Pengawas', 'api', NOW(), NOW()),
 ('Admin_ppk', 'api', NOW(), NOW()),
+('super_admin', 'api', NOW(), NOW()),
 ('Kontraktor', 'api', NOW(), NOW())
 ON CONFLICT (name) DO NOTHING;
 
@@ -991,15 +992,15 @@ INSERT INTO model_has_roles (role_id, model_type, model_id)
 SELECT r.id, 'App\\Models\\User', u.id
 FROM users u
 JOIN roles r ON (
-    (u.email = 'superadmin@gmail.com' AND r.name = 'SuperAdmin') OR
+    (u.email = 'superadmin@gmail.com' AND r.name = 'super_admin') OR
     (u.email = 'admin_ppk@gmail.com' AND r.name = 'Admin_ppk') OR
     (u.email = 'admin@gmail.com' AND r.name = 'Admin_ppk') OR
     (u.email = 'wakil_ppk@gmail.com' AND r.name = 'Wakil PPK') OR
     (u.email = 'ppk@gmail.com' AND r.name = 'PPK') OR
     (u.email = 'pengawas@gmail.com' AND r.name = 'Pengawas') OR
-    (u.email = 'kontraktor@gmail.com' AND r.name = 'Kontraktor') OR
+    (u.email = 'kontraktor@gmail.com' AND r.name = 'Admin_ppk') OR
     (u.email = 'wakildemo@gmail.com' AND r.name = 'Wakil PPK') OR
-    (u.email = 'hello@gmail.com' AND r.name = 'Kontraktor')
+    (u.email = 'hello@gmail.com' AND r.name = 'Admin_ppk')
 )
 ON CONFLICT (role_id, model_id, model_type) DO NOTHING;
 

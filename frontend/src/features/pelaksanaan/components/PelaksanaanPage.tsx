@@ -61,7 +61,7 @@ export const PelaksanaanPage: React.FC = () => {
   const { user } = useAuth();
 
   const isAdminOrPengawas = user?.roles?.some((r) =>
-    ["superadmin", "super admin", "admin_ppk", "admin", "pengawas"].includes(r.toLowerCase())
+    ["superadmin", "super_admin", "super admin", "admin_ppk", "admin", "pengawas"].includes(r.toLowerCase())
   );
   const defaultUserKnmpId = user?.knmp_ids?.[0]?.toString() || "";
 

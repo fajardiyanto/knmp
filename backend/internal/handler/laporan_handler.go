@@ -42,7 +42,7 @@ func (h *LaporanHandler) List(c *fiber.Ctx) error {
 	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
 	isGlobal := false
 	for _, r := range userRoles {
-		if r == "superadmin" || r == "admin_ppk" || r == "ppk" {
+		if domain.IsSuperAdminRole(r) {
 			isGlobal = true
 			break
 		}
@@ -55,6 +55,8 @@ func (h *LaporanHandler) List(c *fiber.Ctx) error {
 		}
 		if userKnmpIDs, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(userKnmpIDs) > 0 {
 			filter.UserKnmpIDs = userKnmpIDs
+		} else {
+			filter.UserKnmpIDs = []int64{-1}
 		}
 	}
 
@@ -86,19 +88,19 @@ type LaporanDetailInput struct {
 }
 
 type CreateLaporanRequest struct {
-	PelaksanaanID        int64                `json:"pelaksanaan_id" validate:"required"`
-	Nama                 string               `json:"nama" validate:"required"`
-	Tanggal              string               `json:"tanggal" validate:"required"`
-	JenisLaporan         string               `json:"jenis_laporan" validate:"required"` // 'harian', 'mingguan', 'bulanan'
-	Keberapa             *int                 `json:"keberapa"`
-	Cuaca                *string              `json:"cuaca"`
-	JumlahTenagaKerja    int                  `json:"jumlah_tenaga_kerja"`
-	RencanaProgresFisik  float64              `json:"rencana_progres_fisik"`
+	PelaksanaanID         int64                `json:"pelaksanaan_id" validate:"required"`
+	Nama                  string               `json:"nama" validate:"required"`
+	Tanggal               string               `json:"tanggal" validate:"required"`
+	JenisLaporan          string               `json:"jenis_laporan" validate:"required"` // 'harian', 'mingguan', 'bulanan'
+	Keberapa              *int                 `json:"keberapa"`
+	Cuaca                 *string              `json:"cuaca"`
+	JumlahTenagaKerja     int                  `json:"jumlah_tenaga_kerja"`
+	RencanaProgresFisik   float64              `json:"rencana_progres_fisik"`
 	RealisasiProgresFisik float64              `json:"realisasi_progres_fisik"`
-	Lat                  *string              `json:"lat"`
-	Long                 *string              `json:"long"`
-	Keterangan           *string              `json:"keterangan"`
-	JenisBangunanDetails []LaporanDetailInput `json:"jenis_bangunan_details"`
+	Lat                   *string              `json:"lat"`
+	Long                  *string              `json:"long"`
+	Keterangan            *string              `json:"keterangan"`
+	JenisBangunanDetails  []LaporanDetailInput `json:"jenis_bangunan_details"`
 }
 
 func (h *LaporanHandler) Create(c *fiber.Ctx) error {
@@ -388,8 +390,7 @@ func (h *LaporanHandler) GetWeeklyPPKReportData(c *fiber.Ctx) error {
 	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
 	isGlobal := false
 	for _, r := range userRoles {
-		lower := strings.ToLower(strings.TrimSpace(r))
-		if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin ppk" || lower == "admin" || lower == "ppk" {
+		if domain.IsSuperAdminRole(r) {
 			isGlobal = true
 			break
 		}

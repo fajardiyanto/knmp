@@ -214,8 +214,8 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
   };
 
   const getReportSubtitle = () => {
-    if (reportType === "harian") return `Laporan Harian – ${reportData?.tanggal_laporan || selectedDate}`;
-    if (reportType === "bulanan") return `Laporan Bulanan – ${MONTHS[bulan - 1]} ${tahun}`;
+    if (reportType === "harian") return `Laporan Harian - ${reportData?.tanggal_laporan || selectedDate}`;
+    if (reportType === "bulanan") return `Laporan Bulanan - ${MONTHS[bulan - 1]} ${tahun}`;
     return `Periode: ${reportData?.tanggal_awal || startDate} s.d. ${reportData?.tanggal_akhir || endDate}`;
   };
 
@@ -427,7 +427,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                       {getReportTitle()}
                     </h1>
                     <h2 className="text-xs font-black tracking-wider text-slate-800 uppercase mt-0.5">
-                      PROGRAM KAMPUNG NELAYAN MERAH PUTIH (KNMP) – WILAYAH SUMATERA
+                      PROGRAM KAMPUNG NELAYAN MERAH PUTIH (KNMP) - WILAYAH SUMATERA
                     </h2>
                     <div className="inline-flex items-center space-x-2 text-[11px] font-bold text-slate-700 bg-slate-100 px-3.5 py-0.5 rounded-full mt-1 border border-slate-200">
                       {reportType === "harian" ? (
@@ -759,12 +759,12 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                                   e.currentTarget.style.display = "none";
                                   if (e.currentTarget.parentElement) {
                                     e.currentTarget.parentElement.innerHTML =
-                                      '<div class="flex flex-col items-center justify-center p-1 text-slate-400 text-[8px] font-semibold"><span class="text-xs mb-0.5">📷</span><span>Foto Lapangan</span></div>';
+                                      '<div class="flex items-center justify-center p-1 text-slate-400 text-[8px] font-semibold">Foto Lapangan</div>';
                                   }
                                 }}
                               />
                               <div className="absolute top-0.5 right-0.5 bg-black/60 text-white text-[6.5px] font-bold px-1 py-0.2 rounded backdrop-blur-xs">
-                                GPS 📍
+                                GPS
                               </div>
                             </div>
                             <span className="text-[7.5px] font-bold text-slate-700 block line-clamp-1" title={item.title}>
@@ -788,19 +788,19 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
 
                     <div className="text-[9.5px] space-y-1.5 text-slate-700 bg-white p-2 rounded-lg border border-slate-200">
                       <div className="flex justify-between items-center">
-                        <span className="flex items-center gap-1">⚠️ Kecelakaan Kerja:</span>
+                        <span className="flex items-center gap-1">Kecelakaan Kerja:</span>
                         <strong className="text-emerald-700">{reportData.k3_kecelakaan} Kejadian</strong>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="flex items-center gap-1">⚠️ Near Miss:</span>
+                        <span className="flex items-center gap-1">Near Miss:</span>
                         <strong className="text-emerald-700">{reportData.k3_near_miss} Kejadian</strong>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="flex items-center gap-1">👷 Pelatihan K3:</span>
+                        <span className="flex items-center gap-1">Pelatihan K3:</span>
                         <strong className="text-blue-700">{reportData.k3_pelatihan} Kegiatan</strong>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="flex items-center gap-1">🛡️ Kepatuhan APD:</span>
+                        <span className="flex items-center gap-1">Kepatuhan APD:</span>
                         <strong className="text-emerald-700">{reportData.k3_kepatuhan_apd}%</strong>
                       </div>
                     </div>
@@ -838,7 +838,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
                     "Bersinergi Membangun Desa Pesisir, Ekonomi Naik, Nelayan Sejahtera"
                   </div>
                   <div className="font-mono font-bold text-slate-600">
-                    Versi 1.0 – {reportData.tahun_anggaran}
+                    Versi 1.0 - {reportData.tahun_anggaran}
                   </div>
                 </div>
               </div>

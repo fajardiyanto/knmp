@@ -2,7 +2,6 @@ package handler
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"knmp-v2-backend/internal/domain"
@@ -57,7 +56,7 @@ func (h *KnmpHandler) List(c *fiber.Ctx) error {
 	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
 	isGlobal := false
 	for _, r := range userRoles {
-		if r == "superadmin" || r == "admin_ppk" || r == "ppk" {
+		if domain.IsSuperAdminRole(r) {
 			isGlobal = true
 			break
 		}
@@ -65,6 +64,8 @@ func (h *KnmpHandler) List(c *fiber.Ctx) error {
 	if !isGlobal {
 		if userKnmpIDs, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(userKnmpIDs) > 0 {
 			filter.UserKnmpIDs = userKnmpIDs
+		} else {
+			filter.UserKnmpIDs = []int64{-1}
 		}
 	}
 
@@ -186,8 +187,7 @@ func (h *KnmpHandler) Widget(c *fiber.Ctx) error {
 	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
 	isGlobal := false
 	for _, r := range userRoles {
-		lower := strings.ToLower(r)
-		if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin" || lower == "ppk" || lower == "wakil_ppk" || lower == "wakil ppk" {
+		if domain.IsSuperAdminRole(r) {
 			isGlobal = true
 			break
 		}
@@ -196,6 +196,8 @@ func (h *KnmpHandler) Widget(c *fiber.Ctx) error {
 	if !isGlobal {
 		if ids, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(ids) > 0 {
 			userKnmpIDs = ids
+		} else {
+			userKnmpIDs = []int64{-1}
 		}
 	}
 
@@ -211,8 +213,7 @@ func (h *KnmpHandler) Map(c *fiber.Ctx) error {
 	userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
 	isGlobal := false
 	for _, r := range userRoles {
-		lower := strings.ToLower(r)
-		if lower == "superadmin" || lower == "super admin" || lower == "admin_ppk" || lower == "admin" || lower == "pengawas" || lower == "ppk" || lower == "wakil_ppk" || lower == "wakil ppk" {
+		if domain.IsSuperAdminRole(r) {
 			isGlobal = true
 			break
 		}
@@ -220,6 +221,8 @@ func (h *KnmpHandler) Map(c *fiber.Ctx) error {
 	if !isGlobal {
 		if userKnmpIDs, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(userKnmpIDs) > 0 {
 			filter.UserKnmpIDs = userKnmpIDs
+		} else {
+			filter.UserKnmpIDs = []int64{-1}
 		}
 	}
 

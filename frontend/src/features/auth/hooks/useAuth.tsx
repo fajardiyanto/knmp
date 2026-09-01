@@ -49,15 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem("knmp_user", JSON.stringify(res.user));
       setUser(res.user);
 
-      const isManagement = res.user.roles?.some((r) => {
-        const lower = r.toLowerCase();
-        return (
-          lower.includes("super") ||
-          lower.includes("admin") ||
-          lower.includes("ppk") ||
-          lower.includes("pengawas")
-        );
-      });
+      const isManagement = res.user.permissions?.includes("*") || res.user.permissions?.includes("dashboard");
 
       if (isManagement) {
         navigate("/dashboard");
@@ -86,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isSuper = user.roles?.some(
       (r) =>
         r.toLowerCase() === "superadmin" ||
+        r.toLowerCase() === "super_admin" ||
         r.toLowerCase() === "super admin"
     );
     if (isSuper) return true;
@@ -96,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasRole = (role: string): boolean => {
     if (!user) return false;
     const isSuper = user.roles?.some(
-      (r) => r.toLowerCase() === "superadmin" || r.toLowerCase() === "super admin"
+      (r) => r.toLowerCase() === "superadmin" || r.toLowerCase() === "super_admin" || r.toLowerCase() === "super admin"
     );
     if (isSuper) return true;
     return user.roles?.some((r) => r.toLowerCase() === role.toLowerCase()) || false;

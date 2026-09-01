@@ -129,8 +129,9 @@ func seedInitialData(db *sqlx.DB) {
 
 	// 2. Roles
 	roles := map[string][]string{
-		"superadmin": permissions,
-		"admin_ppk":  permissions,
+		"superadmin":  permissions,
+		"super_admin": permissions,
+		"admin_ppk":   permissions,
 		"kontraktor": {
 			"knmp_create", "knmp_read", "knmp_update", "knmp_delete",
 			"kontrak_create", "kontrak_read", "kontrak_update", "kontrak_delete",
@@ -177,9 +178,9 @@ func seedInitialData(db *sqlx.DB) {
 		Password string
 		Role     string
 	}{
-		{"SuperAdmin", "superadmin@gmail.com", "superadmin", "superadmin"},
+		{"SuperAdmin", "superadmin@gmail.com", "superadmin", "super_admin"},
 		{"Admin PPK", "admin_ppk@gmail.com", "admin_ppk", "admin_ppk"},
-		{"Kontraktor", "kontraktor@gmail.com", "kontraktor", "kontraktor"},
+		{"Admin Kontraktor", "kontraktor@gmail.com", "kontraktor", "admin_ppk"},
 		{"Pengawas", "pengawas@gmail.com", "pengawas", "pengawas"},
 		{"Wakil PPK", "wakil_ppk@gmail.com", "wakil_ppk", "wakil_ppk"},
 		{"PPK", "ppk@gmail.com", "ppk", "ppk"},
@@ -278,7 +279,7 @@ func seedKNMPUsers(db *sqlx.DB) {
 				Password: defaultPw,
 			}
 			if err := userRepo.Create(ctx, u1); err == nil {
-				_ = userRepo.AssignRole(ctx, u1.ID, "kontraktor")
+				_ = userRepo.AssignRole(ctx, u1.ID, "Admin_ppk")
 				_ = userRepo.AssignKnmps(ctx, u1.ID, []int64{k.ID})
 				countCreated++
 			}
@@ -297,7 +298,7 @@ func seedKNMPUsers(db *sqlx.DB) {
 				Password: defaultPw,
 			}
 			if err := userRepo.Create(ctx, u2); err == nil {
-				_ = userRepo.AssignRole(ctx, u2.ID, "kontraktor")
+				_ = userRepo.AssignRole(ctx, u2.ID, "Admin_ppk")
 				_ = userRepo.AssignKnmps(ctx, u2.ID, []int64{k.ID})
 				countCreated++
 			}

@@ -55,26 +55,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { data: unreadData } = useTotalUnreadCount();
   const unreadTotal = unreadData?.unread_count || 0;
 
-  const isSuperOrAdmin = user?.roles?.some((r) => {
-    const lower = r.toLowerCase();
-    return lower.includes("super") || lower.includes("admin");
-  });
-
-  const isManagement = user?.roles?.some((r) => {
-    const lower = r.toLowerCase();
-    return (
-      lower.includes("super") ||
-      lower.includes("admin") ||
-      lower.includes("ppk") ||
-      lower.includes("pengawas")
-    );
-  });
-
   const groups: NavGroup[] = [
     {
       title: "UTAMA",
       items: [
-        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, show: isManagement || hasPermission("dashboard") },
+        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, show: hasPermission("dashboard") },
         {
           name: "Chat",
           href: "/chat",
@@ -83,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           badge: unreadTotal,
         },
         { name: "Lokasi KNMP", href: "/knmp", icon: MapPin, show: hasPermission("knmp_read") },
-        { name: "Notulensi Rapat", href: "/notulen", icon: ClipboardList, show: true },
+        { name: "Notulensi Rapat", href: "/notulen", icon: ClipboardList, show: hasPermission("notulen_read") },
       ],
     },
     {
@@ -109,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           show: hasPermission("pelaksanaan_read"),
         },
         { name: "Laporan", href: "/laporan", icon: FileText, show: hasPermission("laporan_read") },
-        { name: "Notulensi Rapat", href: "/notulen", icon: ClipboardList, show: true },
+        { name: "Notulensi Rapat", href: "/notulen", icon: ClipboardList, show: hasPermission("notulen_read") },
         { name: "PHO", href: "/pho", icon: CheckCircle2, show: hasPermission("pho_read") },
         { name: "Pemeliharaan", href: "/pemeliharaan", icon: Wrench, show: hasPermission("pemeliharaan_read") },
         { name: "FHO", href: "/fho", icon: ShieldCheck, show: hasPermission("fho_read") },
@@ -147,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           name: "Daftar Perusahaan",
           href: "/perusahaan",
           icon: Building2,
-          show: isSuperOrAdmin || hasPermission("user_read"),
+          show: hasPermission("user_read"),
         },
         { name: "Periode", href: "/periode", icon: Calendar, show: hasPermission("periode_read") },
         {

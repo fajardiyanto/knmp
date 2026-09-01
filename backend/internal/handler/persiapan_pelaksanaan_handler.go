@@ -27,7 +27,7 @@ func (h *PersiapanHandler) List(c *fiber.Ctx) error {
 		userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
 		isGlobal := false
 		for _, r := range userRoles {
-			if r == "superadmin" || r == "admin_ppk" || r == "ppk" {
+			if domain.IsSuperAdminRole(r) {
 				isGlobal = true
 				break
 			}
@@ -35,6 +35,9 @@ func (h *PersiapanHandler) List(c *fiber.Ctx) error {
 		if !isGlobal {
 			if userKnmpIDs, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(userKnmpIDs) > 0 {
 				knmpID = &userKnmpIDs[0]
+			} else {
+				emptyID := int64(-1)
+				knmpID = &emptyID
 			}
 		}
 	}
@@ -239,7 +242,7 @@ func (h *PelaksanaanHandler) List(c *fiber.Ctx) error {
 		userRoles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
 		isGlobal := false
 		for _, r := range userRoles {
-			if r == "superadmin" || r == "admin_ppk" || r == "ppk" {
+			if domain.IsSuperAdminRole(r) {
 				isGlobal = true
 				break
 			}
@@ -247,6 +250,9 @@ func (h *PelaksanaanHandler) List(c *fiber.Ctx) error {
 		if !isGlobal {
 			if userKnmpIDs, ok := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64); ok && len(userKnmpIDs) > 0 {
 				knmpID = &userKnmpIDs[0]
+			} else {
+				emptyID := int64(-1)
+				knmpID = &emptyID
 			}
 		}
 	}

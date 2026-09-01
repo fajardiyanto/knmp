@@ -3,6 +3,7 @@ module knmp-v2-backend
 go 1.25.0
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/gofiber/fiber/v2 v2.52.4
 	github.com/gofiber/websocket/v2 v2.2.1

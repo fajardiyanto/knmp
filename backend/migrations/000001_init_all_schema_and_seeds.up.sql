@@ -967,6 +967,7 @@ VALUES
 ('PPK', 'api', NOW(), NOW()),
 ('Pengawas', 'api', NOW(), NOW()),
 ('Admin_ppk', 'api', NOW(), NOW()),
+('super_admin', 'api', NOW(), NOW()),
 ('Kontraktor', 'api', NOW(), NOW())
 ON CONFLICT (name) DO NOTHING;
 
@@ -991,15 +992,15 @@ INSERT INTO model_has_roles (role_id, model_type, model_id)
 SELECT r.id, 'App\\Models\\User', u.id
 FROM users u
 JOIN roles r ON (
-    (u.email = 'superadmin@gmail.com' AND r.name = 'SuperAdmin') OR
+    (u.email = 'superadmin@gmail.com' AND r.name = 'super_admin') OR
     (u.email = 'admin_ppk@gmail.com' AND r.name = 'Admin_ppk') OR
     (u.email = 'admin@gmail.com' AND r.name = 'Admin_ppk') OR
     (u.email = 'wakil_ppk@gmail.com' AND r.name = 'Wakil PPK') OR
     (u.email = 'ppk@gmail.com' AND r.name = 'PPK') OR
     (u.email = 'pengawas@gmail.com' AND r.name = 'Pengawas') OR
-    (u.email = 'kontraktor@gmail.com' AND r.name = 'Kontraktor') OR
+    (u.email = 'kontraktor@gmail.com' AND r.name = 'Admin_ppk') OR
     (u.email = 'wakildemo@gmail.com' AND r.name = 'Wakil PPK') OR
-    (u.email = 'hello@gmail.com' AND r.name = 'Kontraktor')
+    (u.email = 'hello@gmail.com' AND r.name = 'Admin_ppk')
 )
 ON CONFLICT (role_id, model_id, model_type) DO NOTHING;
 
@@ -1133,7 +1134,7 @@ INSERT INTO role_has_permissions (permission_id, role_id)
 SELECT p.id, r.id
 FROM permissions p
 CROSS JOIN roles r
-WHERE r.name IN ('SuperAdmin', 'Admin_ppk', 'admin_ppk', 'superadmin')
+WHERE r.name IN ('SuperAdmin', 'Admin_ppk', 'admin_ppk', 'superadmin', 'super_admin')
 ON CONFLICT (permission_id, role_id) DO NOTHING;
 
 -- Grant permissions for other roles
@@ -1146,6 +1147,5 @@ WHERE (r.name = 'Pengawas' AND p.name IN ('knmp_read', 'kontrak_read', 'lapangan
    OR (r.name = 'PPK' AND p.name IN ('knmp_read', 'kontrak_read', 'lapangan_read', 'pelaksanaan_read', 'laporan_read', 'laporan_verify', 'absensi_read', 'absensi_verify', 'issue_read', 'issue_verify', 'pembayaran_read', 'document_read', 'document_verify'))
    OR (r.name = 'Kontraktor' AND p.name IN ('knmp_read', 'kontrak_read', 'kontrak_create', 'kontrak_update', 'lapangan_read', 'lapangan_create', 'lapangan_update', 'pelaksanaan_read', 'pelaksanaan_create', 'pelaksanaan_update', 'laporan_read', 'laporan_create', 'laporan_update', 'absensi_read', 'absensi_create', 'issue_read', 'issue_create', 'pembayaran_read', 'document_read', 'document_create'))
 ON CONFLICT (permission_id, role_id) DO NOTHING;
-
 
 

@@ -80,14 +80,14 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", nil, fmt.Errorf("fetch user knmp ids: %w", err)
 	}
 
-	isSuperOrAdmin := false
+	isSuper := false
 	for _, r := range roles {
-		if domain.IsAdminRole(r) {
-			isSuperOrAdmin = true
+		if domain.IsSuperAdminRole(r) {
+			isSuper = true
 			break
 		}
 	}
-	if isSuperOrAdmin {
+	if isSuper {
 		permissions = append(permissions, superAdminPermissions()...)
 	}
 
@@ -136,14 +136,14 @@ func (s *AuthService) GetUserProfile(ctx context.Context, userID int64) (*domain
 		return nil, fmt.Errorf("fetch user knmp ids: %w", err)
 	}
 
-	isSuperOrAdmin := false
+	isSuper := false
 	for _, r := range roles {
-		if domain.IsAdminRole(r) {
-			isSuperOrAdmin = true
+		if domain.IsSuperAdminRole(r) {
+			isSuper = true
 			break
 		}
 	}
-	if isSuperOrAdmin {
+	if isSuper {
 		permissions = append(permissions, superAdminPermissions()...)
 	}
 

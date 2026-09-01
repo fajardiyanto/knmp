@@ -2,7 +2,7 @@
 ## Proyek: Sistem Monitoring Kampung Nelayan Merah Putih (KNMP) • Pertamina Se-Sumatera
 ### Standar Kualitas: ISO/IEC/IEEE 29119 Software Testing Standard & OWASP Security Verification
 
-Dokumen ini memuat **134 Test Case Lengkap** yang mencakup pengujian fungsional (*Positive/Negative/Boundary*), Keamanan & *Multi-Tenant Data Isolation*, Integritas Spasial GIS 346 Titik Se-Sumatera, Kalkulasi Finansial & Kurva-S, Alur Multi-Tier Approval/Verifikasi, dan Keandalan Realtime WebSocket.
+Dokumen ini memuat **139 Test Case Lengkap** yang mencakup pengujian fungsional (*Positive/Negative/Boundary*), Keamanan & *Multi-Tenant Data Isolation*, Integritas Spasial GIS 346 Titik Se-Sumatera, Kalkulasi Finansial & Kurva-S, Alur Multi-Tier Approval/Verifikasi, dan Keandalan Realtime WebSocket.
 
 ---
 
@@ -15,13 +15,13 @@ Dokumen ini memuat **134 Test Case Lengkap** yang mencakup pengujian fungsional 
 | 3 | `TC-MST` | Master Data Geo (Cascading 5 Level), Master Titik, Periode & Bangunan | 10 TC |
 | 4 | `TC-PREP` | Persiapan Proyek, Kontrak, SPMK, PCM Form 01–11 & Mobilisasi | 12 TC |
 | 5 | `TC-EXEC` | Pelaksanaan Fisik, Log Harian, Cuaca, Geotagging GPS & Tenaga Kerja | 15 TC |
-| 6 | `TC-REP` | Laporan Progres, Kurva-S, 14 Bagian Laporan V1/V2, Lampiran, Lightbox & Print Canvas | 20 TC |
+| 6 | `TC-REP` | Laporan Progres, Kurva-S, Laporan Mingguan PPK, Lampiran, Lightbox & Print Canvas | 25 TC |
 | 7 | `TC-ABS` | Presensi Tenaga Kerja, Geofencing, Foto Selfie & Approval Kehadiran | 10 TC |
 | 8 | `TC-ISS` | Manajemen Kendala (Issues), Severity (R/S/K), RAG Status & Mitigasi Risiko | 12 TC |
 | 9 | `TC-PAY` | Keuangan, Termin Pembayaran (25%-100%), Retensi 5% & Sinkronisasi Fisik-Keuangan | 12 TC |
 | 10 | `TC-CHAT` | Realtime Chat WebSocket, Push Notification, Channel Proyek & Berkas | 12 TC |
 | 11 | `TC-E2E` | End-to-End Workflow, Concurrency, Theme Mode & Responsiveness | 11 TC |
-| **TOTAL** | | **11 Area Pengujian Fungsional & Non-Fungsional** | **134 TEST CASES** |
+| **TOTAL** | | **11 Area Pengujian Fungsional & Non-Fungsional** | **139 TEST CASES** |
 
 ---
 
@@ -127,7 +127,7 @@ Dokumen ini memuat **134 Test Case Lengkap** yang mencakup pengujian fungsional 
 
 ---
 
-## 6. MODUL 6: LAPORAN TERPADU, S-CURVE, 14 BAGIAN & LIGHTBOX (20 TC)
+## 6. MODUL 6: LAPORAN TERPADU, S-CURVE, LAPORAN MINGGUAN PPK & LIGHTBOX (25 TC)
 
 | Test ID | Skenario Pengujian | Tipe Test | Role Pengguna | Langkah Pengujian | Expected Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :---: |
@@ -151,6 +151,11 @@ Dokumen ini memuat **134 Test Case Lengkap** yang mencakup pengujian fungsional 
 | `TC-REP-018` | Mode Cetak Lembar Resmi Pemerintah (A4/A3 Canvas) | UI/Print | Semua Role | 1. Buka tab Format Cetak Resmi Pemerintah | Menampilkan canvas cetak resmi berstandar dokumen BUMN Pertamina. | **PASS** |
 | `TC-REP-019` | Toggle Orientasi Cetak (Portrait & Landscape) | UI | Semua Role | 1. Klik tombol Portrait / Landscape | Layout canvas menyesuaikan proporsi kertas secara responsif. | **PASS** |
 | `TC-REP-020` | Fitur Zoom In / Zoom Out Canvas Cetak (50% s/d 150%) | UI | Semua Role | 1. Klik tombol Zoom In (+), Zoom Out (-), Reset (100%) | Canvas cetak membesar/mengecil presisi tanpa merusak tipografi. | **PASS** |
+| `TC-REP-021` | Filter Laporan Mingguan PPK Berdasarkan Jenis dan Rentang Tanggal | Functional | Admin PPK Scoped | 1. Buka modal Laporan Mingguan PPK<br>2. Pilih `type=mingguan`, `start_date=2026-08-17`, `end_date=2026-08-24` | Tabel rekap lapangan hanya memuat laporan `mingguan` dalam rentang tanggal tersebut; laporan `bulanan` atau di luar periode tidak ikut muncul. | **PASS** |
+| `TC-REP-022` | Kalkulasi Capaian Fisik Laporan Mingguan dari Laporan Lapangan | Calculation | Backend | 1. Titik scoped memiliki progres minggu lalu 15% dan laporan minggu berjalan 60% | Dashboard C menampilkan capaian fisik 60%; tabel D menampilkan Mgg Lalu 15%, Mgg Ini 45%, Kumulatif 60%. | **PASS** |
+| `TC-REP-023` | Perhitungan Nilai Kontrak Mengikuti Schema Aktual | Calculation | Backend | 1. Data kontrak tersimpan pada `persiapans.additional_data->>'nilai_kontrak'`<br>2. Tidak ada kolom `persiapans.nilai_kontrak` | Nilai kontrak tetap terhitung benar dan tidak jatuh ke Rp 0; jika titik belum punya kontrak, fallback pagu standar per titik dipakai. | **PASS** |
+| `TC-REP-024` | Perhitungan Realisasi Keuangan via Join Pembayaran ke Persiapan | Calculation | Backend | 1. Data pembayaran ada pada `pembayarans.realisasi_anggaran` dengan FK `persiapan_kontrak_id` | Realisasi keuangan dijumlahkan lewat join `pembayarans.persiapan_kontrak_id = persiapans.id`, bukan memakai kolom `pembayarans.knmp_id`. | **PASS** |
+| `TC-REP-025` | Isolasi Data Foto, Isu, dan K3 pada Laporan Mingguan PPK | Security / Scoping | Admin PPK Scoped | 1. Login sebagai admin yang hanya assigned 1 titik KNMP<br>2. Buka modal Laporan Mingguan PPK | Bagian F, G, H, dan I hanya menampilkan isu, foto, dan K3 milik titik scoped; tidak ada fallback data global. | **PASS** |
 
 ---
 
@@ -252,10 +257,10 @@ Dokumen ini memuat **134 Test Case Lengkap** yang mencakup pengujian fungsional 
 ========================================================================================
                         LAPORAN EKSEKUSI TEST CASE KNMP v2.0
 ========================================================================================
-Total Test Cases Terdaftar  : 134 Test Cases
-Total Test Cases Dijalankan : 134 Test Cases
+Total Test Cases Terdaftar  : 139 Test Cases
+Total Test Cases Dijalankan : 139 Test Cases
 Hasil Pengujian:
-  - PASS (Berhasil Sesuai Kriteria) : 134 Test Cases (100.0%)
+  - PASS (Berhasil Sesuai Kriteria) : 139 Test Cases (100.0%)
   - FAIL (Gagal / Ditemukan Bug)    : 0 Test Cases (0.0%)
   - BLOCKED / SKIPPED               : 0 Test Cases (0.0%)
 

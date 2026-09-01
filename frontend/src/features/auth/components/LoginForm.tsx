@@ -146,41 +146,6 @@ export const LoginForm: React.FC = () => {
                   >
                     SuperAdmin
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin("kontraktor@gmail.com", "password")}
-                    className="px-2 py-1.5 text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-[#0d6efd] dark:text-blue-300 rounded-lg text-center transition-colors cursor-pointer"
-                  >
-                    Kontraktor
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin("pengawas@gmail.com", "password")}
-                    className="px-2 py-1.5 text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 rounded-lg text-center transition-colors cursor-pointer"
-                  >
-                    Pengawas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin("wakil_ppk@gmail.com", "password")}
-                    className="px-2 py-1.5 text-[11px] font-semibold bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-800 dark:text-purple-300 rounded-lg text-center transition-colors cursor-pointer"
-                  >
-                    Wakil PPK
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin("admin_ppk@gmail.com", "password")}
-                    className="px-2 py-1.5 text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 rounded-lg text-center transition-colors cursor-pointer"
-                  >
-                    Admin PPK
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin("ppk@gmail.com", "password")}
-                    className="px-2 py-1.5 text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-800 dark:text-rose-300 rounded-lg text-center transition-colors cursor-pointer"
-                  >
-                    PPK
-                  </button>
                 </div>
               </div>
 

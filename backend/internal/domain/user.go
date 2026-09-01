@@ -7,6 +7,7 @@ import (
 
 const (
 	RoleSuperAdmin   = "superadmin"
+	RoleSuperAdminUs = "super_admin"
 	RoleSuperAdminSp = "super admin"
 	RoleAdminPPK     = "admin_ppk"
 	RoleAdmin        = "admin"
@@ -20,7 +21,18 @@ const (
 func IsAdminRole(role string) bool {
 	lower := strings.ToLower(strings.TrimSpace(role))
 	switch lower {
-	case RoleSuperAdmin, RoleSuperAdminSp, RoleAdminPPK, RoleAdmin, "ppk", "admin ppk", "wakil_ppk", "wakil ppk":
+	case RoleSuperAdmin, RoleSuperAdminUs, RoleSuperAdminSp, RoleAdminPPK, RoleAdmin, "ppk", "admin ppk", "wakil_ppk", "wakil ppk":
+		return true
+	default:
+		return false
+	}
+}
+
+// IsSuperAdminRole checks whether a role should bypass permission and KNMP scoping.
+func IsSuperAdminRole(role string) bool {
+	lower := strings.ToLower(strings.TrimSpace(role))
+	switch lower {
+	case RoleSuperAdmin, RoleSuperAdminUs, RoleSuperAdminSp:
 		return true
 	default:
 		return false

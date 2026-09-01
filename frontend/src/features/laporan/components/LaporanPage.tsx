@@ -23,6 +23,7 @@ import {
   Printer,
   Sparkles,
   Download,
+  BookOpenText,
 } from "lucide-react";
 import { apiFetch } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
@@ -32,6 +33,7 @@ import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 import { MonthlyProjectReportModal } from "./MonthlyProjectReportModal";
 import { ExecutiveProjectReportModalV2 } from "./ExecutiveProjectReportModalV2";
 import { LaporanMingguanPPKModal } from "./LaporanMingguanPPKModal";
+import { ReadableProjectReportModal } from "./ReadableProjectReportModal";
 
 interface LaporanItem {
   id: number;
@@ -111,6 +113,7 @@ export const LaporanPage: React.FC = () => {
   const [isMonthlyReportModalOpen, setIsMonthlyReportModalOpen] = useState(false);
   const [isExecutiveReportV2Open, setIsExecutiveReportV2Open] = useState(false);
   const [isWeeklyPpkModalOpen, setIsWeeklyPpkModalOpen] = useState(false);
+  const [isReadableReportOpen, setIsReadableReportOpen] = useState(false);
   const [monthlyReportKnmpId, setMonthlyReportKnmpId] = useState<number | undefined>(undefined);
   const [selectedLaporanId, setSelectedLaporanId] = useState<number | undefined>(undefined);
   const [editingItem, setEditingItem] = useState<LaporanItem | null>(null);
@@ -507,6 +510,15 @@ export const LaporanPage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={() => setIsReadableReportOpen(true)}
+            className="flex-1 sm:flex-none px-4.5 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-white text-[#002060] border border-[#002060]/20 rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            title="Buka laporan ringkas yang mudah dibaca"
+          >
+            <BookOpenText className="w-4 h-4" />
+            <span>Laporan Ringkas</span>
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -1158,6 +1170,11 @@ export const LaporanPage: React.FC = () => {
       <LaporanMingguanPPKModal
         isOpen={isWeeklyPpkModalOpen}
         onClose={() => setIsWeeklyPpkModalOpen(false)}
+      />
+
+      <ReadableProjectReportModal
+        isOpen={isReadableReportOpen}
+        onClose={() => setIsReadableReportOpen(false)}
       />
     </div>
   );
