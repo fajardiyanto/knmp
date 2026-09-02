@@ -16,7 +16,6 @@ import {
   Building,
   Filter,
   RefreshCw,
-  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
 import type { Notulen, NotulenFilter } from "../types/notulen.types";
@@ -122,15 +121,29 @@ export const NotulenListPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-16">
-      {/* Header Banner Confluence Style */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-950 via-indigo-950 to-slate-950 p-6 md:p-8 text-white shadow-xl border border-blue-900/30">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Notulensi Rapat</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Daftar notulen, berita acara, dan tindak lanjut rapat KNMP.</p>
+        </div>
+        {canManage && (
+          <Link
+            to="/notulen/create"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>Tulis Notulen Baru</span>
+          </Link>
+        )}
+      </div>
+
+      <div className="hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-blue-400 mb-1.5">
               <span className="px-2.5 py-0.5 bg-blue-500/20 rounded-md">BUMN PERTAMINA</span>
               <span>•</span>
               <span className="flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                 DOKUMENTASI KOORDINASI & BERITA ACARA RAPAT
               </span>
             </div>

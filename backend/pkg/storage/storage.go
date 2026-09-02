@@ -15,6 +15,7 @@ import (
 
 type Storage interface {
 	SaveUploadedFile(file *multipart.FileHeader, subDir string) (filePath string, fileName string, fileType string, err error)
+	SaveFileBytes(fileName string, contentType string, data []byte, subDir string) (filePath string, savedFileName string, fileType string, err error)
 	GetFileURL(filePath string) string
 	DeleteFile(filePath string) error
 	GetFilePath(filePath string) string
@@ -40,7 +41,7 @@ func (s *LocalStorage) SaveUploadedFile(file *multipart.FileHeader, subDir strin
 	defer src.Close()
 
 	ext := strings.ToLower(filepath.Ext(file.Filename))
-	
+
 	// Validate allowed extensions (C-07)
 	allowedExts := map[string]bool{
 		".jpg":  true,
@@ -86,6 +87,40 @@ func (s *LocalStorage) SaveUploadedFile(file *multipart.FileHeader, subDir strin
 	}
 
 	return relPath, file.Filename, fileType, nil
+}
+
+func (s *LocalStorage) SaveFileBytes(fileName string, contentType string, data []byte, subDir string) (string, string, string, error) {
+	ext := strings.ToLower(filepath.Ext(fileName))
+	if ext == "" {
+		ext = ".bin"
+		fileName += ext
+	}
+
+	allowedExts := map[string]bool{
+		".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".gif": true,
+		".pdf": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true,
+		".csv": true, ".zip": true, ".txt": true, ".md": true,
+	}
+	if !allowedExts[ext] {
+		return "", "", "", fmt.Errorf("tipe file ekstensi %s tidak diizinkan untuk diunggah", ext)
+	}
+
+	uniqueName := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), uuid.New().String()[:8], ext)
+	targetFolder := filepath.Join(s.baseDir, subDir)
+	if err := os.MkdirAll(targetFolder, 0755); err != nil {
+		return "", "", "", fmt.Errorf("create target folder: %w", err)
+	}
+
+	fullPath := filepath.Join(targetFolder, uniqueName)
+	if err := os.WriteFile(fullPath, data, 0644); err != nil {
+		return "", "", "", fmt.Errorf("write file bytes: %w", err)
+	}
+
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	relPath := filepath.ToSlash(filepath.Join("uploads", subDir, uniqueName))
+	return relPath, fileName, contentType, nil
 }
 
 func (s *LocalStorage) GetFileURL(filePath string) string {

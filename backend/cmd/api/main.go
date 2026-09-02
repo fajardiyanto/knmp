@@ -67,6 +67,7 @@ func main() {
 	notifRepo := postgres.NewNotificationRepo(db)
 	perusahaanRepo := postgres.NewPerusahaanRepo(db)
 	notulenRepo := postgres.NewNotulenRepo(db)
+	aiAnalysisRepo := postgres.NewAIAnalysisRepo(db)
 
 	// 4. Initialize Services & Hubs
 	chatHub := service.NewChatHub()
@@ -84,6 +85,16 @@ func main() {
 	chatSvc := service.NewChatService(chatRepo, chatHub, notifSvc)
 	perusahaanSvc := service.NewPerusahaanService(perusahaanRepo)
 	notulenSvc := service.NewNotulenService(notulenRepo, docRepo, storageEngine)
+	aiAnalysisSvc := service.NewAIAnalysisService(aiAnalysisRepo, docRepo, storageEngine, service.AIProviderConfig{
+		OpenAIAPIKey:   cfg.OpenAIAPIKey,
+		DeepSeekAPIKey: cfg.DeepSeekAPIKey,
+		GeminiAPIKey:   cfg.GeminiAPIKey,
+		ClaudeAPIKey:   cfg.ClaudeAPIKey,
+		OpenAIModel:    cfg.OpenAIModel,
+		DeepSeekModel:  cfg.DeepSeekModel,
+		GeminiModel:    cfg.GeminiModel,
+		ClaudeModel:    cfg.ClaudeModel,
+	})
 
 	// 5. Initialize Handlers
 	handlers := &router.Handlers{
@@ -100,6 +111,7 @@ func main() {
 		Notification: handler.NewNotificationHandler(notifSvc),
 		Perusahaan:   handler.NewPerusahaanHandler(perusahaanSvc),
 		Notulen:      handler.NewNotulenHandler(notulenSvc),
+		AIAnalysis:   handler.NewAIAnalysisHandler(aiAnalysisSvc, cfg.TelegramBotToken, cfg.TelegramWebhookSecret),
 	}
 
 	// 6. Build App & Listen

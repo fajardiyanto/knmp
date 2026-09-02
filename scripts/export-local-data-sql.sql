@@ -1,0 +1,7 @@
+-- This is a note file. The actual local data dump is generated as:
+-- backups/knmp_local_data_YYYYMMDD_HHMMSS.sql
+--
+-- Generate it from local PostgreSQL with:
+-- pg_dump --host localhost --port 5432 --username knmp --dbname knmp_db --data-only --column-inserts --no-owner --no-privileges --file backups/knmp_local_data_YYYYMMDD_HHMMSS.sql
+--
+-- In this workspace, pg_dump is available inside Docker container knmp_postgres.

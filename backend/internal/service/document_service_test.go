@@ -73,6 +73,10 @@ func (m *mockStorage) SaveUploadedFile(file *multipart.FileHeader, subDir string
 	return "uploads/" + subDir + "/test_file.png", "test_file.png", "image/png", nil
 }
 
+func (m *mockStorage) SaveFileBytes(fileName string, contentType string, data []byte, subDir string) (string, string, string, error) {
+	return "uploads/" + subDir + "/" + fileName, fileName, contentType, nil
+}
+
 func (m *mockStorage) GetFileURL(filePath string) string {
 	return "/uploads/" + filePath
 }

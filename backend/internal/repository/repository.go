@@ -225,6 +225,29 @@ type PerusahaanRepository interface {
 	Delete(ctx context.Context, id int64) error
 }
 
+type AIAnalysisFilter struct {
+	Search         string
+	SourceChannel  string
+	RiskLevel      string
+	Status         string
+	KnmpID         *int64
+	AssignedUserID *int64
+	UserKnmpIDs    []int64
+	Limit          int
+	Offset         int
+}
+
+type AIAnalysisRepository interface {
+	GetByID(ctx context.Context, id int64) (*domain.AIAnalysis, error)
+	List(ctx context.Context, filter AIAnalysisFilter) ([]*domain.AIAnalysis, error)
+	Create(ctx context.Context, analysis *domain.AIAnalysis) error
+	UpdateStatus(ctx context.Context, id int64, status string) error
+	Delete(ctx context.Context, id int64) error
+	GetStats(ctx context.Context, userKnmpIDs []int64) (*domain.AIAnalysisStats, error)
+	UserCanAccessKNMP(ctx context.Context, userID, knmpID int64) (bool, error)
+	DetectKNMPFromText(ctx context.Context, text string, userKnmpIDs []int64) (*int64, error)
+}
+
 type NotulenRepository interface {
 	GetByID(ctx context.Context, id int64) (*domain.Notulen, error)
 	List(ctx context.Context, filter domain.NotulenFilter) ([]*domain.Notulen, error)
@@ -236,4 +259,3 @@ type NotulenRepository interface {
 	GetSharedUserIDs(ctx context.Context, notulenID int64) ([]int64, error)
 	GetUserAccess(ctx context.Context, notulenID int64, userID int64) (string, error)
 }
-

@@ -1,0 +1,2 @@
+ALTER TABLE ai_analyses
+DROP COLUMN IF EXISTS summary;

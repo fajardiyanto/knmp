@@ -8,19 +8,31 @@ import (
 )
 
 type Config struct {
-	AppEnv          string
-	Port            string
-	DatabaseURL     string
-	JWTSecret       string
-	StorageDisk     string // "local" or "s3"
-	StorageLocalDir string
-	S3Endpoint      string
-	S3Bucket        string
-	S3AccessKey     string
-	S3SecretKey     string
-	S3UseSSL        bool
-	OtelEndpoint    string
-	OtelServiceName string
+	AppEnv                string
+	Port                  string
+	DatabaseURL           string
+	JWTSecret             string
+	StorageDisk           string // "local" or "s3"
+	StorageLocalDir       string
+	S3Endpoint            string
+	S3Bucket              string
+	S3AccessKey           string
+	S3SecretKey           string
+	S3UseSSL              bool
+	OtelEndpoint          string
+	OtelServiceName       string
+	TelegramBotToken      string
+	TelegramWebhookSecret string
+	WhatsappEnabled       bool
+	WhatsappVerifyToken   string
+	OpenAIAPIKey          string
+	DeepSeekAPIKey        string
+	GeminiAPIKey          string
+	ClaudeAPIKey          string
+	OpenAIModel           string
+	DeepSeekModel         string
+	GeminiModel           string
+	ClaudeModel           string
 }
 
 func Load() *Config {
@@ -52,19 +64,31 @@ func Load() *Config {
 	storageLocalDir := getEnv("STORAGE_LOCAL_DIR", "./storage/uploads")
 
 	return &Config{
-		AppEnv:          appEnv,
-		Port:            port,
-		DatabaseURL:     dbURL,
-		JWTSecret:       jwtSecret,
-		StorageDisk:     storageDisk,
-		StorageLocalDir: storageLocalDir,
-		S3Endpoint:      getEnv("S3_ENDPOINT", "localhost:9000"),
-		S3Bucket:        getEnv("S3_BUCKET", "knmp-documents"),
-		S3AccessKey:     getEnv("S3_ACCESS_KEY", "minioadmin"),
-		S3SecretKey:     getEnv("S3_SECRET_KEY", "minioadminpassword"),
-		S3UseSSL:        getEnv("S3_USE_SSL", "false") == "true",
-		OtelEndpoint:    getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317"),
-		OtelServiceName: getEnv("OTEL_SERVICE_NAME", "knmp-backend"),
+		AppEnv:                appEnv,
+		Port:                  port,
+		DatabaseURL:           dbURL,
+		JWTSecret:             jwtSecret,
+		StorageDisk:           storageDisk,
+		StorageLocalDir:       storageLocalDir,
+		S3Endpoint:            getEnv("S3_ENDPOINT", "localhost:9000"),
+		S3Bucket:              getEnv("S3_BUCKET", "knmp-documents"),
+		S3AccessKey:           getEnv("S3_ACCESS_KEY", "minioadmin"),
+		S3SecretKey:           getEnv("S3_SECRET_KEY", "minioadminpassword"),
+		S3UseSSL:              getEnv("S3_USE_SSL", "false") == "true",
+		OtelEndpoint:          getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317"),
+		OtelServiceName:       getEnv("OTEL_SERVICE_NAME", "knmp-backend"),
+		TelegramBotToken:      getEnv("TELEGRAM_BOT_TOKEN", ""),
+		TelegramWebhookSecret: getEnv("TELEGRAM_WEBHOOK_SECRET", ""),
+		WhatsappEnabled:       getEnv("WHATSAPP_ENABLED", "false") == "true",
+		WhatsappVerifyToken:   getEnv("WHATSAPP_VERIFY_TOKEN", ""),
+		OpenAIAPIKey:          getEnv("OPENAI_API_KEY", ""),
+		DeepSeekAPIKey:        getEnv("DEEPSEEK_API_KEY", ""),
+		GeminiAPIKey:          getEnv("GEMINI_API_KEY", ""),
+		ClaudeAPIKey:          getEnv("CLAUDE_API_KEY", ""),
+		OpenAIModel:           getEnv("OPENAI_MODEL", "gpt-4o-mini"),
+		DeepSeekModel:         getEnv("DEEPSEEK_MODEL", "deepseek-chat"),
+		GeminiModel:           getEnv("GEMINI_MODEL", "gemini-3.7-flash"),
+		ClaudeModel:           getEnv("CLAUDE_MODEL", "claude-sonnet-4-6"),
 	}
 }
 

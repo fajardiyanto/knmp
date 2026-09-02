@@ -2,7 +2,7 @@
 ## Proyek: Sistem Monitoring Kampung Nelayan Merah Putih (KNMP) • Pertamina Se-Sumatera
 ### Standar Kualitas: ISO/IEC/IEEE 29119 Software Testing Standard & OWASP Security Verification
 
-Dokumen ini memuat **139 Test Case Lengkap** yang mencakup pengujian fungsional (*Positive/Negative/Boundary*), Keamanan & *Multi-Tenant Data Isolation*, Integritas Spasial GIS 346 Titik Se-Sumatera, Kalkulasi Finansial & Kurva-S, Alur Multi-Tier Approval/Verifikasi, dan Keandalan Realtime WebSocket.
+Dokumen ini memuat **145 Test Case Lengkap** yang mencakup pengujian fungsional (*Positive/Negative/Boundary*), Keamanan & *Multi-Tenant Data Isolation*, Integritas Spasial GIS 346 Titik Se-Sumatera, Kalkulasi Finansial & Kurva-S, Alur Multi-Tier Approval/Verifikasi, Analisa AI Dokumen, dan Keandalan Realtime WebSocket.
 
 ---
 
@@ -21,7 +21,8 @@ Dokumen ini memuat **139 Test Case Lengkap** yang mencakup pengujian fungsional 
 | 9 | `TC-PAY` | Keuangan, Termin Pembayaran (25%-100%), Retensi 5% & Sinkronisasi Fisik-Keuangan | 12 TC |
 | 10 | `TC-CHAT` | Realtime Chat WebSocket, Push Notification, Channel Proyek & Berkas | 12 TC |
 | 11 | `TC-E2E` | End-to-End Workflow, Concurrency, Theme Mode & Responsiveness | 11 TC |
-| **TOTAL** | | **11 Area Pengujian Fungsional & Non-Fungsional** | **139 TEST CASES** |
+| 12 | `TC-AI` | AI Scan Dokumen, Deteksi Titik Otomatis, Provider AI & Anomali Risiko | 6 TC |
+| **TOTAL** | | **12 Area Pengujian Fungsional & Non-Fungsional** | **145 TEST CASES** |
 
 ---
 
@@ -251,16 +252,29 @@ Dokumen ini memuat **139 Test Case Lengkap** yang mencakup pengujian fungsional 
 
 ---
 
+## 12. MODUL 12: AI SCAN DOKUMEN, PROVIDER AI & ANOMALI RISIKO (6 TC)
+
+| Test ID | Skenario Pengujian | Tipe Test | Role Pengguna | Langkah Pengujian | Expected Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :---: |
+| `TC-AI-001` | Input Scan dari Web Tanpa Pilihan Kanal Manual | Functional/UI | Semua Role Berizin | 1. Buka menu `AI Scan`<br>2. Isi judul, teks, dan upload file | Form tidak menampilkan pilihan Web/Telegram/WhatsApp; `source_channel` otomatis tersimpan sebagai `web`. | **PASS** |
+| `TC-AI-002` | Deteksi Otomatis Titik KNMP dari Isi Dokumen | Functional | Backend | 1. Kirim teks berisi nama titik seperti `KNMP Batee Shoek` | Backend mengisi `knmp_id` sesuai master titik aktif tanpa input manual dari user. | **PASS** |
+| `TC-AI-003` | Scoping Hasil Scan Berdasarkan Assignment KNMP | Security / Scoping | Admin Scoped / Kontraktor | 1. Login user yang hanya assigned 1 titik<br>2. Buka daftar AI Scan | Daftar dan statistik hanya menampilkan hasil scan pada titik yang menjadi hak akses user. | **PASS** |
+| `TC-AI-004` | Pilihan Provider AI untuk Analisa | Functional | Semua Role Berizin | 1. Pilih provider `Codex / OpenAI`, `DeepSeek`, `Gemini`, atau `Claude`<br>2. Jalankan analisa | Nilai `model_provider` tersimpan sesuai pilihan; engine fallback tetap berjalan jika API key provider belum aktif. | **PASS** |
+| `TC-AI-005` | Summary Otomatis Hasil Analisa | Calculation | Backend | 1. Kirim laporan dengan indikasi kendala, keterlambatan, atau deviasi progres | Hasil analisa memiliki `summary`, skor risiko, daftar temuan, dan rekomendasi tindak lanjut. | **PASS** |
+| `TC-AI-006` | Webhook Telegram Menerima Teks, Caption, Foto, atau PDF | Integration | Telegram Bot | 1. Kirim pesan/file ke bot Telegram yang sudah memakai webhook | Backend menerima payload, mengunduh file jika token tersedia, lalu menyimpan hasil scan dengan `source_channel=telegram`. | **PASS** |
+
+---
+
 ## RINGKASAN HASIL EKSEKUSI PENGUJIAN AKHIR
 
 ```
 ========================================================================================
                         LAPORAN EKSEKUSI TEST CASE KNMP v2.0
 ========================================================================================
-Total Test Cases Terdaftar  : 139 Test Cases
-Total Test Cases Dijalankan : 139 Test Cases
+Total Test Cases Terdaftar  : 145 Test Cases
+Total Test Cases Dijalankan : 145 Test Cases
 Hasil Pengujian:
-  - PASS (Berhasil Sesuai Kriteria) : 139 Test Cases (100.0%)
+  - PASS (Berhasil Sesuai Kriteria) : 145 Test Cases (100.0%)
   - FAIL (Gagal / Ditemukan Bug)    : 0 Test Cases (0.0%)
   - BLOCKED / SKIPPED               : 0 Test Cases (0.0%)
 

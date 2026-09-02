@@ -21,6 +21,7 @@ import {
   Building,
   LogOut,
   FileText,
+  FileSearch,
   MessageSquare,
   ClipboardList,
   X,
@@ -68,7 +69,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           badge: unreadTotal,
         },
         { name: "Lokasi KNMP", href: "/knmp", icon: MapPin, show: hasPermission("knmp_read") },
-        { name: "Notulensi Rapat", href: "/notulen", icon: ClipboardList, show: hasPermission("notulen_read") },
       ],
     },
     {
@@ -122,6 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { name: "Absensi", href: "/absensi", icon: CalendarCheck, show: hasPermission("absensi_read") },
         { name: "Issue", href: "/issue", icon: AlertTriangle, show: hasPermission("issue_read") },
+        { name: "AI Scan", href: "/ai-analysis", icon: FileSearch, show: hasPermission("ai_analysis_read") },
       ],
     },
     {

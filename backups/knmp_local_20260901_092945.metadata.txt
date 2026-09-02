@@ -1,0 +1,7 @@
+﻿Generated At : 2026-09-01 09:29:45 +07:00
+Source Host  : localhost
+Source Port  : 5432
+Source User  : knmp
+Source DB    : knmp_db
+Dump File    : D:\spacecode\NGS\pertamina\knmp-v2\scripts\..\backups\knmp_local_20260901_092945.dump
+Restore Tool : pg_restore --clean --if-exists --no-owner --no-privileges

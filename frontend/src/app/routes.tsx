@@ -23,6 +23,7 @@ import { AbsensiPage } from "../features/absensi/components/AbsensiPage";
 import { UploadDokumenAbsensiPage } from "../features/absensi/components/UploadDokumenAbsensiPage";
 import { IssuePage } from "../features/issue/components/IssuePage";
 import { UploadDokumenIssuePage } from "../features/issue/components/UploadDokumenIssuePage";
+import { AIAnalysisPage } from "../features/ai-analysis/components/AIAnalysisPage";
 import { UsersPage } from "../features/users/components/UsersPage";
 import { PerusahaanPage } from "../features/perusahaan/components/PerusahaanPage";
 import {
@@ -293,6 +294,14 @@ export const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute requiredPermission="issue_read">
               <UploadDokumenIssuePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="ai-analysis"
+          element={
+            <ProtectedRoute requiredPermission="ai_analysis_read">
+              <AIAnalysisPage />
             </ProtectedRoute>
           }
         />

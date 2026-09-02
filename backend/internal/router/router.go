@@ -26,6 +26,7 @@ type Handlers struct {
 	Notification *handler.NotificationHandler
 	Perusahaan   *handler.PerusahaanHandler
 	Notulen      *handler.NotulenHandler
+	AIAnalysis   *handler.AIAnalysisHandler
 }
 
 func New(cfg *config.Config, h *Handlers) *fiber.App {
@@ -80,6 +81,9 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	// Public routes
 	api.Post("/auth/login", h.Auth.Login)
 	api.Get("/documents/stream", h.Document.Stream)
+	if h.AIAnalysis != nil {
+		api.Post("/integrations/telegram/webhook", h.AIAnalysis.TelegramWebhook)
+	}
 
 	// Protected routes
 	jwtAuth := middleware.JWTProtected(cfg.JWTSecret)
@@ -187,6 +191,17 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	protected.Patch("/documents/:id/verify", h.Document.Verify)
 	protected.Post("/documents/:id/verify", h.Document.Verify)
 	protected.Delete("/documents/:id", h.Document.Delete)
+
+	// AI Document Scan & Anomaly Analysis
+	if h.AIAnalysis != nil {
+		ai := protected.Group("/ai-analysis")
+		ai.Get("", middleware.RequirePermission("ai_analysis_read"), h.AIAnalysis.List)
+		ai.Get("/stats", middleware.RequirePermission("ai_analysis_read"), h.AIAnalysis.Stats)
+		ai.Get("/:id", middleware.RequirePermission("ai_analysis_read"), h.AIAnalysis.GetByID)
+		ai.Post("", middleware.RequirePermission("ai_analysis_create"), h.AIAnalysis.Create)
+		ai.Patch("/:id/status", middleware.RequirePermission("ai_analysis_update"), h.AIAnalysis.UpdateStatus)
+		ai.Delete("/:id", middleware.RequirePermission("ai_analysis_delete"), h.AIAnalysis.Delete)
+	}
 
 	// Perusahaan / Kontraktor Detail & Master
 	if h.Perusahaan != nil {
