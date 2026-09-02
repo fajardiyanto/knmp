@@ -37,6 +37,9 @@ type AnalysisMetadata = {
   provider_status?: string;
   document_type?: string;
   is_knmp_related?: boolean;
+  document_valid?: boolean;
+  text_readable?: boolean;
+  validation_note?: string;
   target_module?: string;
   draft_input?: Record<string, any>;
   extracted_facts?: string[];
@@ -131,7 +134,6 @@ export const AIAnalysisPage: React.FC = () => {
   });
 
   const canSubmit = form.input_text.trim() || file;
-  const visibleAnalyses = analyses.filter((item) => item.knmp_id);
 
   return (
     <div className="space-y-5">
@@ -253,13 +255,14 @@ export const AIAnalysisPage: React.FC = () => {
             <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
               Memuat hasil analisa...
             </div>
-          ) : visibleAnalyses.length === 0 ? (
+          ) : analyses.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
-              Belum ada hasil scan yang cocok dengan titik KNMP.
+              Belum ada hasil scan.
             </div>
           ) : (
-            visibleAnalyses.map((item) => {
+            analyses.map((item) => {
               const metadata = parseMetadata(item.metadata);
+              const isValid = metadata.document_valid === true && Boolean(item.knmp_id);
               const draftEntries = Object.entries(metadata.draft_input || {}).filter(([, value]) => value !== "" && value !== null && value !== undefined);
               return (
               <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -269,6 +272,9 @@ export const AIAnalysisPage: React.FC = () => {
                       <h3 className="font-bold text-slate-900 dark:text-slate-100">{item.title}</h3>
                       <span className={`rounded-full border px-2 py-0.5 text-xs font-bold ${riskClass[item.risk_level]}`}>
                         {item.risk_level.toUpperCase()} - {item.risk_score}
+                      </span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${isValid ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                        {isValid ? "Valid" : "Tidak valid"}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
@@ -301,15 +307,15 @@ export const AIAnalysisPage: React.FC = () => {
                 </div>
 
                 <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm leading-relaxed text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
-                  {item.summary || "Belum ada summary analisa."}
+                  {formatSummary(item.summary, metadata)}
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
                   <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
                     {metadata.document_type || "Jenis dokumen belum terdeteksi"}
                   </span>
-                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200">
-                    Cocok dengan {item.knmp_name}
+                  <span className={`rounded-full px-2.5 py-1 ${isValid ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200" : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-200"}`}>
+                    {isValid ? `Cocok dengan ${item.knmp_name}` : metadata.validation_note || "Belum cocok dengan titik KNMP"}
                   </span>
                 </div>
 
@@ -412,5 +418,22 @@ const formatFieldName = (field: string) => field.replace(/_/g, " ");
 const formatDraftValue = (value: any) => {
   if (Array.isArray(value)) return value.join(", ");
   if (typeof value === "object" && value !== null) return JSON.stringify(value);
-  return String(value);
+  const text = String(value);
+  if (looksGarbled(text)) return "Teks dokumen tidak terbaca otomatis. Perlu unggah ulang PDF searchable/OCR.";
+  return text;
+};
+
+const formatSummary = (summary: string | undefined, metadata: AnalysisMetadata) => {
+  if (!summary) return "Belum ada summary analisa.";
+  if (metadata.text_readable === false || looksGarbled(summary)) {
+    return "Dokumen berhasil diterima, tetapi teks file tidak dapat dibaca dengan baik. Kemungkinan PDF berupa scan gambar, memakai encoding yang tidak terbaca, atau file korup. Unggah ulang PDF searchable/OCR atau tambahkan caption yang memuat titik KNMP, tanggal, progres, dan keterangan utama.";
+  }
+  return summary;
+};
+
+const looksGarbled = (value: string) => {
+  if (!value) return false;
+  const weirdChars = value.match(/[^\x09\x0A\x0D\x20-\x7EÀ-ÿ]/g)?.length || 0;
+  const suspicious = value.match(/[ÏÐÝÚÛ]/g)?.length || 0;
+  return weirdChars + suspicious > Math.max(4, value.length * 0.03);
 };

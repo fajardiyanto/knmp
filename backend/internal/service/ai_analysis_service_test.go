@@ -1,6 +1,9 @@
 package service
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestAnalyzeAnomaliesDetectsHighRiskDocument(t *testing.T) {
 	result := analyzeAnomalies("Lokasi KNMP Batee Shoek tanggal 31/08/2026 progres 15% realisasi 60% ada kendala K3 kritis dan terlambat", "Laporan lapangan")
@@ -50,6 +53,25 @@ func TestAnalyzeAnomaliesBuildsDocumentSummaryAndDraftInput(t *testing.T) {
 	}
 	if len(result.extractedFacts) == 0 {
 		t.Fatal("expected extracted facts")
+	}
+}
+
+func TestUnreadableExtractedTextDoesNotLeakGibberishIntoSummary(t *testing.T) {
+	gibberish := "Ï+\x14 ÐT jgi\\YT\x14\\fYTÝTHgNZT:ZGTMM\\fiTgiY:iH T HZpHgiN:gTÝT"
+
+	if isReadableExtractedText(gibberish) {
+		t.Fatal("expected gibberish text to be marked unreadable")
+	}
+
+	result := markUnreadableDocumentResult(analyzeAnomalies(sanitizeExtractedText(gibberish), "Scan Web"))
+	if strings.Contains(result.summary, "jgi\\YT") {
+		t.Fatalf("summary leaked gibberish text: %s", result.summary)
+	}
+	if result.documentType != "Dokumen tidak terbaca" {
+		t.Fatalf("expected unreadable document type, got %s", result.documentType)
+	}
+	if result.isKNMPRelated {
+		t.Fatal("unreadable document should not be marked KNMP related")
 	}
 }
 

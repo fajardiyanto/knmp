@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"knmp-v2-backend/internal/domain"
 	"knmp-v2-backend/internal/repository"
 )
@@ -69,16 +70,28 @@ func (r *userRepo) GetByEmail(ctx context.Context, email string) (*domain.User, 
 }
 
 func (r *userRepo) List(ctx context.Context, search string) ([]*domain.User, error) {
-	var users []*domain.User
+	type userListRow struct {
+		domain.User
+		Roles       pq.StringArray `db:"roles"`
+		Permissions pq.StringArray `db:"permissions"`
+		KnmpIDs     pq.Int64Array  `db:"knmp_ids"`
+	}
+
+	var rows []userListRow
 	query := `
 		SELECT u.id, u.name, u.email, u.email_verified_at, u.created_at, u.updated_at, u.deleted_at,
-		       COALESCE(r.name, 'Admin') as role_name,
-		       COALESCE(k.name, '-') as knmp_name
+		       COALESCE(MIN(r.name), 'Admin') as role_name,
+		       COALESCE(NULLIF(string_agg(DISTINCT k.name, ', '), ''), '-') as knmp_name,
+		       COALESCE(array_agg(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), '{}') as roles,
+		       COALESCE(array_agg(DISTINCT p.name) FILTER (WHERE p.name IS NOT NULL), '{}') as permissions,
+		       COALESCE(array_agg(DISTINCT uk.knmp_id) FILTER (WHERE uk.knmp_id IS NOT NULL), '{}') as knmp_ids
 		FROM users u
 		LEFT JOIN model_has_roles mhr ON u.id = mhr.model_id
 		LEFT JOIN roles r ON mhr.role_id = r.id
 		LEFT JOIN user_knmps uk ON u.id = uk.user_id
 		LEFT JOIN knmps k ON uk.knmp_id = k.id
+		LEFT JOIN model_has_permissions mhp ON u.id = mhp.model_id
+		LEFT JOIN permissions p ON mhp.permission_id = p.id
 		WHERE u.deleted_at IS NULL
 	`
 	var args []any
@@ -87,11 +100,22 @@ func (r *userRepo) List(ctx context.Context, search string) ([]*domain.User, err
 		query += ` AND (u.name ILIKE $1 OR u.email ILIKE $1)`
 		args = append(args, "%"+search+"%")
 	}
-	query += ` ORDER BY u.id ASC`
+	query += `
+		GROUP BY u.id, u.name, u.email, u.email_verified_at, u.created_at, u.updated_at, u.deleted_at
+		ORDER BY u.id ASC
+	`
 
-	err := r.db.SelectContext(ctx, &users, query, args...)
+	err := r.db.SelectContext(ctx, &rows, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list users: %w", err)
+	}
+	users := make([]*domain.User, 0, len(rows))
+	for _, row := range rows {
+		user := row.User
+		user.Roles = []string(row.Roles)
+		user.Permissions = []string(row.Permissions)
+		user.KnmpIDs = []int64(row.KnmpIDs)
+		users = append(users, &user)
 	}
 	return users, nil
 }

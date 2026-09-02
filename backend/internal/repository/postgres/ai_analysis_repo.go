@@ -80,7 +80,7 @@ func (r *aiAnalysisRepo) List(ctx context.Context, filter repository.AIAnalysisF
 		LEFT JOIN knmps k ON a.knmp_id = k.id
 		LEFT JOIN users au ON a.assigned_user_id = au.id
 		LEFT JOIN users su ON a.submitted_by = su.id
-		WHERE a.deleted_at IS NULL AND a.knmp_id IS NOT NULL
+		WHERE a.deleted_at IS NULL
 	`
 	args := []any{}
 	argIdx := 1
@@ -195,7 +195,7 @@ func (r *aiAnalysisRepo) GetStats(ctx context.Context, userKnmpIDs []int64) (*do
 			COUNT(*) FILTER (WHERE risk_level = 'rendah') AS low_risk,
 			COUNT(*) FILTER (WHERE status = 'perlu_review') AS needs_review
 		FROM ai_analyses
-		WHERE deleted_at IS NULL AND knmp_id IS NOT NULL
+		WHERE deleted_at IS NULL
 	`
 	args := []any{}
 	if len(userKnmpIDs) > 0 {

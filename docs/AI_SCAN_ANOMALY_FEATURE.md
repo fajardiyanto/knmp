@@ -74,7 +74,7 @@ Provider yang didukung:
 
 Jika API key kosong, provider error, atau respons AI tidak valid, sistem otomatis memakai fallback `rule_based_v1` agar proses scan tetap tersimpan dan tidak gagal total.
 
-Hasil scan hanya ditampilkan jika dokumen lolos dua validasi: dokumen terkait KNMP dan sistem menemukan kecocokan titik KNMP aktif dari isi dokumen/caption. Jika tidak ada titik KNMP yang cocok, hasil scan ditolak dan tidak masuk daftar.
+Hasil scan tetap dianalisis dan disimpan walaupun dokumen tidak lolos validasi KNMP. Jika dokumen tidak terkait KNMP atau tidak ditemukan titik KNMP aktif yang cocok dari isi dokumen/caption, item tetap tampil di daftar dengan penanda `Tidak valid` dan alasan validasinya.
 
 Fallback lokal membaca teks/caption/file teks dan memberi skor risiko berdasarkan:
 

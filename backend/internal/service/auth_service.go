@@ -155,16 +155,7 @@ func (s *AuthService) GetUserProfile(ctx context.Context, userID int64) (*domain
 }
 
 func (s *AuthService) ListUsers(ctx context.Context, search string) ([]*domain.User, error) {
-	users, err := s.userRepo.List(ctx, search)
-	if err != nil {
-		return nil, err
-	}
-	for _, u := range users {
-		u.Roles, _ = s.userRepo.GetUserRoles(ctx, u.ID)
-		u.Permissions, _ = s.userRepo.GetUserPermissions(ctx, u.ID)
-		u.KnmpIDs, _ = s.userRepo.GetUserKnmpIDs(ctx, u.ID)
-	}
-	return users, nil
+	return s.userRepo.List(ctx, search)
 }
 
 func (s *AuthService) CreateUser(ctx context.Context, name, email, password, role string, knmpIDs []int64, permissions []string) (*domain.User, error) {

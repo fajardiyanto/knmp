@@ -1,7 +1,7 @@
 const BASE_URL =
-  (import.meta as any).env?.VITE_API_BASE_URL !== undefined
+  (import.meta as any).env?.VITE_API_BASE_URL
     ? (import.meta as any).env?.VITE_API_BASE_URL
-    : window.location.port === "5173"
+    : (import.meta as any).env?.DEV
     ? "http://localhost:8080"
     : "";
 

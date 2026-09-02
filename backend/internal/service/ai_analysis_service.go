@@ -140,6 +140,7 @@ func (s *AIAnalysisService) Analyze(ctx context.Context, input AIAnalysisInput) 
 	var externalFile *AIAnalysisExternalFile
 	if input.File != nil {
 		fileText := extractPreviewText(input.File)
+		fileText = sanitizeExtractedText(fileText)
 		if fileText != "" {
 			if extractedText != "" {
 				extractedText += "\n\n"
@@ -153,6 +154,7 @@ func (s *AIAnalysisService) Analyze(ctx context.Context, input AIAnalysisInput) 
 		if externalPreview == "" && strings.EqualFold(filepath.Ext(input.ExternalFile.FileName), ".pdf") {
 			externalPreview = extractPDFTextFromBytes(input.ExternalFile.Data)
 		}
+		externalPreview = sanitizeExtractedText(externalPreview)
 		if externalPreview != "" {
 			if extractedText != "" {
 				extractedText += "\n\n"
@@ -176,10 +178,12 @@ func (s *AIAnalysisService) Analyze(ctx context.Context, input AIAnalysisInput) 
 		}
 	}
 
+	extractedTextReadable := isReadableExtractedText(extractedText)
 	result, providerStatus, providerErr := s.analyzeWithProvider(ctx, provider, title, extractedText)
-	if input.KnmpID == nil || !result.isKNMPRelated {
-		return nil, errors.New("dokumen tidak ditampilkan karena tidak terdeteksi terkait titik KNMP yang valid")
+	if !extractedTextReadable {
+		result = markUnreadableDocumentResult(result)
 	}
+	documentValid := input.KnmpID != nil && result.isKNMPRelated
 
 	metadata := map[string]any{
 		"engine":          result.engine,
@@ -187,6 +191,9 @@ func (s *AIAnalysisService) Analyze(ctx context.Context, input AIAnalysisInput) 
 		"provider_status": providerStatus,
 		"document_type":   result.documentType,
 		"is_knmp_related": result.isKNMPRelated,
+		"document_valid":  documentValid,
+		"text_readable":   extractedTextReadable,
+		"validation_note": documentValidationNote(input.KnmpID, result.isKNMPRelated),
 		"target_module":   result.targetModule,
 		"draft_input":     result.draftInput,
 		"extracted_facts": result.extractedFacts,
@@ -722,9 +729,11 @@ func buildAnalysisSummary(level string, score int, findings []string, recommenda
 
 func buildDocumentSummary(level string, score int, text string, findings []string, recommendations []string) string {
 	summary := fmt.Sprintf("Dokumen sudah dibaca dan dikategorikan sebagai risiko %s dengan skor %d/100.", level, score)
-	if strings.TrimSpace(text) != "" {
+	if isReadableExtractedText(text) {
 		snippet := strings.Join(strings.Fields(text), " ")
 		summary += " Isi utama dokumen: " + limitText(snippet, 280)
+	} else if strings.TrimSpace(text) != "" {
+		summary += " Teks dokumen tidak dapat dibaca dengan baik karena hasil ekstraksi PDF tidak valid atau dokumen berupa scan gambar tanpa OCR."
 	}
 	if len(findings) > 0 {
 		summary += " Temuan utama: " + findings[0] + "."
@@ -733,6 +742,26 @@ func buildDocumentSummary(level string, score int, text string, findings []strin
 		summary += " Tindak lanjut awal: " + recommendations[0] + "."
 	}
 	return summary
+}
+
+func markUnreadableDocumentResult(result anomalyResult) anomalyResult {
+	result.documentType = "Dokumen tidak terbaca"
+	result.isKNMPRelated = false
+	result.targetModule = "dokumen_umum"
+	result.summary = "Dokumen berhasil diterima, tetapi teks di dalam file tidak dapat dibaca dengan baik. Kemungkinan PDF memakai encoding tertanam, hasil scan gambar, atau file korup sehingga AI tidak bisa membuat summary isi dokumen secara akurat. Silakan unggah PDF dengan text layer yang dapat diseleksi atau file hasil OCR agar sistem bisa mencocokkan titik KNMP dan mengisi draft modul."
+	result.findings = []string{
+		"Teks hasil ekstraksi dokumen tidak terbaca atau berisi karakter acak",
+		"Titik KNMP belum bisa dicocokkan dari isi dokumen",
+	}
+	result.recommendations = []string{
+		"Unggah ulang dokumen dalam format PDF searchable atau hasil OCR",
+		"Tambahkan caption berisi nama titik KNMP, tanggal, progres, dan keterangan utama",
+	}
+	result.draftInput = map[string]any{
+		"keterangan": "Dokumen tidak dapat dibaca otomatis. Perlu unggah ulang dokumen searchable/OCR atau lengkapi caption.",
+	}
+	result.extractedFacts = []string{"Teks dokumen tidak terbaca otomatis"}
+	return result
 }
 
 func normalizeTargetModule(module string) string {
@@ -751,6 +780,16 @@ func cleanDocumentType(value string) string {
 		return "Dokumen umum"
 	}
 	return value
+}
+
+func documentValidationNote(knmpID *int64, isKNMPRelated bool) string {
+	if !isKNMPRelated {
+		return "Dokumen dianalisis, tetapi AI menilai dokumen tidak berkaitan dengan KNMP."
+	}
+	if knmpID == nil {
+		return "Dokumen dianalisis, tetapi tidak ditemukan titik KNMP aktif yang cocok dari isi dokumen."
+	}
+	return "Dokumen valid dan cocok dengan titik KNMP."
 }
 
 func isLikelyKNMPRelated(source string) bool {
@@ -827,9 +866,13 @@ func inferTargetModule(source string) string {
 }
 
 func inferDraftInput(source, title string) map[string]any {
+	keterangan := "Belum ada keterangan terstruktur yang terbaca dari dokumen."
+	if isReadableExtractedText(source) {
+		keterangan = limitText(strings.Join(strings.Fields(source), " "), 500)
+	}
 	draft := map[string]any{
 		"nama":       strings.TrimSpace(title),
-		"keterangan": limitText(strings.Join(strings.Fields(source), " "), 500),
+		"keterangan": keterangan,
 	}
 	if date := extractISODate(source); date != "" {
 		draft["tanggal"] = date
@@ -1006,6 +1049,55 @@ func extractPDFTextFromBytes(data []byte) string {
 		return ""
 	}
 	return string(text)
+}
+
+func sanitizeExtractedText(text string) string {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return ""
+	}
+	if !isReadableExtractedText(text) {
+		return "Teks dokumen tidak dapat dibaca otomatis. PDF kemungkinan berupa scan gambar, memakai encoding yang tidak terbaca, atau file korup."
+	}
+	return text
+}
+
+func isReadableExtractedText(text string) bool {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return false
+	}
+	runes := []rune(text)
+	if len(runes) < 20 {
+		return true
+	}
+	readable := 0
+	weird := 0
+	letters := 0
+	for _, r := range runes {
+		switch {
+		case r == '\n' || r == '\r' || r == '\t' || r == ' ':
+			readable++
+		case r < 32:
+			return false
+		case r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9':
+			readable++
+			if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' {
+				letters++
+			}
+		case strings.ContainsRune(".,;:/()%+-_@#&[]{}'\"?!", r):
+			readable++
+		default:
+			weird++
+		}
+	}
+	total := readable + weird
+	if total == 0 {
+		return false
+	}
+	readableRatio := float64(readable) / float64(total)
+	letterRatio := float64(letters) / float64(total)
+	return readableRatio >= 0.72 && letterRatio >= 0.18
 }
 
 func extractPercentages(text string) []float64 {
