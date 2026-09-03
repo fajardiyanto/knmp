@@ -135,7 +135,7 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
   const sheetContent = (
     <div className="w-full max-w-[210mm] bg-white shadow-2xl print:shadow-none print:max-w-none text-slate-900 text-[11px] leading-tight font-sans mx-auto">
       {/* ================= HALAMAN 1 ================= */}
-      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-[40mm] pb-10 flex flex-col justify-between border-b border-slate-300 print:border-none print:min-h-screen print:break-after-page overflow-hidden">
+      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-[34mm] pb-6 flex flex-col justify-between border-b border-slate-300 print:border-none print:min-h-screen print:break-after-page overflow-hidden">
         {/* Official KKP Template Background */}
         <img
           src="/assets/img/kkp_official_bg.jpg"
@@ -145,11 +145,11 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
 
         <div className="relative z-10">
           {/* Judul & Status Subheader */}
-          <div className="text-center mb-3">
+          <div className="text-center mb-2">
             <h1 className="text-sm font-black uppercase tracking-wide text-slate-900">
               FORMAT LAPORAN MINGGUAN KONSTRUKSI KNMP
             </h1>
-            <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-xs font-semibold text-slate-700">
+            <div className="mt-1 flex flex-wrap items-center justify-center gap-x-5 gap-y-0.5 text-xs font-semibold text-slate-700">
               <span>Periode: <strong className="text-slate-900">{data.periode_awal || "-"} s.d. {data.periode_akhir || "-"}</strong></span>
               <span>Minggu ke-: <strong className="text-slate-900">{data.minggu_ke || "-"}</strong></span>
               <span className="inline-flex items-center gap-2">
@@ -170,61 +170,61 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
           </div>
 
           {/* 1. Identitas dan Acuan */}
-          <div className="mb-3">
-            <h3 className="font-bold text-xs text-slate-900 mb-1">1. Identitas dan Acuan</h3>
-            <table className="w-full border-collapse border border-slate-700 text-[10.5px]">
+          <div className="mb-2">
+            <h3 className="font-bold text-xs text-slate-900 mb-0.5">1. Identitas dan Acuan</h3>
+            <table className="w-full border-collapse border border-slate-700 text-[9.5px]">
               <tbody>
                 <tr>
-                  <td className="border border-slate-600 bg-slate-100 p-1.5 font-bold w-[18%]">Paket pekerjaan</td>
-                  <td className="border border-slate-600 p-1.5 w-[32%]">{data.identitas?.paket_pekerjaan || "-"}</td>
-                  <td className="border border-slate-600 bg-slate-100 p-1.5 font-bold w-[18%]">Lokasi</td>
-                  <td className="border border-slate-600 p-1.5 w-[32%]">{data.identitas?.lokasi || "-"}</td>
+                  <td className="border border-slate-600 bg-slate-100 py-0.5 px-1.5 font-bold w-[18%]">Paket pekerjaan</td>
+                  <td className="border border-slate-600 py-0.5 px-1.5 w-[32%]">{data.identitas?.paket_pekerjaan || "-"}</td>
+                  <td className="border border-slate-600 bg-slate-100 py-0.5 px-1.5 font-bold w-[18%]">Lokasi</td>
+                  <td className="border border-slate-600 py-0.5 px-1.5 w-[32%]">{data.identitas?.lokasi || "-"}</td>
                 </tr>
                 <tr>
-                  <td className="border border-slate-600 bg-slate-100 p-1.5 font-bold">Jenis titik</td>
-                  <td className="border border-slate-600 p-1.5">
+                  <td className="border border-slate-600 bg-slate-100 py-0.5 px-1.5 font-bold">Jenis titik</td>
+                  <td className="border border-slate-600 py-0.5 px-1.5">
                     <span className="inline-flex items-center gap-4">
                       <span>[{data.identitas?.jenis_titik === "HUB" ? " ✔ " : "   "}] HUB</span>
                       <span>[{data.identitas?.jenis_titik === "PENYANGGA" ? " ✔ " : "   "}] PENYANGGA</span>
                     </span>
                   </td>
-                  <td className="border border-slate-600 bg-slate-100 p-1.5 font-bold">No. kontrak/SPMK</td>
-                  <td className="border border-slate-600 p-1.5">{data.identitas?.no_kontrak_spmk || "-"}</td>
+                  <td className="border border-slate-600 bg-slate-100 py-0.5 px-1.5 font-bold">No. kontrak/SPMK</td>
+                  <td className="border border-slate-600 py-0.5 px-1.5">{data.identitas?.no_kontrak_spmk || "-"}</td>
                 </tr>
                 <tr>
-                  <td className="border border-slate-600 bg-slate-100 p-1.5 font-bold">Kontraktor</td>
-                  <td className="border border-slate-600 p-1.5">{data.identitas?.kontraktor || "-"}</td>
-                  <td className="border border-slate-600 bg-slate-100 p-1.5 font-bold">Pengawas/PPK</td>
-                  <td className="border border-slate-600 p-1.5">{data.identitas?.pengawas_ppk || "-"}</td>
+                  <td className="border border-slate-600 bg-slate-100 py-0.5 px-1.5 font-bold">Kontraktor</td>
+                  <td className="border border-slate-600 py-0.5 px-1.5">{data.identitas?.kontraktor || "-"}</td>
+                  <td className="border border-slate-600 bg-slate-100 py-0.5 px-1.5 font-bold">Pengawas/PPK</td>
+                  <td className="border border-slate-600 py-0.5 px-1.5">{data.identitas?.pengawas_ppk || "-"}</td>
                 </tr>
                 <tr>
-                  <td className="border border-slate-600 bg-slate-100 p-1.5 font-bold">Rencana kum.</td>
-                  <td className="border border-slate-600 p-1.5 font-bold text-blue-700">
+                  <td className="border border-slate-600 bg-slate-100 py-0.5 px-1.5 font-bold">Rencana kum.</td>
+                  <td className="border border-slate-600 py-0.5 px-1.5 font-bold text-blue-700">
                     {formatPct(data.identitas?.rencana_kum_pct)}
                   </td>
-                  <td className="border border-slate-600 bg-slate-100 p-1.5 font-bold">Aktual kum.</td>
-                  <td className="border border-slate-600 p-1.5 font-bold text-emerald-700">
+                  <td className="border border-slate-600 bg-slate-100 py-0.5 px-1.5 font-bold">Aktual kum.</td>
+                  <td className="border border-slate-600 py-0.5 px-1.5 font-bold text-emerald-700">
                     {formatPct(data.identitas?.aktual_kum_pct)}
                   </td>
                 </tr>
               </tbody>
             </table>
-            <p className="text-[9px] text-slate-500 italic mt-0.5">
+            <p className="text-[8px] text-slate-500 italic mt-0.5 leading-tight">
               Acuan BoQ/RAB: daftar kuantitas dan harga kontrak, AHSP/HSP, volume terpasang terukur, bukti lapangan, kurva-S, BA opname/MC, serta perubahan pekerjaan/addendum bila ada.
             </p>
           </div>
 
           {/* 2. Checklist Fasilitas KNMP (10 Fasilitas Standar) */}
-          <div className="mb-3">
-            <h3 className="font-bold text-xs text-slate-900 mb-1">2. Checklist Fasilitas KNMP</h3>
-            <table className="w-full border-collapse border border-slate-700 text-[10px]">
+          <div className="mb-2">
+            <h3 className="font-bold text-xs text-slate-900 mb-0.5">2. Checklist Fasilitas KNMP</h3>
+            <table className="w-full border-collapse border border-slate-700 text-[8.5px]">
               <thead>
                 <tr className="bg-slate-200 text-slate-900 font-bold text-center">
-                  <th className="border border-slate-600 p-1 w-7">No</th>
-                  <th className="border border-slate-600 p-1 text-left">Fasilitas/area</th>
-                  <th className="border border-slate-600 p-1 w-20">Lingkup</th>
-                  <th className="border border-slate-600 p-1 w-40">Status</th>
-                  <th className="border border-slate-600 p-1">Catatan</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-7">No</th>
+                  <th className="border border-slate-600 py-0.5 px-1 text-left">Fasilitas/area</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-20">Lingkup</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-36">Status</th>
+                  <th className="border border-slate-600 py-0.5 px-1">Catatan</th>
                 </tr>
               </thead>
               <tbody>
@@ -236,22 +236,22 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                   catatan: "",
                 }))).map((f, idx) => (
                   <tr key={idx} className="hover:bg-slate-50">
-                    <td className="border border-slate-600 p-0.5 text-center font-bold">{f.no || idx + 1}</td>
-                    <td className="border border-slate-600 p-0.5 font-semibold">{f.fasilitas}</td>
-                    <td className="border border-slate-600 p-0.5 text-center">
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{f.no || idx + 1}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{f.fasilitas}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center">
                       <span className="inline-flex gap-1.5">
                         <span>[{f.lingkup === "Ya" ? "✔" : " "}] Ya</span>
                         <span>[{f.lingkup === "N/A" ? "✔" : " "}] N/A</span>
                       </span>
                     </td>
-                    <td className="border border-slate-600 p-0.5 text-center">
-                      <span className="inline-flex gap-1 text-[9px]">
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center">
+                      <span className="inline-flex gap-1 text-[8px]">
                         <span>[{f.status === "Belum" ? "✔" : " "}] Belum</span>
                         <span>[{f.status === "Proses" ? "✔" : " "}] Proses</span>
                         <span>[{f.status === "Selesai" ? "✔" : " "}] Selesai</span>
                       </span>
                     </td>
-                    <td className="border border-slate-600 p-0.5 text-slate-700">{f.catatan || "-"}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{f.catatan || "-"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -259,19 +259,19 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
           </div>
 
           {/* 3. Ringkasan BoQ/RAB per Kelompok Pekerjaan */}
-          <div className="mb-3">
-            <h3 className="font-bold text-xs text-slate-900 mb-1">3. Ringkasan BoQ/RAB per Kelompok Pekerjaan</h3>
-            <table className="w-full border-collapse border border-slate-700 text-[10px]">
+          <div className="mb-2">
+            <h3 className="font-bold text-xs text-slate-900 mb-0.5">3. Ringkasan BoQ/RAB per Kelompok Pekerjaan</h3>
+            <table className="w-full border-collapse border border-slate-700 text-[8.5px]">
               <thead>
                 <tr className="bg-slate-200 text-slate-900 font-bold text-center">
-                  <th className="border border-slate-600 p-1 w-7">No</th>
-                  <th className="border border-slate-600 p-1 text-left">Kelompok BoQ</th>
-                  <th className="border border-slate-600 p-1 w-24">Nilai kontrak</th>
-                  <th className="border border-slate-600 p-1 w-14">Bobot</th>
-                  <th className="border border-slate-600 p-1 w-16">Renc. kum.</th>
-                  <th className="border border-slate-600 p-1 w-16">Akt. kum.</th>
-                  <th className="border border-slate-600 p-1 w-14">Deviasi</th>
-                  <th className="border border-slate-600 p-1">Ket.</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-7">No</th>
+                  <th className="border border-slate-600 py-0.5 px-1 text-left">Kelompok BoQ</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-24">Nilai kontrak</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-12">Bobot</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-14">Renc. kum.</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-14">Akt. kum.</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-14">Deviasi</th>
+                  <th className="border border-slate-600 py-0.5 px-1">Ket.</th>
                 </tr>
               </thead>
               <tbody>
@@ -286,16 +286,16 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                   keterangan: "",
                 }))).map((item, idx) => (
                   <tr key={idx}>
-                    <td className="border border-slate-600 p-0.5 text-center font-bold">{item.no || idx + 1}</td>
-                    <td className="border border-slate-600 p-0.5 font-semibold">{item.kelompok_boq}</td>
-                    <td className="border border-slate-600 p-0.5 text-right font-mono">{formatRp(item.nilai_kontrak)}</td>
-                    <td className="border border-slate-600 p-0.5 text-center font-mono">{formatPct(item.bobot_pct)}</td>
-                    <td className="border border-slate-600 p-0.5 text-center font-mono text-blue-700">{formatPct(item.renc_kum_pct)}</td>
-                    <td className="border border-slate-600 p-0.5 text-center font-mono font-bold text-emerald-700">{formatPct(item.akt_kum_pct)}</td>
-                    <td className={`border border-slate-600 p-0.5 text-center font-mono font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-700"}`}>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{item.kelompok_boq}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono">{formatRp(item.nilai_kontrak)}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono">{formatPct(item.bobot_pct)}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono text-blue-700">{formatPct(item.renc_kum_pct)}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold text-emerald-700">{formatPct(item.akt_kum_pct)}</td>
+                    <td className={`border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-700"}`}>
                       {item.deviasi_pct > 0 ? `+${item.deviasi_pct.toFixed(2)}%` : `${item.deviasi_pct.toFixed(2)}%`}
                     </td>
-                    <td className="border border-slate-600 p-0.5 text-slate-700">{item.keterangan || "-"}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.keterangan || "-"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -303,25 +303,25 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
           </div>
 
           {/* 4. Detail BoQ Progres Mingguan */}
-          <div>
-            <h3 className="font-bold text-xs text-slate-900 mb-1">4. Detail BoQ Progres Mingguan</h3>
-            <table className="w-full border-collapse border border-slate-700 text-[10px]">
+          <div className="mb-1">
+            <h3 className="font-bold text-xs text-slate-900 mb-0.5">4. Detail BoQ Progres Mingguan</h3>
+            <table className="w-full border-collapse border border-slate-700 text-[8.5px]">
               <thead>
                 <tr className="bg-slate-200 text-slate-900 font-bold text-center">
-                  <th className="border border-slate-600 p-1 w-7">No</th>
-                  <th className="border border-slate-600 p-1 w-16">Kode BoQ</th>
-                  <th className="border border-slate-600 p-1 w-20">Area</th>
-                  <th className="border border-slate-600 p-1 text-left">Uraian</th>
-                  <th className="border border-slate-600 p-1 w-14">Bobot</th>
-                  <th className="border border-slate-600 p-1 w-14">Renc. mgg</th>
-                  <th className="border border-slate-600 p-1 w-14">Real. mgg</th>
-                  <th className="border border-slate-600 p-1 w-14">Akt. kum.</th>
-                  <th className="border border-slate-600 p-1 w-14">Deviasi</th>
-                  <th className="border border-slate-600 p-1 w-16">Bukti/MC</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-7">No</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-14">Kode BoQ</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-20">Area</th>
+                  <th className="border border-slate-600 py-0.5 px-1 text-left">Uraian</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-12">Bobot</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-14">Renc. mgg</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-14">Real. mgg</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-14">Akt. kum.</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-14">Deviasi</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-14">Bukti/MC</th>
                 </tr>
               </thead>
               <tbody>
-                {(data.detail_boq?.length ? data.detail_boq : [1, 2, 3, 4, 5, 6].map((n) => ({
+                {(data.detail_boq?.length ? data.detail_boq : [1, 2, 3, 4].map((n) => ({
                   no: n,
                   kode_boq: `DIV-${n}`,
                   area: "-",
@@ -332,37 +332,37 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                   akt_kum: 0,
                   deviasi_pct: 0,
                   bukti_mc: "MC-01",
-                }))).map((item, idx) => (
+                }))).slice(0, 4).map((item, idx) => (
                   <tr key={idx}>
-                    <td className="border border-slate-600 p-0.5 text-center font-bold">{item.no || idx + 1}</td>
-                    <td className="border border-slate-600 p-0.5 text-center font-mono font-bold">{item.kode_boq}</td>
-                    <td className="border border-slate-600 p-0.5">{item.area || "-"}</td>
-                    <td className="border border-slate-600 p-0.5">{item.uraian || "-"}</td>
-                    <td className="border border-slate-600 p-0.5 text-center font-mono">{formatPct(item.bobot_pct)}</td>
-                    <td className="border border-slate-600 p-0.5 text-center font-mono text-blue-700">{formatPct(item.renc_mgg)}</td>
-                    <td className="border border-slate-600 p-0.5 text-center font-mono font-bold text-emerald-700">{formatPct(item.real_mgg)}</td>
-                    <td className="border border-slate-600 p-0.5 text-center font-mono font-bold">{formatPct(item.akt_kum)}</td>
-                    <td className={`border border-slate-600 p-0.5 text-center font-mono font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-700"}`}>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold">{item.kode_boq}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1">{item.area || "-"}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 truncate max-w-[200px]">{item.uraian || "-"}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono">{formatPct(item.bobot_pct)}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono text-blue-700">{formatPct(item.renc_mgg)}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold text-emerald-700">{formatPct(item.real_mgg)}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold">{formatPct(item.akt_kum)}</td>
+                    <td className={`border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-700"}`}>
                       {item.deviasi_pct > 0 ? `+${item.deviasi_pct.toFixed(2)}%` : `${item.deviasi_pct.toFixed(2)}%`}
                     </td>
-                    <td className="border border-slate-600 p-0.5 text-center">{item.bukti_mc || "-"}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center">{item.bukti_mc || "-"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="text-[9px] text-slate-500 italic mt-0.5">
+            <p className="text-[7.5px] text-slate-500 italic mt-0.5 leading-tight">
               Bandingkan realisasi mingguan terhadap rencana kurva-S/baseline. Deviasi negatif perlu penyebab dan recovery plan.
             </p>
           </div>
         </div>
 
-        <div className="text-right text-[9px] text-slate-400 pt-2">
+        <div className="text-right text-[8.5px] text-slate-400 pt-1">
           Halaman 1 dari 2 — Laporan Mingguan Konstruksi KNMP
         </div>
       </div>
 
       {/* ================= HALAMAN 2 ================= */}
-      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-[40mm] pb-10 flex flex-col justify-between print:min-h-screen print:break-before-page overflow-hidden">
+      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-[34mm] pb-6 flex flex-col justify-between print:min-h-screen print:break-before-page overflow-hidden">
         {/* Official KKP Template Background */}
         <img
           src="/assets/img/kkp_official_bg.jpg"
@@ -373,17 +373,17 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
         <div className="relative z-10">
 
           {/* 5. Kontrol Mingguan dan Look Ahead (6 Aspek) */}
-          <div className="mb-4">
-            <h3 className="font-bold text-xs text-slate-900 mb-1.5">5. Kontrol Mingguan dan Look Ahead</h3>
-            <table className="w-full border-collapse border border-slate-700 text-[10px]">
+          <div className="mb-2">
+            <h3 className="font-bold text-xs text-slate-900 mb-0.5">5. Kontrol Mingguan dan Look Ahead</h3>
+            <table className="w-full border-collapse border border-slate-700 text-[8.5px]">
               <thead>
                 <tr className="bg-slate-200 text-slate-900 font-bold text-center">
-                  <th className="border border-slate-600 p-1 w-7">No</th>
-                  <th className="border border-slate-600 p-1 w-36 text-left">Aspek</th>
-                  <th className="border border-slate-600 p-1 text-left">Kondisi</th>
-                  <th className="border border-slate-600 p-1 text-left">Isu/Risiko</th>
-                  <th className="border border-slate-600 p-1 text-left">Keputusan dibutuhkan</th>
-                  <th className="border border-slate-600 p-1 w-28 text-left">PIC/Target</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-7">No</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-32 text-left">Aspek</th>
+                  <th className="border border-slate-600 py-0.5 px-1 text-left">Kondisi</th>
+                  <th className="border border-slate-600 py-0.5 px-1 text-left">Isu/Risiko</th>
+                  <th className="border border-slate-600 py-0.5 px-1 text-left">Keputusan dibutuhkan</th>
+                  <th className="border border-slate-600 py-0.5 px-1 w-24 text-left">PIC/Target</th>
                 </tr>
               </thead>
               <tbody>
@@ -396,12 +396,12 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                   pic_target: "Site Manager",
                 }))).map((item, idx) => (
                   <tr key={idx}>
-                    <td className="border border-slate-600 p-1 text-center font-bold">{item.no || idx + 1}</td>
-                    <td className="border border-slate-600 p-1 font-semibold">{item.aspek}</td>
-                    <td className="border border-slate-600 p-1 text-slate-700">{item.kondisi || "-"}</td>
-                    <td className="border border-slate-600 p-1 text-slate-700">{item.isu_risiko || "-"}</td>
-                    <td className="border border-slate-600 p-1 text-slate-700">{item.keputusan_dibutuhkan || "-"}</td>
-                    <td className="border border-slate-600 p-1 font-semibold text-slate-800">{item.pic_target || "-"}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{item.aspek}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.kondisi || "-"}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.isu_risiko || "-"}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.keputusan_dibutuhkan || "-"}</td>
+                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold text-slate-800">{item.pic_target || "-"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -409,9 +409,9 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
           </div>
 
           {/* 6. Dokumentasi Foto Mingguan (2x2 Grid) */}
-          <div className="mb-6">
-            <h3 className="font-bold text-xs text-slate-900 mb-2">6. Dokumentasi Foto Mingguan</h3>
-            <div className="grid grid-cols-2 gap-3.5">
+          <div className="mb-2.5">
+            <h3 className="font-bold text-xs text-slate-900 mb-1">6. Dokumentasi Foto Mingguan</h3>
+            <div className="grid grid-cols-2 gap-2.5">
               {[1, 2, 3, 4].map((slot) => {
                 const foto = data.dokumentasi_foto?.find((f) => f.slot === slot) || {
                   slot,
@@ -422,13 +422,13 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                 };
 
                 return (
-                  <div key={slot} className="border border-slate-600 p-2 rounded bg-white flex flex-col">
-                    <div className="font-bold text-xs uppercase text-slate-800 mb-1 flex items-center justify-between">
+                  <div key={slot} className="border border-slate-600 p-1.5 rounded bg-white flex flex-col">
+                    <div className="font-bold text-xs uppercase text-slate-800 mb-0.5 flex items-center justify-between">
                       <span>FOTO {slot}</span>
-                      <span className="text-[9px] text-slate-400 font-mono">SLOT #{slot}</span>
+                      <span className="text-[8px] text-slate-400 font-mono">SLOT #{slot}</span>
                     </div>
 
-                    <div className="aspect-[16/10] bg-slate-100 border border-slate-300 rounded overflow-hidden flex items-center justify-center mb-2">
+                    <div className="aspect-[16/8] bg-slate-100 border border-slate-300 rounded overflow-hidden flex items-center justify-center mb-1">
                       {foto.file_url ? (
                         <img
                           src={foto.file_url}
@@ -436,13 +436,13 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="text-center p-3 text-slate-400 text-[10px] italic">
+                        <div className="text-center p-2 text-slate-400 text-[9px] italic">
                           [Dokumentasi Progres Mingguan #{slot}]
                         </div>
                       )}
                     </div>
 
-                    <div className="text-[9.5px] space-y-0.5 border-t border-slate-200 pt-1 text-slate-700">
+                    <div className="text-[8.5px] space-y-0.5 border-t border-slate-200 pt-0.5 text-slate-700 leading-tight">
                       <div><strong>Kode BoQ/area:</strong> {foto.kode_boq_area || "-"}</div>
                       <div><strong>Tanggal:</strong> {foto.tanggal || data.periode_akhir || "-"}</div>
                       <div><strong>Keterangan:</strong> {foto.keterangan || "-"}</div>
@@ -451,22 +451,22 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                 );
               })}
             </div>
-            <p className="text-[9px] text-slate-500 italic mt-1.5">
+            <p className="text-[7.5px] text-slate-500 italic mt-0.5 leading-tight">
               Foto wajib dikaitkan dengan kode BoQ/area agar progres volume mudah diverifikasi.
             </p>
           </div>
 
           {/* 7. Pengesahan (3 Kolom) */}
           <div>
-            <h3 className="font-bold text-xs text-slate-900 mb-1.5">7. Pengesahan</h3>
-            <table className="w-full border-collapse border border-slate-700 text-[10.5px]">
+            <h3 className="font-bold text-xs text-slate-900 mb-1">7. Pengesahan</h3>
+            <table className="w-full border-collapse border border-slate-700 text-[9.5px]">
               <thead>
                 <tr className="bg-slate-200 text-slate-900 font-bold text-center">
-                  <th className="border border-slate-600 p-1.5 w-1/3">Dibuat oleh</th>
-                  <th className="border border-slate-600 p-1.5 w-1/3">Diperiksa oleh</th>
-                  <th className="border border-slate-600 p-1.5 w-1/3">Disetujui oleh</th>
+                  <th className="border border-slate-600 py-1 px-1.5 w-1/3">Dibuat oleh</th>
+                  <th className="border border-slate-600 py-1 px-1.5 w-1/3">Diperiksa oleh</th>
+                  <th className="border border-slate-600 py-1 px-1.5 w-1/3">Disetujui oleh</th>
                 </tr>
-                <tr className="text-center text-[9.5px] text-slate-600 font-medium">
+                <tr className="text-center text-[8.5px] text-slate-600 font-medium">
                   <th className="border border-slate-600 py-0.5">Kontraktor Pelaksana</th>
                   <th className="border border-slate-600 py-0.5">Konsultan Pengawas</th>
                   <th className="border border-slate-600 py-0.5">Pejabat Pembuat Komitmen (PPK)</th>
@@ -474,18 +474,18 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
               </thead>
               <tbody>
                 <tr>
-                  <td className="border border-slate-600 p-3 h-28 align-bottom text-left">
-                    <div className="text-slate-400 italic text-[9px] mb-8 text-center">[Tanda Tangan & Cap]</div>
+                  <td className="border border-slate-600 p-2 h-20 align-bottom text-left">
+                    <div className="text-slate-400 italic text-[8.5px] mb-4 text-center">[Tanda Tangan & Cap]</div>
                     <div><strong>Nama:</strong> {data.pengesahan?.pembuat_nama || "-"}</div>
                     <div><strong>Tanggal:</strong> {data.pengesahan?.pembuat_tanggal || data.periode_akhir || "-"}</div>
                   </td>
-                  <td className="border border-slate-600 p-3 h-28 align-bottom text-left">
-                    <div className="text-slate-400 italic text-[9px] mb-8 text-center">[Tanda Tangan & Cap]</div>
+                  <td className="border border-slate-600 p-2 h-20 align-bottom text-left">
+                    <div className="text-slate-400 italic text-[8.5px] mb-4 text-center">[Tanda Tangan & Cap]</div>
                     <div><strong>Nama:</strong> {data.pengesahan?.pemeriksa_nama || "-"}</div>
                     <div><strong>Tanggal:</strong> {data.pengesahan?.pemeriksa_tanggal || data.periode_akhir || "-"}</div>
                   </td>
-                  <td className="border border-slate-600 p-3 h-28 align-bottom text-left">
-                    <div className="text-slate-400 italic text-[9px] mb-8 text-center">[Tanda Tangan & Cap]</div>
+                  <td className="border border-slate-600 p-2 h-20 align-bottom text-left">
+                    <div className="text-slate-400 italic text-[8.5px] mb-4 text-center">[Tanda Tangan & Cap]</div>
                     <div><strong>Nama:</strong> {data.pengesahan?.penyetuju_nama || "-"}</div>
                     <div><strong>Tanggal:</strong> {data.pengesahan?.penyetuju_tanggal || data.periode_akhir || "-"}</div>
                   </td>
@@ -495,7 +495,7 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
           </div>
         </div>
 
-        <div className="text-right text-[9px] text-slate-400 pt-2">
+        <div className="text-right text-[8.5px] text-slate-400 pt-1">
           Halaman 2 dari 2 — Laporan Mingguan Konstruksi KNMP
         </div>
       </div>

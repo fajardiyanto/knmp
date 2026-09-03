@@ -32,7 +32,7 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
   const sheetContent = (
     <div className="w-full max-w-[210mm] bg-white shadow-2xl print:shadow-none print:max-w-none text-slate-900 text-[11px] leading-tight font-sans mx-auto">
       {/* ================= PAGE 1 ================= */}
-      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-[40mm] pb-10 flex flex-col justify-between border-b border-slate-300 print:border-none print:min-h-screen print:break-after-page overflow-hidden">
+      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-[34mm] pb-6 flex flex-col justify-between border-b border-slate-300 print:border-none print:min-h-screen print:break-after-page overflow-hidden">
         {/* Official KKP Template Background */}
         <img
           src="/assets/img/kkp_official_bg.jpg"
@@ -42,17 +42,16 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
 
         <div className="relative z-10">
           {/* Judul & Status */}
-          <div className="text-center mb-4">
+          <div className="text-center mb-2">
             <h1 className="text-sm font-black uppercase tracking-wide text-slate-900">
               FORMAT LAPORAN BULANAN KONSTRUKSI KNMP
             </h1>
-            <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-xs font-semibold text-slate-700">
+            <div className="mt-1 flex flex-wrap items-center justify-center gap-x-6 gap-y-0.5 text-xs font-semibold text-slate-700">
               <span>
                 Bulan/Tahun: <strong className="text-slate-900">{data.bulan_tahun || "-"}</strong>
               </span>
               <span>
                 Bulan kontrak ke-: <strong className="text-slate-900">{data.bulan_kontrak_ke || "-"}</strong>
-              </span>
                 <span className="flex items-center gap-2">
                   Status:
                   <span className="inline-flex items-center gap-1 font-bold">
@@ -61,226 +60,229 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
                     <span>[{data.status_proyek === "Critical" ? "X" : " "}] Critical</span>
                   </span>
                 </span>
-              </div>
-            </div>
-
-            {/* 1. Identitas dan Acuan */}
-            <div className="mb-4">
-              <h3 className="text-xs font-bold text-slate-900 uppercase mb-1">
-                1. Identitas dan Acuan
-              </h3>
-              <table className="w-full border-collapse border border-slate-800 text-[10px]">
-                <tbody>
-                  <tr>
-                    <td className="border border-slate-800 p-1.5 font-bold w-[18%] bg-slate-50/70">Paket pekerjaan</td>
-                    <td className="border border-slate-800 p-1.5 w-[32%]">{data.identitas_acuan.paket_pekerjaan || "-"}</td>
-                    <td className="border border-slate-800 p-1.5 font-bold w-[18%] bg-slate-50/70">Lokasi</td>
-                    <td className="border border-slate-800 p-1.5 w-[32%]">{data.identitas_acuan.lokasi || "-"}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-800 p-1.5 font-bold bg-slate-50/70">Jenis titik</td>
-                    <td className="border border-slate-800 p-1.5">
-                      [{data.identitas_acuan.jenis_titik === "HUB" ? "X" : " "}] HUB &nbsp;&nbsp;
-                      [{data.identitas_acuan.jenis_titik === "PENYANGGA" ? "X" : " "}] PENYANGGA
-                    </td>
-                    <td className="border border-slate-800 p-1.5 font-bold bg-slate-50/70">No. kontrak/SPMK</td>
-                    <td className="border border-slate-800 p-1.5">{data.identitas_acuan.no_kontrak_spmk || "-"}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-800 p-1.5 font-bold bg-slate-50/70">Kontraktor</td>
-                    <td className="border border-slate-800 p-1.5">{data.identitas_acuan.kontraktor || "-"}</td>
-                    <td className="border border-slate-800 p-1.5 font-bold bg-slate-50/70">Pengawas/PPK</td>
-                    <td className="border border-slate-800 p-1.5">{data.identitas_acuan.pengawas_ppk || "-"}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-800 p-1.5 font-bold bg-slate-50/70">Rencana kum.</td>
-                    <td className="border border-slate-800 p-1.5 font-bold text-blue-700">{formatPct(data.identitas_acuan.rencana_kum_pct)}</td>
-                    <td className="border border-slate-800 p-1.5 font-bold bg-slate-50/70">Aktual kum.</td>
-                    <td className="border border-slate-800 p-1.5 font-bold text-emerald-700">{formatPct(data.identitas_acuan.aktual_kum_pct)}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-800 p-1.5 font-bold bg-slate-50/70">Deviasi</td>
-                    <td className={`border border-slate-800 p-1.5 font-bold ${data.identitas_acuan.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                      {formatPct(data.identitas_acuan.deviasi_pct)}
-                    </td>
-                    <td className="border border-slate-800 p-1.5 font-bold bg-slate-50/70">Termin/keuangan</td>
-                    <td className="border border-slate-800 p-1.5">{data.identitas_acuan.termin_keuangan || "-"}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p className="text-[8.5px] italic text-slate-500 mt-1">
-                Acuan BoQ/RAB: daftar kuantitas dan harga kontrak, AHSP/HSP, volume terpasang terukur, bukti lapangan, kurva-S, BA opname/MC, serta perubahan pekerjaan/addendum bila ada.
-              </p>
-            </div>
-
-            {/* 2. Checklist Fasilitas KNMP */}
-            <div className="mb-4">
-              <h3 className="text-xs font-bold text-slate-900 uppercase mb-1">
-                2. Checklist Fasilitas KNMP
-              </h3>
-              <table className="w-full border-collapse border border-slate-800 text-[9.5px]">
-                <thead>
-                  <tr className="bg-slate-100 font-bold text-center">
-                    <th className="border border-slate-800 p-1 w-7">No</th>
-                    <th className="border border-slate-800 p-1 text-left">Fasilitas/area</th>
-                    <th className="border border-slate-800 p-1 w-28">Lingkup</th>
-                    <th className="border border-slate-800 p-1 w-44">Status</th>
-                    <th className="border border-slate-800 p-1 text-left w-40">Catatan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.checklist_fasilitas.map((item, idx) => (
-                    <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
-                      <td className="border border-slate-800 p-1 text-center font-medium">{item.no || idx + 1}</td>
-                      <td className="border border-slate-800 p-1 font-semibold">{item.fasilitas}</td>
-                      <td className="border border-slate-800 p-1 text-center">
-                        [{item.lingkup === "Ya" ? "X" : " "}] Ya &nbsp;
-                        [{item.lingkup === "N/A" ? "X" : " "}] N/A
-                      </td>
-                      <td className="border border-slate-800 p-1 text-center">
-                        [{item.status === "Belum" ? "X" : " "}] Belum &nbsp;
-                        [{item.status === "Proses" ? "X" : " "}] Proses &nbsp;
-                        [{item.status === "Selesai" ? "X" : " "}] Selesai
-                      </td>
-                      <td className="border border-slate-800 p-1 text-slate-700">{item.catatan || "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* 3. Ringkasan BoQ/RAB per Kelompok Pekerjaan */}
-            <div className="mb-4">
-              <h3 className="text-xs font-bold text-slate-900 uppercase mb-1">
-                3. Ringkasan BoQ/RAB per Kelompok Pekerjaan
-              </h3>
-              <table className="w-full border-collapse border border-slate-800 text-[9.5px]">
-                <thead>
-                  <tr className="bg-slate-100 font-bold text-center">
-                    <th className="border border-slate-800 p-1 w-7">No</th>
-                    <th className="border border-slate-800 p-1 text-left">Kelompok BoQ</th>
-                    <th className="border border-slate-800 p-1 text-right w-24">Nilai kontrak</th>
-                    <th className="border border-slate-800 p-1 text-right w-14">Bobot</th>
-                    <th className="border border-slate-800 p-1 text-right w-16">Renc. kum.</th>
-                    <th className="border border-slate-800 p-1 text-right w-16">Akt. kum.</th>
-                    <th className="border border-slate-800 p-1 text-right w-14">Deviasi</th>
-                    <th className="border border-slate-800 p-1 text-left w-24">Ket.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.ringkasan_boq.map((item, idx) => (
-                    <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
-                      <td className="border border-slate-800 p-1 text-center">{item.no || idx + 1}</td>
-                      <td className="border border-slate-800 p-1 font-semibold">{item.kelompok_boq}</td>
-                      <td className="border border-slate-800 p-1 text-right">{item.nilai_kontrak ? formatRp(item.nilai_kontrak) : "-"}</td>
-                      <td className="border border-slate-800 p-1 text-right">{formatPct(item.bobot_pct)}</td>
-                      <td className="border border-slate-800 p-1 text-right">{formatPct(item.renc_kum_pct)}</td>
-                      <td className="border border-slate-800 p-1 text-right font-bold text-emerald-700">{formatPct(item.akt_kum_pct)}</td>
-                      <td className={`border border-slate-800 p-1 text-right font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                        {formatPct(item.deviasi_pct)}
-                      </td>
-                      <td className="border border-slate-800 p-1">{item.keterangan || "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* 4. Detail BoQ, Nilai Progres, dan Pembayaran */}
-            <div className="mb-2">
-              <h3 className="text-xs font-bold text-slate-900 uppercase mb-1">
-                4. Detail BoQ, Nilai Progres, dan Pembayaran
-              </h3>
-              <table className="w-full border-collapse border border-slate-800 text-[9px]">
-                <thead>
-                  <tr className="bg-slate-100 font-bold text-center">
-                    <th className="border border-slate-800 p-1 w-6">No</th>
-                    <th className="border border-slate-800 p-1 w-14">Kode BoQ</th>
-                    <th className="border border-slate-800 p-1 w-20 text-left">Area</th>
-                    <th className="border border-slate-800 p-1 text-left">Uraian</th>
-                    <th className="border border-slate-800 p-1 text-right w-11">Bobot</th>
-                    <th className="border border-slate-800 p-1 text-right w-14">Akt. kum.</th>
-                    <th className="border border-slate-800 p-1 text-right w-20">Nilai realisasi</th>
-                    <th className="border border-slate-800 p-1 w-14">Termin/MC</th>
-                    <th className="border border-slate-800 p-1 text-right w-12">Deviasi</th>
-                    <th className="border border-slate-800 p-1 text-left w-20">Catatan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.detail_boq.length === 0 ? (
-                    <tr>
-                      <td colSpan={10} className="border border-slate-800 p-2 text-center text-slate-400 italic">
-                        Belum ada item detail BoQ diinput
-                      </td>
-                    </tr>
-                  ) : (
-                    data.detail_boq.slice(0, 10).map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="border border-slate-800 p-1 text-center">{item.no || idx + 1}</td>
-                        <td className="border border-slate-800 p-1 font-mono font-bold text-center">{item.kode_boq}</td>
-                        <td className="border border-slate-800 p-1">{item.area}</td>
-                        <td className="border border-slate-800 p-1 font-medium">{item.uraian}</td>
-                        <td className="border border-slate-800 p-1 text-right">{formatPct(item.bobot_pct)}</td>
-                        <td className="border border-slate-800 p-1 text-right font-bold text-emerald-700">{formatPct(item.akt_kum_pct)}</td>
-                        <td className="border border-slate-800 p-1 text-right font-mono">{formatRp(item.nilai_realisasi)}</td>
-                        <td className="border border-slate-800 p-1 text-center font-semibold">{item.termin_mc || "-"}</td>
-                        <td className={`border border-slate-800 p-1 text-right font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                          {formatPct(item.deviasi_pct)}
-                        </td>
-                        <td className="border border-slate-800 p-1 text-slate-600">{item.catatan || "-"}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-              <p className="text-[8.5px] italic text-slate-500 mt-1">
-                Nilai realisasi mengikuti volume terukur x harga satuan kontrak; pembayaran mengikuti ketentuan kontrak, MC/BA opname, pajak/retensi, dan addendum yang berlaku.
-              </p>
+              </span>
             </div>
           </div>
 
-          {/* Footer Halaman 1 */}
-          <div className="pt-2 border-t border-slate-300 text-right text-[9px] text-slate-400">
-            Halaman 1 dari 2 — Laporan Bulanan Konstruksi KNMP
+          {/* 1. Identitas dan Acuan */}
+          <div className="mb-2">
+            <h3 className="text-xs font-bold text-slate-900 uppercase mb-0.5">
+              1. Identitas dan Acuan
+            </h3>
+            <table className="w-full border-collapse border border-slate-800 text-[9.5px]">
+              <tbody>
+                <tr>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold w-[18%] bg-slate-50/70">Paket pekerjaan</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5 w-[32%]">{data.identitas_acuan.paket_pekerjaan || "-"}</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold w-[18%] bg-slate-50/70">Lokasi</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5 w-[32%]">{data.identitas_acuan.lokasi || "-"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold bg-slate-50/70">Jenis titik</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5">
+                    [{data.identitas_acuan.jenis_titik === "HUB" ? "X" : " "}] HUB &nbsp;&nbsp;
+                    [{data.identitas_acuan.jenis_titik === "PENYANGGA" ? "X" : " "}] PENYANGGA
+                  </td>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold bg-slate-50/70">No. kontrak/SPMK</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5">{data.identitas_acuan.no_kontrak_spmk || "-"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold bg-slate-50/70">Kontraktor</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5">{data.identitas_acuan.kontraktor || "-"}</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold bg-slate-50/70">Pengawas/PPK</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5">{data.identitas_acuan.pengawas_ppk || "-"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold bg-slate-50/70">Rencana kum.</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold text-blue-700">{formatPct(data.identitas_acuan.rencana_kum_pct)}</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold bg-slate-50/70">Aktual kum.</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold text-emerald-700">{formatPct(data.identitas_acuan.aktual_kum_pct)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold bg-slate-50/70">Deviasi</td>
+                  <td className={`border border-slate-800 py-0.5 px-1.5 font-bold ${data.identitas_acuan.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                    {formatPct(data.identitas_acuan.deviasi_pct)}
+                  </td>
+                  <td className="border border-slate-800 py-0.5 px-1.5 font-bold bg-slate-50/70">Termin/keuangan</td>
+                  <td className="border border-slate-800 py-0.5 px-1.5">{data.identitas_acuan.termin_keuangan || "-"}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="text-[8px] italic text-slate-500 mt-0.5 leading-tight">
+              Acuan BoQ/RAB: daftar kuantitas dan harga kontrak, AHSP/HSP, volume terpasang terukur, bukti lapangan, kurva-S, BA opname/MC, serta perubahan pekerjaan/addendum bila ada.
+            </p>
+          </div>
+
+          {/* 2. Checklist Fasilitas KNMP */}
+          <div className="mb-2">
+            <h3 className="text-xs font-bold text-slate-900 uppercase mb-0.5">
+              2. Checklist Fasilitas KNMP
+            </h3>
+            <table className="w-full border-collapse border border-slate-800 text-[8.5px]">
+              <thead>
+                <tr className="bg-slate-100 font-bold text-center">
+                  <th className="border border-slate-800 py-0.5 px-1 w-7">No</th>
+                  <th className="border border-slate-800 py-0.5 px-1 text-left">Fasilitas/area</th>
+                  <th className="border border-slate-800 py-0.5 px-1 w-24">Lingkup</th>
+                  <th className="border border-slate-800 py-0.5 px-1 w-36">Status</th>
+                  <th className="border border-slate-800 py-0.5 px-1 text-left">Catatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.checklist_fasilitas.map((item, idx) => (
+                  <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
+                    <td className="border border-slate-800 py-[1.5px] px-1 text-center font-medium">{item.no || idx + 1}</td>
+                    <td className="border border-slate-800 py-[1.5px] px-1 font-semibold">{item.fasilitas}</td>
+                    <td className="border border-slate-800 py-[1.5px] px-1 text-center">
+                      [{item.lingkup === "Ya" ? "X" : " "}] Ya &nbsp;
+                      [{item.lingkup === "N/A" ? "X" : " "}] N/A
+                    </td>
+                    <td className="border border-slate-800 py-[1.5px] px-1 text-center">
+                      <span className="inline-flex items-center gap-1 text-[8px]">
+                        <span>[{item.status === "Belum" ? "X" : " "}] Belum</span>
+                        <span>[{item.status === "Proses" ? "X" : " "}] Proses</span>
+                        <span>[{item.status === "Selesai" ? "X" : " "}] Selesai</span>
+                      </span>
+                    </td>
+                    <td className="border border-slate-800 py-[1.5px] px-1 text-slate-700">{item.catatan || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 3. Ringkasan BoQ/RAB per Kelompok Pekerjaan */}
+          <div className="mb-2">
+            <h3 className="text-xs font-bold text-slate-900 uppercase mb-0.5">
+              3. Ringkasan BoQ/RAB per Kelompok Pekerjaan
+            </h3>
+            <table className="w-full border-collapse border border-slate-800 text-[8.5px]">
+              <thead>
+                <tr className="bg-slate-100 font-bold text-center">
+                  <th className="border border-slate-800 py-0.5 px-1 w-7">No</th>
+                  <th className="border border-slate-800 py-0.5 px-1 text-left">Kelompok BoQ</th>
+                  <th className="border border-slate-800 py-0.5 px-1 w-24">Nilai kontrak</th>
+                  <th className="border border-slate-800 py-0.5 px-1 w-12">Bobot</th>
+                  <th className="border border-slate-800 py-0.5 px-1 w-14">Renc. kum.</th>
+                  <th className="border border-slate-800 py-0.5 px-1 w-14">Akt. kum.</th>
+                  <th className="border border-slate-800 py-0.5 px-1 w-14">Deviasi</th>
+                  <th className="border border-slate-800 py-0.5 px-1 text-left">Keterangan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.ringkasan_boq.map((item, idx) => (
+                  <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
+                    <td className="border border-slate-800 py-[1.5px] px-1 text-center">{item.no || idx + 1}</td>
+                    <td className="border border-slate-800 py-[1.5px] px-1 font-semibold">{item.kelompok_boq}</td>
+                    <td className="border border-slate-800 py-[1.5px] px-1 text-right">{item.nilai_kontrak ? formatRp(item.nilai_kontrak) : "-"}</td>
+                    <td className="border border-slate-800 py-[1.5px] px-1 text-right">{formatPct(item.bobot_pct)}</td>
+                    <td className="border border-slate-800 py-[1.5px] px-1 text-right">{formatPct(item.renc_kum_pct)}</td>
+                    <td className="border border-slate-800 py-[1.5px] px-1 text-right font-bold text-emerald-700">{formatPct(item.akt_kum_pct)}</td>
+                    <td className={`border border-slate-800 py-[1.5px] px-1 text-right font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                      {formatPct(item.deviasi_pct)}
+                    </td>
+                    <td className="border border-slate-800 py-[1.5px] px-1">{item.keterangan || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 4. Detail BoQ, Nilai Progres, dan Pembayaran */}
+          <div className="mb-1">
+            <h3 className="text-xs font-bold text-slate-900 uppercase mb-0.5">
+              4. Detail BoQ, Nilai Progres, dan Pembayaran
+            </h3>
+            <table className="w-full border-collapse border border-slate-800 text-[8.5px]">
+              <thead>
+                <tr className="bg-slate-100 font-bold text-center">
+                  <th className="border border-slate-800 py-0.5 px-1 w-6">No</th>
+                  <th className="border border-slate-800 py-0.5 px-1 w-14">Kode BoQ</th>
+                  <th className="border border-slate-800 py-0.5 px-1 w-20 text-left">Area</th>
+                  <th className="border border-slate-800 py-0.5 px-1 text-left">Uraian</th>
+                  <th className="border border-slate-800 py-0.5 px-1 text-right w-11">Bobot</th>
+                  <th className="border border-slate-800 py-0.5 px-1 text-right w-14">Akt. kum.</th>
+                  <th className="border border-slate-800 py-0.5 px-1 text-right w-20">Nilai realisasi</th>
+                  <th className="border border-slate-800 py-0.5 px-1 w-14">Termin/MC</th>
+                  <th className="border border-slate-800 py-0.5 px-1 text-right w-12">Deviasi</th>
+                  <th className="border border-slate-800 py-0.5 px-1 text-left w-20">Catatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.detail_boq.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="border border-slate-800 py-1 px-2 text-center text-slate-400 italic">
+                      Belum ada item detail BoQ diinput
+                    </td>
+                  </tr>
+                ) : (
+                  data.detail_boq.slice(0, 4).map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-center">{item.no || idx + 1}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 font-mono font-bold text-center">{item.kode_boq}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1">{item.area}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 font-medium truncate max-w-[180px]">{item.uraian}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-right">{formatPct(item.bobot_pct)}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-right font-bold text-emerald-700">{formatPct(item.akt_kum_pct)}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-right font-mono">{formatRp(item.nilai_realisasi)}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-center font-semibold">{item.termin_mc || "-"}</td>
+                      <td className={`border border-slate-800 py-[1.5px] px-1 text-right font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                        {formatPct(item.deviasi_pct)}
+                      </td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-slate-600">{item.catatan || "-"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+            <p className="text-[7.5px] italic text-slate-500 mt-0.5 leading-tight">
+              Nilai realisasi mengikuti volume terukur x harga satuan kontrak; pembayaran mengikuti ketentuan kontrak, MC/BA opname, pajak/retensi, dan addendum yang berlaku.
+            </p>
           </div>
         </div>
 
-        {/* ================= PAGE 2 ================= */}
-        <div className="relative min-h-[297mm] px-8 sm:px-10 pt-[40mm] pb-10 flex flex-col justify-between print:min-h-screen print:break-before-page overflow-hidden">
-          {/* Official KKP Template Background */}
-          <img
-            src="/assets/img/kkp_official_bg.jpg"
-            alt="KKP Official Background"
-            className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-0"
-          />
+        {/* Footer Halaman 1 */}
+        <div className="pt-1 border-t border-slate-300 text-right text-[8.5px] text-slate-400">
+          Halaman 1 dari 2 — Laporan Bulanan Konstruksi KNMP
+        </div>
+      </div>
 
-          <div className="relative z-10">
+      {/* ================= PAGE 2 ================= */}
+      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-[34mm] pb-6 flex flex-col justify-between print:min-h-screen print:break-before-page overflow-hidden">
+        {/* Official KKP Template Background */}
+        <img
+          src="/assets/img/kkp_official_bg.jpg"
+          alt="KKP Official Background"
+          className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-0"
+        />
 
-            {/* 5. Kontrak, Keuangan, Risiko, dan Readiness */}
-            <div className="mb-5">
-              <h3 className="text-xs font-bold text-slate-900 uppercase mb-1">
-                5. Kontrak, Keuangan, Risiko, dan Readiness
-              </h3>
-              <table className="w-full border-collapse border border-slate-800 text-[9.5px]">
+        <div className="relative z-10">
+
+          {/* 5. Kontrak, Keuangan, Risiko, dan Readiness */}
+          <div className="mb-2">
+            <h3 className="text-xs font-bold text-slate-900 uppercase mb-0.5">
+              5. Kontrak, Keuangan, Risiko, dan Readiness
+            </h3>
+            <table className="w-full border-collapse border border-slate-800 text-[8.5px]">
                 <thead>
                   <tr className="bg-slate-100 font-bold text-center">
                     <th className="border border-slate-800 p-1.5 w-7">No</th>
-                    <th className="border border-slate-800 p-1.5 text-left w-36">Aspek</th>
-                    <th className="border border-slate-800 p-1.5 text-left">Kondisi bulan ini</th>
-                    <th className="border border-slate-800 p-1.5 text-left w-48">Risiko/deviasi</th>
-                    <th className="border border-slate-800 p-1.5 text-left w-48">Tindak lanjut</th>
-                    <th className="border border-slate-800 p-1.5 text-left w-28">PIC/Target</th>
+                    <th className="border border-slate-800 py-0.5 px-1 text-left w-36">Aspek</th>
+                    <th className="border border-slate-800 py-0.5 px-1 text-left">Kondisi bulan ini</th>
+                    <th className="border border-slate-800 py-0.5 px-1 text-left w-48">Risiko/deviasi</th>
+                    <th className="border border-slate-800 py-0.5 px-1 text-left w-48">Tindak lanjut</th>
+                    <th className="border border-slate-800 py-0.5 px-1 text-left w-28">PIC/Target</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.matriks_risiko.map((item, idx) => (
                     <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
-                      <td className="border border-slate-800 p-1.5 text-center">{item.no || idx + 1}</td>
-                      <td className="border border-slate-800 p-1.5 font-bold">{item.aspek}</td>
-                      <td className="border border-slate-800 p-1.5">{item.kondisi_bulan_ini || "-"}</td>
-                      <td className="border border-slate-800 p-1.5 text-rose-700 font-medium">{item.risiko_deviasi || "-"}</td>
-                      <td className="border border-slate-800 p-1.5 text-blue-800">{item.tindak_lanjut || "-"}</td>
-                      <td className="border border-slate-800 p-1.5 font-medium">{item.pic_target || "-"}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-center">{item.no || idx + 1}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 font-bold">{item.aspek}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1">{item.kondisi_bulan_ini || "-"}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-rose-700 font-medium">{item.risiko_deviasi || "-"}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-blue-800">{item.tindak_lanjut || "-"}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 font-medium">{item.pic_target || "-"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -288,11 +290,11 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
             </div>
 
             {/* 6. Dokumentasi Foto Bulanan */}
-            <div className="mb-5">
-              <h3 className="text-xs font-bold text-slate-900 uppercase mb-1">
+            <div className="mb-2.5">
+              <h3 className="text-xs font-bold text-slate-900 uppercase mb-0.5">
                 6. Dokumentasi Foto Bulanan
               </h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 {[1, 2, 3, 4].map((slot) => {
                   const foto = data.dokumentasi_foto.find((f) => f.slot === slot) || {
                     slot,
@@ -302,18 +304,18 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
                     keterangan: "",
                   };
                   return (
-                    <div key={slot} className="border border-slate-800 rounded p-2 bg-white flex flex-col justify-between">
-                      <div className="flex items-center justify-between mb-1 pb-1 border-b border-slate-200">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-900">
+                    <div key={slot} className="border border-slate-800 rounded p-1.5 bg-white flex flex-col justify-between">
+                      <div className="flex items-center justify-between mb-0.5 pb-0.5 border-b border-slate-200">
+                        <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-900">
                           FOTO {slot}
                         </span>
-                        <span className="text-[9px] text-slate-500 font-medium">
+                        <span className="text-[8.5px] text-slate-500 font-medium">
                           {foto.tanggal ? `Tgl: ${foto.tanggal}` : "Tanggal: -"}
                         </span>
                       </div>
 
                       {/* Image Area */}
-                      <div className="aspect-[16/10] bg-slate-100 border border-slate-300 rounded overflow-hidden flex items-center justify-center mb-2">
+                      <div className="aspect-[16/8] bg-slate-100 border border-slate-300 rounded overflow-hidden flex items-center justify-center mb-1">
                         {foto.file_url ? (
                           <img
                             src={getFileUrl(foto.file_url)}
@@ -321,19 +323,19 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <span className="text-[10px] text-slate-400 font-semibold italic">
+                          <span className="text-[9px] text-slate-400 font-semibold italic">
                             [Belum ada foto]
                           </span>
                         )}
                       </div>
 
                       {/* Meta */}
-                      <div className="space-y-0.5 text-[9px]">
+                      <div className="space-y-0.5 text-[8.5px] leading-tight">
                         <p>
                           <span className="font-bold text-slate-700">Kode BoQ/area:</span>{" "}
                           <span className="font-mono font-semibold">{foto.kode_boq_area || "-"}</span>
                         </p>
-                        <p className="line-clamp-2">
+                        <p className="line-clamp-1">
                           <span className="font-bold text-slate-700">Keterangan:</span>{" "}
                           <span>{foto.keterangan || "-"}</span>
                         </p>
@@ -342,45 +344,45 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
                   );
                 })}
               </div>
-              <p className="text-[8.5px] italic text-slate-500 mt-1">
+              <p className="text-[7.5px] italic text-slate-500 mt-0.5 leading-tight">
                 Foto wajib dikaitkan dengan kode BoQ/area agar progres volume mudah diverifikasi.
               </p>
             </div>
 
             {/* 7. Pengesahan */}
-            <div className="mb-4">
-              <h3 className="text-xs font-bold text-slate-900 uppercase mb-1">
+            <div>
+              <h3 className="text-xs font-bold text-slate-900 uppercase mb-0.5">
                 7. Pengesahan
               </h3>
-              <table className="w-full border-collapse border border-slate-800 text-[10px]">
+              <table className="w-full border-collapse border border-slate-800 text-[9px]">
                 <thead>
-                  <tr className="bg-slate-100 font-bold text-center">
-                    <th className="border border-slate-800 p-2 w-1/3">Dibuat oleh:</th>
-                    <th className="border border-slate-800 p-2 w-1/3">Diperiksa oleh:</th>
-                    <th className="border border-slate-800 p-2 w-1/3">Disetujui oleh:</th>
+                  <tr className="bg-slate-100 font-bold">
+                    <th className="border border-slate-800 py-0.5 px-1 text-center w-1/3">Dibuat oleh</th>
+                    <th className="border border-slate-800 py-0.5 px-1 text-center w-1/3">Diperiksa oleh</th>
+                    <th className="border border-slate-800 py-0.5 px-1 text-center w-1/3">Disetujui oleh</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-slate-800 p-2 text-center align-top h-24 flex-col justify-between">
-                      <p className="text-[9.5px] font-semibold text-slate-600 mb-8">KONTRAKTOR PELAKSANA</p>
+                    <td className="border border-slate-800 p-1.5 text-center align-top h-20 flex-col justify-between">
+                      <p className="text-[9px] font-semibold text-slate-600 mb-4">KONTRAKTOR PELAKSANA</p>
                       <div className="mt-auto">
                         <p className="font-bold underline text-slate-900">{data.pengesahan.pembuat_nama || "(Nama Kontraktor)"}</p>
-                        <p className="text-[9px] text-slate-500">{data.pengesahan.pembuat_tanggal ? `Tanggal: ${data.pengesahan.pembuat_tanggal}` : "Tanggal: ...................."}</p>
+                        <p className="text-[8.5px] text-slate-500">{data.pengesahan.pembuat_tanggal ? `Tanggal: ${data.pengesahan.pembuat_tanggal}` : "Tanggal: ...................."}</p>
                       </div>
                     </td>
-                    <td className="border border-slate-800 p-2 text-center align-top h-24 flex-col justify-between">
-                      <p className="text-[9.5px] font-semibold text-slate-600 mb-8">KONSULTAN PENGAWAS</p>
+                    <td className="border border-slate-800 p-1.5 text-center align-top h-20 flex-col justify-between">
+                      <p className="text-[9px] font-semibold text-slate-600 mb-4">KONSULTAN PENGAWAS</p>
                       <div className="mt-auto">
                         <p className="font-bold underline text-slate-900">{data.pengesahan.pemeriksa_nama || "(Nama Pengawas)"}</p>
-                        <p className="text-[9px] text-slate-500">{data.pengesahan.pemeriksa_tanggal ? `Tanggal: ${data.pengesahan.pemeriksa_tanggal}` : "Tanggal: ...................."}</p>
+                        <p className="text-[8.5px] text-slate-500">{data.pengesahan.pemeriksa_tanggal ? `Tanggal: ${data.pengesahan.pemeriksa_tanggal}` : "Tanggal: ...................."}</p>
                       </div>
                     </td>
-                    <td className="border border-slate-800 p-2 text-center align-top h-24 flex-col justify-between">
-                      <p className="text-[9.5px] font-semibold text-slate-600 mb-8">PEJABAT PEMBUAT KOMITMEN (PPK)</p>
+                    <td className="border border-slate-800 p-1.5 text-center align-top h-20 flex-col justify-between">
+                      <p className="text-[9px] font-semibold text-slate-600 mb-4">PEJABAT PEMBUAT KOMITMEN (PPK)</p>
                       <div className="mt-auto">
                         <p className="font-bold underline text-slate-900">{data.pengesahan.penyetuju_nama || "(Nama PPK)"}</p>
-                        <p className="text-[9px] text-slate-500">{data.pengesahan.penyetuju_tanggal ? `Tanggal: ${data.pengesahan.penyetuju_tanggal}` : "Tanggal: ...................."}</p>
+                        <p className="text-[8.5px] text-slate-500">{data.pengesahan.penyetuju_tanggal ? `Tanggal: ${data.pengesahan.penyetuju_tanggal}` : "Tanggal: ...................."}</p>
                       </div>
                     </td>
                   </tr>
@@ -390,7 +392,7 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
           </div>
 
           {/* Footer Halaman 2 */}
-          <div className="pt-2 border-t border-slate-300 flex items-center justify-between text-[9px] text-slate-400">
+          <div className="pt-1 border-t border-slate-300 flex items-center justify-between text-[8.5px] text-slate-400">
             <span>Sistem Monitoring Kampung Nelayan Merah Putih (KNMP) • Pertamina Se-Sumatera</span>
             <span>Halaman 2 dari 2</span>
           </div>
