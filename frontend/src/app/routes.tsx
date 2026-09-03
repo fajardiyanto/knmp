@@ -17,6 +17,7 @@ import { UploadDokumenPelaksanaanPage } from "../features/pelaksanaan/components
 import { WeeklyBOQPage } from "../features/boq/components/WeeklyBOQPage";
 import { WeeklyBOQInputPage } from "../features/boq/components/WeeklyBOQInputPage";
 import { LaporanPage } from "../features/laporan/components/LaporanPage";
+import { LaporanBulananInputPage } from "../features/laporan/components/LaporanBulananInputPage";
 import { UploadDokumenLaporanPage } from "../features/laporan/components/UploadDokumenLaporanPage";
 import { TotalAnggaranPage } from "../features/pembayaran/components/TotalAnggaranPage";
 import { UploadDokumenAnggaranPage } from "../features/pembayaran/components/UploadDokumenAnggaranPage";
@@ -252,6 +253,22 @@ export const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute requiredPermission="laporan_read">
               <LaporanPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="laporan/create"
+          element={
+            <ProtectedRoute requiredPermission="laporan_create">
+              <LaporanBulananInputPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="laporan/:id/edit"
+          element={
+            <ProtectedRoute requiredPermission="laporan_update">
+              <LaporanBulananInputPage />
             </ProtectedRoute>
           }
         />

@@ -34,7 +34,6 @@ import { MonthlyProjectReportModal } from "./MonthlyProjectReportModal";
 import { ExecutiveProjectReportModalV2 } from "./ExecutiveProjectReportModalV2";
 import { LaporanMingguanPPKModal } from "./LaporanMingguanPPKModal";
 import { ReadableProjectReportModal } from "./ReadableProjectReportModal";
-import { LaporanBulananFormModal } from "./LaporanBulananFormModal";
 import { FormatBulananPrintView } from "./FormatBulananPrintView";
 import type { LaporanBulananData } from "../types";
 
@@ -113,8 +112,7 @@ export const LaporanPage: React.FC = () => {
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Modal & Print State
   const [selectedPrintData, setSelectedPrintData] = useState<LaporanBulananData | null>(null);
   const [isMonthlyReportModalOpen, setIsMonthlyReportModalOpen] = useState(false);
   const [isExecutiveReportV2Open, setIsExecutiveReportV2Open] = useState(false);
@@ -122,7 +120,6 @@ export const LaporanPage: React.FC = () => {
   const [isReadableReportOpen, setIsReadableReportOpen] = useState(false);
   const [monthlyReportKnmpId, setMonthlyReportKnmpId] = useState<number | undefined>(undefined);
   const [selectedLaporanId, setSelectedLaporanId] = useState<number | undefined>(undefined);
-  const [editingItem, setEditingItem] = useState<LaporanItem | null>(null);
 
   // 1. Fetch Laporan List
   const { data: laporanList = [], isLoading } = useQuery<LaporanItem[]>({
@@ -173,17 +170,26 @@ export const LaporanPage: React.FC = () => {
         type: "success",
       });
     },
+    onError: (err: any) => {
+      showAlert({
+        title: "Gagal Verifikasi",
+        message: err.message || "Gagal memperbarui status verifikasi.",
+        type: "error",
+      });
+    },
   });
 
   // Delete Mutation
   const deleteMutation = useMutation({
     mutationFn: (id: number) =>
-      apiFetch(`/api/v1/laporan/${id}`, { method: "DELETE" }),
+      apiFetch(`/api/v1/laporan/${id}`, {
+        method: "DELETE",
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
       showAlert({
         title: "Berhasil Dihapus",
-        message: "Data laporan berhasil dihapus.",
+        message: "Laporan berhasil dihapus.",
         type: "success",
       });
     },
@@ -208,13 +214,11 @@ export const LaporanPage: React.FC = () => {
   };
 
   const handleOpenAdd = () => {
-    setEditingItem(null);
-    setIsModalOpen(true);
+    navigate("/laporan/create");
   };
 
   const handleOpenEdit = (item: LaporanItem) => {
-    setEditingItem(item);
-    setIsModalOpen(true);
+    navigate(`/laporan/${item.id}/edit`);
   };
 
   const handleOpenPrintKKP = (item: LaporanItem) => {
@@ -909,19 +913,6 @@ export const LaporanPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Modal Format Laporan Bulanan Konstruksi KNMP (KKP Official 7-Section Format) */}
-      <LaporanBulananFormModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingItem(null);
-        }}
-        editingItem={editingItem as any}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
-        }}
-      />
 
       {/* Official 2-Page Print View Modal */}
       {selectedPrintData && (
