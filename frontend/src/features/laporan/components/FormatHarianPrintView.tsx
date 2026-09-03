@@ -180,32 +180,34 @@ export const FormatHarianPrintView: React.FC<FormatHarianPrintViewProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {(data.checklist_fasilitas?.length ? data.checklist_fasilitas : DEFAULT_8_FASILITAS_HARIAN.map((f, i) => ({
-                  no: i + 1,
-                  fasilitas: f,
-                  lingkup: "Ya" as const,
-                  status: "Proses" as const,
-                  catatan: "",
-                }))).slice(0, 8).map((f, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{f.no || idx + 1}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{f.fasilitas}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center">
-                      <span className="inline-flex gap-1.5">
-                        <span>[{f.lingkup === "Ya" ? "✔" : " "}] Ya</span>
-                        <span>[{f.lingkup === "N/A" ? "✔" : " "}] N/A</span>
-                      </span>
+                {!data.checklist_fasilitas || data.checklist_fasilitas.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="border border-slate-600 py-2.5 text-center text-slate-400 italic">
+                      Tidak ada data
                     </td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center">
-                      <span className="inline-flex gap-1 text-[8px]">
-                        <span>[{f.status === "Belum" ? "✔" : " "}] Belum</span>
-                        <span>[{f.status === "Proses" ? "✔" : " "}] Proses</span>
-                        <span>[{f.status === "Selesai" ? "✔" : " "}] Selesai</span>
-                      </span>
-                    </td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{f.catatan || "-"}</td>
                   </tr>
-                ))}
+                ) : (
+                  data.checklist_fasilitas.slice(0, 8).map((f, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50">
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{f.no || idx + 1}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{f.fasilitas}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center">
+                        <span className="inline-flex gap-1.5">
+                          <span>[{f.lingkup === "Ya" ? "✔" : " "}] Ya</span>
+                          <span>[{f.lingkup === "N/A" ? "✔" : " "}] N/A</span>
+                        </span>
+                      </td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center">
+                        <span className="inline-flex gap-1 text-[8px]">
+                          <span>[{f.status === "Belum" ? "✔" : " "}] Belum</span>
+                          <span>[{f.status === "Proses" ? "✔" : " "}] Proses</span>
+                          <span>[{f.status === "Selesai" ? "✔" : " "}] Selesai</span>
+                        </span>
+                      </td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{f.catatan || "-"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -229,31 +231,28 @@ export const FormatHarianPrintView: React.FC<FormatHarianPrintViewProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {(data.detail_boq?.length ? data.detail_boq : [1, 2, 3, 4].map((n) => ({
-                  no: n,
-                  kode_boq: `DIV-${n}`,
-                  area: "-",
-                  uraian: "-",
-                  satuan: "m3",
-                  vol_kontrak: 0,
-                  renc_hari: 0,
-                  realisasi: 0,
-                  kum_sd_hari: 0,
-                  bukti: "-",
-                }))).slice(0, 4).map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold">{item.kode_boq || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1">{item.area || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 truncate max-w-[180px]">{item.uraian || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center">{item.satuan || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono">{item.vol_kontrak || 0}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono text-blue-700">{item.renc_hari || 0}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono font-bold text-emerald-700">{item.realisasi || 0}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono font-bold">{item.kum_sd_hari || 0}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center">{item.bukti || "Foto"}</td>
+                {!data.detail_boq || data.detail_boq.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="border border-slate-600 py-2.5 text-center text-slate-400 italic">
+                      Tidak ada data
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  data.detail_boq.slice(0, 4).map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold">{item.kode_boq || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1">{item.area || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 truncate max-w-[180px]">{item.uraian || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center">{item.satuan || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono">{item.vol_kontrak || 0}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono text-blue-700">{item.renc_hari || 0}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono font-bold text-emerald-700">{item.realisasi || 0}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono font-bold">{item.kum_sd_hari || 0}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center">{item.bukti || "Foto"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
             <p className="text-[7.5px] text-slate-500 italic mt-0.5 leading-tight">
@@ -276,23 +275,24 @@ export const FormatHarianPrintView: React.FC<FormatHarianPrintViewProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {(data.aspek_k3_kendala?.length ? data.aspek_k3_kendala : DEFAULT_5_ASPEK_HARIAN.map((a, i) => ({
-                  no: i + 1,
-                  aspek: a,
-                  catatan: "Kondisi aman dan terkendali",
-                  dampak: "Nihil",
-                  tindak_lanjut: "Lanjutkan pengawasan lapangan",
-                  pic_target: "Pelaksana / K3",
-                }))).map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{item.aspek}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.catatan || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.dampak || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.tindak_lanjut || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold text-slate-800">{item.pic_target || "-"}</td>
+                {!data.aspek_k3_kendala || data.aspek_k3_kendala.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="border border-slate-600 py-2.5 text-center text-slate-400 italic">
+                      Tidak ada data
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  data.aspek_k3_kendala.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{item.aspek}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.catatan || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.dampak || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.tindak_lanjut || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 font-semibold text-slate-800">{item.pic_target || "-"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

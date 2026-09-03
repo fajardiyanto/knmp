@@ -228,32 +228,34 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                 </tr>
               </thead>
               <tbody>
-                {(data.checklist_fasilitas?.length ? data.checklist_fasilitas : DEFAULT_10_FASILITAS_MINGGUAN.map((f, i) => ({
-                  no: i + 1,
-                  fasilitas: f,
-                  lingkup: "Ya" as const,
-                  status: "Proses" as const,
-                  catatan: "",
-                }))).map((f, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{f.no || idx + 1}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{f.fasilitas}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center">
-                      <span className="inline-flex gap-1.5">
-                        <span>[{f.lingkup === "Ya" ? "✔" : " "}] Ya</span>
-                        <span>[{f.lingkup === "N/A" ? "✔" : " "}] N/A</span>
-                      </span>
+                {!data.checklist_fasilitas || data.checklist_fasilitas.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="border border-slate-600 py-2.5 text-center text-slate-400 italic">
+                      Tidak ada data
                     </td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center">
-                      <span className="inline-flex gap-1 text-[8px]">
-                        <span>[{f.status === "Belum" ? "✔" : " "}] Belum</span>
-                        <span>[{f.status === "Proses" ? "✔" : " "}] Proses</span>
-                        <span>[{f.status === "Selesai" ? "✔" : " "}] Selesai</span>
-                      </span>
-                    </td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{f.catatan || "-"}</td>
                   </tr>
-                ))}
+                ) : (
+                  data.checklist_fasilitas.map((f, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50">
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{f.no || idx + 1}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{f.fasilitas}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center">
+                        <span className="inline-flex gap-1.5">
+                          <span>[{f.lingkup === "Ya" ? "✔" : " "}] Ya</span>
+                          <span>[{f.lingkup === "N/A" ? "✔" : " "}] N/A</span>
+                        </span>
+                      </td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center">
+                        <span className="inline-flex gap-1 text-[8px]">
+                          <span>[{f.status === "Belum" ? "✔" : " "}] Belum</span>
+                          <span>[{f.status === "Proses" ? "✔" : " "}] Proses</span>
+                          <span>[{f.status === "Selesai" ? "✔" : " "}] Selesai</span>
+                        </span>
+                      </td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{f.catatan || "-"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -275,29 +277,28 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                 </tr>
               </thead>
               <tbody>
-                {(data.ringkasan_boq?.length ? data.ringkasan_boq : DEFAULT_8_BOQ_MINGGUAN.map((k, i) => ({
-                  no: i + 1,
-                  kelompok_boq: k,
-                  nilai_kontrak: 0,
-                  bobot_pct: 12.5,
-                  renc_kum_pct: 0,
-                  akt_kum_pct: 0,
-                  deviasi_pct: 0,
-                  keterangan: "",
-                }))).map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{item.kelompok_boq}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono">{formatRp(item.nilai_kontrak)}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono">{formatPct(item.bobot_pct)}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono text-blue-700">{formatPct(item.renc_kum_pct)}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold text-emerald-700">{formatPct(item.akt_kum_pct)}</td>
-                    <td className={`border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-700"}`}>
-                      {item.deviasi_pct > 0 ? `+${item.deviasi_pct.toFixed(2)}%` : `${item.deviasi_pct.toFixed(2)}%`}
+                {!data.ringkasan_boq || data.ringkasan_boq.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="border border-slate-600 py-2.5 text-center text-slate-400 italic">
+                      Tidak ada data
                     </td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.keterangan || "-"}</td>
                   </tr>
-                ))}
+                ) : (
+                  data.ringkasan_boq.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{item.kelompok_boq}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-right font-mono">{formatRp(item.nilai_kontrak)}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono">{formatPct(item.bobot_pct)}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono text-blue-700">{formatPct(item.renc_kum_pct)}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold text-emerald-700">{formatPct(item.akt_kum_pct)}</td>
+                      <td className={`border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-700"}`}>
+                        {item.deviasi_pct > 0 ? `+${item.deviasi_pct.toFixed(2)}%` : `${item.deviasi_pct.toFixed(2)}%`}
+                      </td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.keterangan || "-"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -321,33 +322,30 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                 </tr>
               </thead>
               <tbody>
-                {(data.detail_boq?.length ? data.detail_boq : [1, 2, 3, 4].map((n) => ({
-                  no: n,
-                  kode_boq: `DIV-${n}`,
-                  area: "-",
-                  uraian: "-",
-                  bobot_pct: 0,
-                  renc_mgg: 0,
-                  real_mgg: 0,
-                  akt_kum: 0,
-                  deviasi_pct: 0,
-                  bukti_mc: "MC-01",
-                }))).slice(0, 4).map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold">{item.kode_boq}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1">{item.area || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 truncate max-w-[200px]">{item.uraian || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono">{formatPct(item.bobot_pct)}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono text-blue-700">{formatPct(item.renc_mgg)}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold text-emerald-700">{formatPct(item.real_mgg)}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold">{formatPct(item.akt_kum)}</td>
-                    <td className={`border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-700"}`}>
-                      {item.deviasi_pct > 0 ? `+${item.deviasi_pct.toFixed(2)}%` : `${item.deviasi_pct.toFixed(2)}%`}
+                {!data.detail_boq || data.detail_boq.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="border border-slate-600 py-2.5 text-center text-slate-400 italic">
+                      Tidak ada data
                     </td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center">{item.bukti_mc || "-"}</td>
                   </tr>
-                ))}
+                ) : (
+                  data.detail_boq.slice(0, 4).map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold">{item.kode_boq}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1">{item.area || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 truncate max-w-[200px]">{item.uraian || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono">{formatPct(item.bobot_pct)}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono text-blue-700">{formatPct(item.renc_mgg)}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold text-emerald-700">{formatPct(item.real_mgg)}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold">{formatPct(item.akt_kum)}</td>
+                      <td className={`border border-slate-600 py-[1.5px] px-1 text-center font-mono font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-700"}`}>
+                        {item.deviasi_pct > 0 ? `+${item.deviasi_pct.toFixed(2)}%` : `${item.deviasi_pct.toFixed(2)}%`}
+                      </td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center">{item.bukti_mc || "-"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
             <p className="text-[7.5px] text-slate-500 italic mt-0.5 leading-tight">
@@ -387,23 +385,24 @@ export const FormatMingguanPrintView: React.FC<FormatMingguanPrintViewProps> = (
                 </tr>
               </thead>
               <tbody>
-                {(data.kontrol_mingguan?.length ? data.kontrol_mingguan : DEFAULT_6_KONTROL_MINGGUAN.map((a, i) => ({
-                  no: i + 1,
-                  aspek: a,
-                  kondisi: "Berjalan sesuai baseline",
-                  isu_risiko: "Terkendali",
-                  keputusan_dibutuhkan: "Monitoring lapangan rutin",
-                  pic_target: "Site Manager",
-                }))).map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{item.aspek}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.kondisi || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.isu_risiko || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.keputusan_dibutuhkan || "-"}</td>
-                    <td className="border border-slate-600 py-[1.5px] px-1 font-semibold text-slate-800">{item.pic_target || "-"}</td>
+                {!data.kontrol_mingguan || data.kontrol_mingguan.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="border border-slate-600 py-2.5 text-center text-slate-400 italic">
+                      Tidak ada data
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  data.kontrol_mingguan.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-center font-bold">{item.no || idx + 1}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 font-semibold">{item.aspek}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.kondisi || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.isu_risiko || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 text-slate-700">{item.keputusan_dibutuhkan || "-"}</td>
+                      <td className="border border-slate-600 py-[1.5px] px-1 font-semibold text-slate-800">{item.pic_target || "-"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

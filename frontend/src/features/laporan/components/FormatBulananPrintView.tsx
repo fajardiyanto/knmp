@@ -129,24 +129,32 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {data.checklist_fasilitas.map((item, idx) => (
-                  <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
-                    <td className="border border-slate-800 py-[1.5px] px-1 text-center font-medium">{item.no || idx + 1}</td>
-                    <td className="border border-slate-800 py-[1.5px] px-1 font-semibold">{item.fasilitas}</td>
-                    <td className="border border-slate-800 py-[1.5px] px-1 text-center">
-                      [{item.lingkup === "Ya" ? "X" : " "}] Ya &nbsp;
-                      [{item.lingkup === "N/A" ? "X" : " "}] N/A
+                {!data.checklist_fasilitas || data.checklist_fasilitas.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="border border-slate-800 py-2.5 text-center text-slate-400 italic">
+                      Tidak ada data
                     </td>
-                    <td className="border border-slate-800 py-[1.5px] px-1 text-center">
-                      <span className="inline-flex items-center gap-1 text-[8px]">
-                        <span>[{item.status === "Belum" ? "X" : " "}] Belum</span>
-                        <span>[{item.status === "Proses" ? "X" : " "}] Proses</span>
-                        <span>[{item.status === "Selesai" ? "X" : " "}] Selesai</span>
-                      </span>
-                    </td>
-                    <td className="border border-slate-800 py-[1.5px] px-1 text-slate-700">{item.catatan || "-"}</td>
                   </tr>
-                ))}
+                ) : (
+                  data.checklist_fasilitas.map((item, idx) => (
+                    <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-center font-medium">{item.no || idx + 1}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 font-semibold">{item.fasilitas}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-center">
+                        [{item.lingkup === "Ya" ? "X" : " "}] Ya &nbsp;
+                        [{item.lingkup === "N/A" ? "X" : " "}] N/A
+                      </td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-center">
+                        <span className="inline-flex items-center gap-1 text-[8px]">
+                          <span>[{item.status === "Belum" ? "X" : " "}] Belum</span>
+                          <span>[{item.status === "Proses" ? "X" : " "}] Proses</span>
+                          <span>[{item.status === "Selesai" ? "X" : " "}] Selesai</span>
+                        </span>
+                      </td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-slate-700">{item.catatan || "-"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -170,20 +178,28 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {data.ringkasan_boq.map((item, idx) => (
-                  <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
-                    <td className="border border-slate-800 py-[1.5px] px-1 text-center">{item.no || idx + 1}</td>
-                    <td className="border border-slate-800 py-[1.5px] px-1 font-semibold">{item.kelompok_boq}</td>
-                    <td className="border border-slate-800 py-[1.5px] px-1 text-right">{item.nilai_kontrak ? formatRp(item.nilai_kontrak) : "-"}</td>
-                    <td className="border border-slate-800 py-[1.5px] px-1 text-right">{formatPct(item.bobot_pct)}</td>
-                    <td className="border border-slate-800 py-[1.5px] px-1 text-right">{formatPct(item.renc_kum_pct)}</td>
-                    <td className="border border-slate-800 py-[1.5px] px-1 text-right font-bold text-emerald-700">{formatPct(item.akt_kum_pct)}</td>
-                    <td className={`border border-slate-800 py-[1.5px] px-1 text-right font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                      {formatPct(item.deviasi_pct)}
+                {!data.ringkasan_boq || data.ringkasan_boq.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="border border-slate-800 py-2.5 text-center text-slate-400 italic">
+                      Tidak ada data
                     </td>
-                    <td className="border border-slate-800 py-[1.5px] px-1">{item.keterangan || "-"}</td>
                   </tr>
-                ))}
+                ) : (
+                  data.ringkasan_boq.map((item, idx) => (
+                    <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-center">{item.no || idx + 1}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 font-semibold">{item.kelompok_boq}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-right">{item.nilai_kontrak ? formatRp(item.nilai_kontrak) : "-"}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-right">{formatPct(item.bobot_pct)}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-right">{formatPct(item.renc_kum_pct)}</td>
+                      <td className="border border-slate-800 py-[1.5px] px-1 text-right font-bold text-emerald-700">{formatPct(item.akt_kum_pct)}</td>
+                      <td className={`border border-slate-800 py-[1.5px] px-1 text-right font-bold ${item.deviasi_pct < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                        {formatPct(item.deviasi_pct)}
+                      </td>
+                      <td className="border border-slate-800 py-[1.5px] px-1">{item.keterangan || "-"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -209,10 +225,10 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {data.detail_boq.length === 0 ? (
+                {!data.detail_boq || data.detail_boq.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="border border-slate-800 py-1 px-2 text-center text-slate-400 italic">
-                      Belum ada item detail BoQ diinput
+                    <td colSpan={10} className="border border-slate-800 py-2.5 text-center text-slate-400 italic">
+                      Tidak ada data
                     </td>
                   </tr>
                 ) : (
@@ -275,16 +291,24 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {data.matriks_risiko.map((item, idx) => (
-                    <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
-                      <td className="border border-slate-800 py-[1.5px] px-1 text-center">{item.no || idx + 1}</td>
-                      <td className="border border-slate-800 py-[1.5px] px-1 font-bold">{item.aspek}</td>
-                      <td className="border border-slate-800 py-[1.5px] px-1">{item.kondisi_bulan_ini || "-"}</td>
-                      <td className="border border-slate-800 py-[1.5px] px-1 text-rose-700 font-medium">{item.risiko_deviasi || "-"}</td>
-                      <td className="border border-slate-800 py-[1.5px] px-1 text-blue-800">{item.tindak_lanjut || "-"}</td>
-                      <td className="border border-slate-800 py-[1.5px] px-1 font-medium">{item.pic_target || "-"}</td>
+                  {!data.matriks_risiko || data.matriks_risiko.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="border border-slate-800 py-2.5 text-center text-slate-400 italic">
+                        Tidak ada data
+                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    data.matriks_risiko.map((item, idx) => (
+                      <tr key={idx} className={idx % 2 === 1 ? "bg-slate-50/50" : ""}>
+                        <td className="border border-slate-800 py-[1.5px] px-1 text-center">{item.no || idx + 1}</td>
+                        <td className="border border-slate-800 py-[1.5px] px-1 font-bold">{item.aspek}</td>
+                        <td className="border border-slate-800 py-[1.5px] px-1">{item.kondisi_bulan_ini || "-"}</td>
+                        <td className="border border-slate-800 py-[1.5px] px-1 text-rose-700 font-medium">{item.risiko_deviasi || "-"}</td>
+                        <td className="border border-slate-800 py-[1.5px] px-1 text-blue-800">{item.tindak_lanjut || "-"}</td>
+                        <td className="border border-slate-800 py-[1.5px] px-1 font-medium">{item.pic_target || "-"}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

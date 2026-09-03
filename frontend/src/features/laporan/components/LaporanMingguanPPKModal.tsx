@@ -237,6 +237,7 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
   };
 
   // Build Harian Data Object conforming to KKP Daily Format
+  // Build Harian Data Object conforming to KKP Daily Format
   const harianData: LaporanHarianData = useMemo(() => {
     const p = activePelaksanaan;
     const knmp = p?.knmp || {};
@@ -245,105 +246,70 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
 
     const photosList = reportData?.photos || [];
     const rekapItems = reportData?.progress_rekap || [];
+    const rencKum = reportData?.progress_total_lalu ?? 0;
+    const aktKum = reportData?.progress_total_kumulatif || reportData?.capaian_fisik_kumulatif || 0;
 
     return {
       tanggal: selectedDate,
       hari: getDayName(selectedDate),
       minggu_ke: reportData?.minggu_ke || 1,
-      cuaca: "Cerah / Pasang Normal",
+      cuaca: "-",
       identitas: {
-        paket_pekerjaan: p?.nama || knmp?.name || "Pembangunan Fasilitas Kampung Nelayan Merah Putih (KNMP)",
-        lokasi: knmp?.regency_name || knmp?.name || "Wilayah Sumatera (346 Titik)",
-        jenis_titik: ((knmp?.jenis || "HUB").toUpperCase() === "PENYANGGA" ? "PENYANGGA" : "HUB") as "HUB" | "PENYANGGA",
-        no_kontrak_spmk: persiapan.nomor_spmk || persiapan.nomor_kontrak || "SPMK-01/KNMP/SUMATERA/2026",
-        kontraktor: perush.nama || (reportData?.total_kontraktor ? `${reportData.total_kontraktor} Kontraktor Pelaksana` : "PT. Bahari Nusantara Perkasa"),
-        pengawas_ppk: `${reportData?.ppk_name || "Pejabat Pembuat Komitmen"} / Konsultan Pengawas`,
-        sisa_waktu_hari: 120,
-        progres_harian_pct: (reportData?.capaian_fisik_kumulatif ? (reportData.capaian_fisik_kumulatif / 90).toFixed(2) : "0.35"),
+        paket_pekerjaan: p?.nama || knmp?.name || "-",
+        lokasi: knmp?.regency_name || knmp?.name || "-",
+        jenis_titik: ((knmp?.jenis || "").toUpperCase() === "PENYANGGA" ? "PENYANGGA" : (knmp?.jenis ? "HUB" : "-")) as "HUB" | "PENYANGGA",
+        no_kontrak_spmk: persiapan.nomor_spmk || persiapan.nomor_kontrak || "-",
+        kontraktor: perush.nama || (reportData?.total_kontraktor ? `${reportData.total_kontraktor} Kontraktor Pelaksana` : "-"),
+        pengawas_ppk: reportData?.ppk_name ? `${reportData.ppk_name} / Tim Pengawas` : "-",
+        sisa_waktu_hari: p?.sisa_waktu_hari ?? "-",
+        progres_harian_pct: (aktKum > 0 ? (aktKum / 90).toFixed(2) : "0.00"),
       },
-      checklist_fasilitas: DEFAULT_8_FASILITAS_HARIAN.map((f, i) => ({
+      checklist_fasilitas: p || reportData?.total_lokasi ? DEFAULT_8_FASILITAS_HARIAN.map((f, i) => ({
         no: i + 1,
         fasilitas: f,
         lingkup: "Ya" as const,
-        status: (reportData?.capaian_fisik_kumulatif || 0) >= 100 ? "Selesai" as const : "Proses" as const,
-        catatan: "Pekerjaan fisik berjalan normal",
-      })),
+        status: (aktKum >= 100 ? "Selesai" : aktKum > 0 ? "Proses" : "Belum") as any,
+        catatan: "-",
+      })) : [],
       detail_boq: rekapItems.length
         ? rekapItems.slice(0, 6).map((item, idx) => ({
             no: idx + 1,
             kode_boq: `DIV-${idx + 1}.1`,
-            area: item.uraian || "Area Konstruksi",
-            uraian: `Pekerjaan ${item.uraian || "Konstruksi Lapangan"}`,
+            area: item.uraian || "-",
+            uraian: item.uraian ? `Pekerjaan ${item.uraian}` : "-",
             satuan: "m3",
-            vol_kontrak: item.lokasi ? item.lokasi * 10 : 150,
-            renc_hari: Number((item.minggu_lalu / 6).toFixed(2)) || 2.5,
-            realisasi: Number((item.minggu_ini / 6).toFixed(2)) || 2.8,
-            kum_sd_hari: Number(item.kumulatif?.toFixed(2)) || 14.5,
-            bukti: "Foto & BA",
+            vol_kontrak: item.lokasi ? item.lokasi * 10 : 0,
+            renc_hari: Number((item.minggu_lalu / 6).toFixed(2)) || 0,
+            realisasi: Number((item.minggu_ini / 6).toFixed(2)) || 0,
+            kum_sd_hari: Number(item.kumulatif?.toFixed(2)) || 0,
+            bukti: item.keterangan || "-",
           }))
-        : [
-            {
-              no: 1,
-              kode_boq: "DIV-1.1",
-              area: "Dermaga",
-              uraian: "Pemasangan tiang pancang baja & bekesting",
-              satuan: "titik",
-              vol_kontrak: 48,
-              renc_hari: 2,
-              realisasi: 2,
-              kum_sd_hari: 24,
-              bukti: "Foto Lapangan",
-            },
-            {
-              no: 2,
-              kode_boq: "DIV-2.1",
-              area: "Cold Storage",
-              uraian: "Pengecoran sloof beton bertulang",
-              satuan: "m3",
-              vol_kontrak: 85,
-              renc_hari: 4.5,
-              realisasi: 4.8,
-              kum_sd_hari: 42.0,
-              bukti: "Uji Tekan Beton",
-            },
-            {
-              no: 3,
-              kode_boq: "DIV-3.1",
-              area: "Sentra Kuliner",
-              uraian: "Pemasangan dinding bata & plesteran",
-              satuan: "m2",
-              vol_kontrak: 260,
-              renc_hari: 12,
-              realisasi: 14,
-              kum_sd_hari: 110,
-              bukti: "Foto Lapangan",
-            },
-          ],
-      aspek_k3_kendala: DEFAULT_5_ASPEK_HARIAN.map((a, i) => {
+        : [],
+      aspek_k3_kendala: reportData?.issues?.length ? DEFAULT_5_ASPEK_HARIAN.map((a, i) => {
         const issue = reportData?.issues?.[i];
         return {
           no: i + 1,
           aspek: a,
-          catatan: issue ? issue.deskripsi : a === "K3/SMKK" ? `Kepatuhan APD ${reportData?.k3_kepatuhan_apd || 95}%` : "Kondisi terpantau aman dan terkendali",
-          dampak: issue ? issue.dampak : "Nihil / Sesuai Rencana",
-          tindak_lanjut: issue ? issue.rencana_mitigasi : "Monitoring harian dan safety induction",
-          pic_target: issue ? issue.pic : "Site Manager / Pengawas",
+          catatan: issue ? issue.deskripsi : "-",
+          dampak: issue ? issue.dampak : "-",
+          tindak_lanjut: issue ? issue.rencana_mitigasi : "-",
+          pic_target: issue ? issue.pic : "-",
         };
-      }),
-      dokumentasi_foto: [1, 2, 3, 4].map((slot) => ({
+      }) : [],
+      dokumentasi_foto: photosList.length ? [1, 2, 3, 4].map((slot) => ({
         slot,
         file_url: photosList[slot - 1]?.file_url || "",
-        file_name: photosList[slot - 1]?.title || `Foto Dokumentasi ${slot}`,
-        kode_boq_area: `DIV-${slot}.1 Area Fasilitas KNMP`,
+        file_name: photosList[slot - 1]?.title || "-",
+        kode_boq_area: "-",
         tanggal: selectedDate,
-        keterangan: photosList[slot - 1]?.title || "Dokumentasi visual fisik terpasang di lapangan",
-      })),
+        keterangan: photosList[slot - 1]?.title || "-",
+      })) : [],
       pengesahan: {
-        pembuat_nama: perush.nama || user?.name || "PT. Pelaksana Konstruksi",
+        pembuat_nama: perush.nama || user?.name || "-",
         pembuat_tanggal: selectedDate,
-        pemeriksa_nama: "Konsultan Pengawas KNMP",
+        pemeriksa_nama: reportData?.kadis_name || "-",
         pemeriksa_tanggal: selectedDate,
-        penyetuju_nama: reportData?.ppk_name || "Pejabat Pembuat Komitmen (PPK)",
+        penyetuju_nama: reportData?.ppk_name || "-",
         penyetuju_tanggal: selectedDate,
       },
     };
@@ -359,8 +325,8 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
     const photosList = reportData?.photos || [];
     const rekapItems = reportData?.progress_rekap || [];
 
-    const rencKum = reportData?.progress_total_lalu || 12.5;
-    const aktKum = reportData?.progress_total_kumulatif || reportData?.capaian_fisik_kumulatif || 14.8;
+    const rencKum = reportData?.progress_total_lalu ?? 0;
+    const aktKum = reportData?.progress_total_kumulatif || reportData?.capaian_fisik_kumulatif || 0;
     const deviasi = Number((aktKum - rencKum).toFixed(2));
     const status = deviasi < -5 ? "Critical" : deviasi < 0 ? "Warning" : "On Track";
 
@@ -370,113 +336,64 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
       minggu_ke: reportData?.minggu_ke || 1,
       status_proyek: status,
       identitas: {
-        paket_pekerjaan: p?.nama || knmp?.name || "Program Kampung Nelayan Merah Putih (KNMP) Wilayah Sumatera",
-        lokasi: knmp?.regency_name || knmp?.name || "Wilayah Sumatera (346 Titik)",
-        jenis_titik: ((knmp?.jenis || "HUB").toUpperCase() === "PENYANGGA" ? "PENYANGGA" : "HUB") as "HUB" | "PENYANGGA",
-        no_kontrak_spmk: persiapan.nomor_spmk || persiapan.nomor_kontrak || "SPMK-01/KNMP/SUMATERA/2026",
-        kontraktor: perush.nama || (reportData?.total_kontraktor ? `${reportData.total_kontraktor} Kontraktor Pelaksana` : "Konsorsium Kontraktor Pelaksana"),
-        pengawas_ppk: `${reportData?.ppk_name || "Pejabat Pembuat Komitmen"} / Tim Pengawas`,
+        paket_pekerjaan: p?.nama || knmp?.name || "-",
+        lokasi: knmp?.regency_name || knmp?.name || "-",
+        jenis_titik: ((knmp?.jenis || "").toUpperCase() === "PENYANGGA" ? "PENYANGGA" : (knmp?.jenis ? "HUB" : "-")) as "HUB" | "PENYANGGA",
+        no_kontrak_spmk: persiapan.nomor_spmk || persiapan.nomor_kontrak || "-",
+        kontraktor: perush.nama || (reportData?.total_kontraktor ? `${reportData.total_kontraktor} Kontraktor Pelaksana` : "-"),
+        pengawas_ppk: reportData?.ppk_name ? `${reportData.ppk_name} / Tim Pengawas` : "-",
         rencana_kum_pct: rencKum,
         aktual_kum_pct: aktKum,
       },
-      checklist_fasilitas: DEFAULT_10_FASILITAS_MINGGUAN.map((f, i) => ({
+      checklist_fasilitas: p || reportData?.total_lokasi ? DEFAULT_10_FASILITAS_MINGGUAN.map((f, i) => ({
         no: i + 1,
         fasilitas: f,
         lingkup: "Ya" as const,
-        status: aktKum >= 100 ? "Selesai" as const : "Proses" as const,
-        catatan: "Sesuai jadwal pelaksanaan kurva-S",
-      })),
-      ringkasan_boq: DEFAULT_8_BOQ_MINGGUAN.map((k, i) => {
-        const bobot = 12.5;
-        const renc = rencKum * 0.9;
-        const akt = aktKum * (0.85 + (i % 3) * 0.1);
-        return {
-          no: i + 1,
-          kelompok_boq: k,
-          nilai_kontrak: 1850000000,
-          bobot_pct: bobot,
-          renc_kum_pct: Number(renc.toFixed(2)),
-          akt_kum_pct: Number(akt.toFixed(2)),
-          deviasi_pct: Number((akt - renc).toFixed(2)),
-          keterangan: "Sesuai target mingguan",
-        };
-      }),
+        status: (aktKum >= 100 ? "Selesai" : aktKum > 0 ? "Proses" : "Belum") as any,
+        catatan: "-",
+      })) : [],
+      ringkasan_boq: [],
       detail_boq: rekapItems.length
         ? rekapItems.slice(0, 7).map((item, idx) => ({
             no: idx + 1,
             kode_boq: `DIV-${idx + 1}`,
-            area: item.uraian || "Fasilitas Utama",
-            uraian: `Pekerjaan ${item.uraian || "Struktur Fisik"}`,
-            bobot_pct: 12.5,
-            renc_mgg: Number(item.minggu_lalu?.toFixed(2)) || 2.4,
-            real_mgg: Number(item.minggu_ini?.toFixed(2)) || 2.8,
-            akt_kum: Number(item.kumulatif?.toFixed(2)) || 15.2,
+            area: item.uraian || "-",
+            uraian: item.uraian ? `Pekerjaan ${item.uraian}` : "-",
+            bobot_pct: 0,
+            renc_mgg: Number(item.minggu_lalu?.toFixed(2)) || 0,
+            real_mgg: Number(item.minggu_ini?.toFixed(2)) || 0,
+            akt_kum: Number(item.kumulatif?.toFixed(2)) || 0,
             deviasi_pct: Number(((item.minggu_ini || 0) - (item.minggu_lalu || 0)).toFixed(2)),
-            bukti_mc: "MC-01",
+            bukti_mc: item.keterangan || "-",
           }))
-        : [
-            {
-              no: 1,
-              kode_boq: "DIV-1.1",
-              area: "Dermaga",
-              uraian: "Pekerjaan Struktur Tiang Pancang & Capping Beam",
-              bobot_pct: 15.0,
-              renc_mgg: 2.5,
-              real_mgg: 2.8,
-              akt_kum: 14.5,
-              deviasi_pct: 0.3,
-              bukti_mc: "MC-01",
-            },
-            {
-              no: 2,
-              kode_boq: "DIV-2.1",
-              area: "Cold Storage",
-              uraian: "Pekerjaan Struktur Kolom & Balok Beton",
-              bobot_pct: 18.0,
-              renc_mgg: 3.0,
-              real_mgg: 3.2,
-              akt_kum: 16.0,
-              deviasi_pct: 0.2,
-              bukti_mc: "MC-01",
-            },
-            {
-              no: 3,
-              kode_boq: "DIV-3.1",
-              area: "Sentra Pasar Ikan",
-              uraian: "Pekerjaan Atap Baja Ringan & Finishing Lantai",
-              bobot_pct: 12.0,
-              renc_mgg: 2.0,
-              real_mgg: 1.8,
-              akt_kum: 10.5,
-              deviasi_pct: -0.2,
-              bukti_mc: "MC-01",
-            },
-          ],
-      kontrol_mingguan: DEFAULT_6_KONTROL_MINGGUAN.map((a, i) => {
-        const issue = reportData?.issues?.[i];
-        return {
-          no: i + 1,
-          aspek: a,
-          kondisi: a === "Look ahead 1 minggu" ? "Rencana pengecoran pelat lantai dan pasang atap" : "Berjalan baik sesuai kurva-S baseline",
-          isu_risiko: issue ? issue.dampak : "Risiko rendah / terkendali",
-          keputusan_dibutuhkan: issue ? issue.rencana_mitigasi : "Lanjutkan pemantauan dan percepatan opname",
-          pic_target: issue ? issue.pic : "Site Manager",
-        };
-      }),
-      dokumentasi_foto: [1, 2, 3, 4].map((slot) => ({
+        : [],
+      kontrol_mingguan: reportData?.issues?.length
+        ? DEFAULT_6_KONTROL_MINGGUAN.map((a, i) => {
+            const issue = reportData?.issues?.[i];
+            return {
+              no: i + 1,
+              aspek: a,
+              kondisi: issue ? (issue.status || "-") : "-",
+              isu_risiko: issue ? (issue.dampak || "-") : "-",
+              keputusan_dibutuhkan: issue ? (issue.rencana_mitigasi || "-") : "-",
+              pic_target: issue ? (issue.pic || "-") : "-",
+            };
+          })
+        : [],
+      dokumentasi_foto: photosList.length ? [1, 2, 3, 4].map((slot) => ({
         slot,
         file_url: photosList[slot - 1]?.file_url || "",
-        file_name: photosList[slot - 1]?.title || `Foto Mingguan ${slot}`,
-        kode_boq_area: `DIV-${slot}.1 Area KNMP`,
+        file_name: photosList[slot - 1]?.title || "-",
+        kode_boq_area: "-",
         tanggal: endDate,
-        keterangan: photosList[slot - 1]?.title || "Dokumentasi visual progres fisik mingguan",
-      })),
+        keterangan: photosList[slot - 1]?.title || "-",
+      })) : [],
       pengesahan: {
-        pembuat_nama: perush.nama || user?.name || "Konsorsium Kontraktor Pelaksana",
+        pembuat_nama: perush.nama || user?.name || "-",
         pembuat_tanggal: endDate,
-        pemeriksa_nama: "Konsultan Pengawas KNMP",
+        pemeriksa_nama: reportData?.kadis_name || "-",
         pemeriksa_tanggal: endDate,
-        penyetuju_nama: reportData?.ppk_name || "Pejabat Pembuat Komitmen (PPK)",
+        penyetuju_nama: reportData?.ppk_name || "-",
         penyetuju_tanggal: endDate,
       },
     };
@@ -490,115 +407,70 @@ export const LaporanMingguanPPKModal: React.FC<LaporanMingguanPPKModalProps> = (
     const perush = p?.perusahaan || persiapan.perusahaan || {};
 
     const photosList = reportData?.photos || [];
-    const rencKum = reportData?.progress_total_lalu || 24.5;
-    const aktKum = reportData?.progress_total_kumulatif || reportData?.capaian_fisik_kumulatif || 26.8;
+    const rencKum = reportData?.progress_total_lalu ?? 0;
+    const aktKum = reportData?.progress_total_kumulatif || reportData?.capaian_fisik_kumulatif || 0;
     const deviasi = Number((aktKum - rencKum).toFixed(2));
 
     return {
       bulan_tahun: `${MONTHS[bulan - 1]} ${tahun}`,
-      bulan_kontrak_ke: Math.ceil((reportData?.minggu_ke || 4) / 4).toString(),
+      bulan_kontrak_ke: Math.ceil((reportData?.minggu_ke || 1) / 4).toString(),
       status_proyek: deviasi < -5 ? "Critical" : deviasi < 0 ? "Warning" : "On Track",
       identitas_acuan: {
-        paket_pekerjaan: p?.nama || knmp?.name || "Program Kampung Nelayan Merah Putih (KNMP) Wilayah Sumatera",
-        lokasi: knmp?.regency_name || knmp?.name || "Wilayah Sumatera (346 Titik)",
-        jenis_titik: ((knmp?.jenis || "HUB").toUpperCase() === "PENYANGGA" ? "PENYANGGA" : "HUB") as "HUB" | "PENYANGGA",
-        no_kontrak_spmk: persiapan.nomor_spmk || persiapan.nomor_kontrak || "SPMK-01/KNMP/SUMATERA/2026",
-        kontraktor: perush.nama || (reportData?.total_kontraktor ? `${reportData.total_kontraktor} Kontraktor Pelaksana` : "PT. Bahari Nusantara Perkasa"),
-        pengawas_ppk: `${reportData?.ppk_name || "Pejabat Pembuat Komitmen"} / Tim Pengawas`,
+        paket_pekerjaan: p?.nama || knmp?.name || "-",
+        lokasi: knmp?.regency_name || knmp?.name || "-",
+        jenis_titik: ((knmp?.jenis || "").toUpperCase() === "PENYANGGA" ? "PENYANGGA" : (knmp?.jenis ? "HUB" : "-")) as "HUB" | "PENYANGGA",
+        no_kontrak_spmk: persiapan.nomor_spmk || persiapan.nomor_kontrak || "-",
+        kontraktor: perush.nama || (reportData?.total_kontraktor ? `${reportData.total_kontraktor} Kontraktor Pelaksana` : "-"),
+        pengawas_ppk: reportData?.ppk_name ? `${reportData.ppk_name} / Tim Pengawas` : "-",
         rencana_kum_pct: rencKum,
         aktual_kum_pct: aktKum,
         deviasi_pct: deviasi,
-        termin_keuangan: "Termin 1 (25%) Terbayar",
+        termin_keuangan: "-",
       },
-      checklist_fasilitas: DEFAULT_10_FASILITAS_MINGGUAN.map((f, i) => ({
+      checklist_fasilitas: p || reportData?.total_lokasi ? DEFAULT_10_FASILITAS_MINGGUAN.map((f, i) => ({
         no: i + 1,
         fasilitas: f,
         lingkup: "Ya" as const,
-        status: aktKum >= 100 ? "Selesai" as const : "Proses" as const,
-        catatan: "Dalam tahapan konstruksi fisik",
-      })),
-      ringkasan_boq: DEFAULT_8_BOQ_MINGGUAN.map((k, i) => {
-        const renc = rencKum * 0.95;
-        const akt = aktKum * (0.9 + (i % 2) * 0.15);
-        return {
-          no: i + 1,
-          kelompok_boq: k,
-          nilai_kontrak: 2500000000,
-          bobot_pct: 12.5,
-          renc_kum_pct: Number(renc.toFixed(2)),
-          akt_kum_pct: Number(akt.toFixed(2)),
-          deviasi_pct: Number((akt - renc).toFixed(2)),
-          keterangan: "Sesuai kurva-S bulanan",
-        };
-      }),
-      detail_boq: [
-        {
-          no: 1,
-          kode_boq: "DIV-1.1",
-          area: "Dermaga / Tambatan",
-          uraian: "Pekerjaan Struktur Dermaga & Capping Beam",
-          bobot_pct: 15.0,
-          akt_kum_pct: 14.2,
-          nilai_realisasi: 355000000,
-          termin_mc: "MC-01",
-          deviasi_pct: -0.8,
-          catatan: "Selesai pengecoran tahap 1",
-        },
-        {
-          no: 2,
-          kode_boq: "DIV-2.1",
-          area: "Cold Storage",
-          uraian: "Pekerjaan Dinding Panel Insulasi & Mesin Pendingin",
-          bobot_pct: 20.0,
-          akt_kum_pct: 21.5,
-          nilai_realisasi: 537500000,
-          termin_mc: "MC-01",
-          deviasi_pct: 1.5,
-          catatan: "Pemasangan mesin pendingin rampung",
-        },
-        {
-          no: 3,
-          kode_boq: "DIV-3.1",
-          area: "Sentra Pasar Ikan",
-          uraian: "Pekerjaan Lantai Keramik & Meja Lapak",
-          bobot_pct: 15.0,
-          akt_kum_pct: 15.0,
-          nilai_realisasi: 375000000,
-          termin_mc: "MC-01",
-          deviasi_pct: 0.0,
-          catatan: "Tahap finishing meja lapak",
-        },
-      ],
-      matriks_risiko: [
-        "Kurva-S/jadwal",
-        "Pembayaran/termin",
-        "Perubahan kontrak",
-        "Mutu/QC/NCR",
-        "K3 & lingkungan",
-        "Readiness operasional",
-      ].map((a, i) => ({
-        no: i + 1,
-        aspek: a,
-        kondisi_bulan_ini: "Berjalan normal sesuai target progres bulanan",
-        risiko_deviasi: deviasi < 0 ? "Keterlambatan progres" : "Risiko rendah dan terkendali",
-        tindak_lanjut: "Percepatan jam kerja (lembur) dan penambahan tenaga kerja",
-        pic_target: "Site Manager / PPK",
-      })),
-      dokumentasi_foto: [1, 2, 3, 4].map((slot) => ({
+        status: (aktKum >= 100 ? "Selesai" : aktKum > 0 ? "Proses" : "Belum") as any,
+        catatan: "-",
+      })) : [],
+      ringkasan_boq: [],
+      detail_boq: [],
+      matriks_risiko: reportData?.issues?.length
+        ? [
+            "Kurva-S/jadwal",
+            "Pembayaran/termin",
+            "Perubahan kontrak",
+            "Mutu/QC/NCR",
+            "K3 & lingkungan",
+            "Readiness operasional",
+          ].map((a, i) => {
+            const issue = reportData?.issues?.[i];
+            return {
+              no: i + 1,
+              aspek: a,
+              kondisi_bulan_ini: issue ? (issue.status || "-") : "-",
+              risiko_deviasi: issue ? (issue.dampak || "-") : "-",
+              tindak_lanjut: issue ? (issue.rencana_mitigasi || "-") : "-",
+              pic_target: issue ? (issue.pic || "-") : "-",
+            };
+          })
+        : [],
+      dokumentasi_foto: photosList.length ? [1, 2, 3, 4].map((slot) => ({
         slot,
         file_url: photosList[slot - 1]?.file_url || "",
-        file_name: photosList[slot - 1]?.title || `Foto Bulanan ${slot}`,
-        kode_boq_area: `DIV-${slot}.1 Fasilitas Utama KNMP`,
-        tanggal: `2026-0${bulan}-28`,
-        keterangan: photosList[slot - 1]?.title || "Dokumentasi visual fisik terpasang di lapangan",
-      })),
+        file_name: photosList[slot - 1]?.title || "-",
+        kode_boq_area: "-",
+        tanggal: `${tahun}-0${bulan}-28`,
+        keterangan: photosList[slot - 1]?.title || "-",
+      })) : [],
       pengesahan: {
-        pembuat_nama: perush.nama || user?.name || "PT. Pelaksana Konstruksi",
-        pembuat_tanggal: `2026-0${bulan}-28`,
-        pemeriksa_nama: "Konsultan Pengawas KNMP",
-        pemeriksa_tanggal: `2026-0${bulan}-28`,
-        penyetuju_nama: reportData?.ppk_name || "Pejabat Pembuat Komitmen (PPK)",
-        penyetuju_tanggal: `2026-0${bulan}-28`,
+        pembuat_nama: perush.nama || user?.name || "-",
+        pembuat_tanggal: `${tahun}-0${bulan}-28`,
+        pemeriksa_nama: reportData?.kadis_name || "-",
+        pemeriksa_tanggal: `${tahun}-0${bulan}-28`,
+        penyetuju_nama: reportData?.ppk_name || "-",
+        penyetuju_tanggal: `${tahun}-0${bulan}-28`,
       },
     };
   }, [activePelaksanaan, reportData, bulan, tahun, user]);
