@@ -118,6 +118,7 @@ func seedInitialData(db *sqlx.DB) {
 		"issue_create", "issue_read", "issue_update", "issue_delete",
 		"issue_verify_pengawas", "issue_verify_wakil_ppk",
 		"issue_unverify_pengawas", "issue_unverify_wakil_ppk",
+		"boq_create", "boq_read", "boq_update", "boq_delete",
 		"user_create", "user_read", "user_update", "user_delete",
 		"periode_create", "periode_read", "periode_update", "periode_delete",
 		"jenis_bangunan_create", "jenis_bangunan_read", "jenis_bangunan_update", "jenis_bangunan_delete",
@@ -132,29 +133,33 @@ func seedInitialData(db *sqlx.DB) {
 		"superadmin":  permissions,
 		"super_admin": permissions,
 		"admin_ppk":   permissions,
+		"admin":       permissions,
 		"kontraktor": {
 			"knmp_create", "knmp_read", "knmp_update", "knmp_delete",
 			"kontrak_create", "kontrak_read", "kontrak_update", "kontrak_delete",
 			"lapangan_create", "lapangan_read", "lapangan_update", "lapangan_delete",
 			"pelaksanaan_create", "pelaksanaan_read", "pelaksanaan_update", "pelaksanaan_delete",
+			"boq_create", "boq_read",
 			"laporan_create", "laporan_read", "laporan_update", "laporan_delete",
 			"absensi_create", "absensi_read", "absensi_update", "absensi_delete",
 			"issue_create", "issue_read", "issue_update", "issue_delete",
 		},
 		"pengawas": {
 			"knmp_read",
+			"boq_create", "boq_read",
 			"laporan_read", "laporan_verify_pengawas", "laporan_unverify_pengawas",
 			"absensi_read", "absensi_verify_pengawas", "absensi_unverify_pengawas",
 			"issue_read", "issue_verify_pengawas", "issue_unverify_pengawas",
 		},
 		"wakil_ppk": {
 			"dashboard", "knmp_read",
+			"boq_create", "boq_read", "boq_update",
 			"laporan_read", "laporan_verify_wakil_ppk", "laporan_unverify_wakil_ppk",
 			"absensi_read", "absensi_create", "absensi_verify_wakil_ppk", "absensi_unverify_wakil_ppk",
 			"issue_read", "issue_create", "issue_verify_wakil_ppk", "issue_unverify_wakil_ppk",
 		},
 		"ppk": {
-			"dashboard",
+			"dashboard", "boq_create", "boq_read", "boq_update", "boq_delete",
 		},
 	}
 

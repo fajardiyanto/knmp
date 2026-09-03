@@ -223,8 +223,39 @@ func (r *laporanRepo) UpdateStatus(ctx context.Context, id int64, status string)
 }
 
 func (r *laporanRepo) Delete(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE laporans SET deleted_at = NOW() WHERE id = $1`, id)
-	return err
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE documents
+		SET deleted_at = NOW(), updated_at = NOW()
+		WHERE documentable_type = 'laporan_jenis_bangunan'
+		  AND documentable_id IN (
+		      SELECT id FROM laporan_jenis_bangunan WHERE laporan_id = $1
+		  )
+		  AND deleted_at IS NULL
+	`, id); err != nil {
+		return fmt.Errorf("delete laporan detail documents: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE documents
+		SET deleted_at = NOW(), updated_at = NOW()
+		WHERE documentable_type = 'laporan'
+		  AND documentable_id = $1
+		  AND deleted_at IS NULL
+	`, id); err != nil {
+		return fmt.Errorf("delete laporan documents: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE laporan_jenis_bangunan SET deleted_at = NOW(), updated_at = NOW() WHERE laporan_id = $1 AND deleted_at IS NULL`, id); err != nil {
+		return fmt.Errorf("delete laporan details: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE laporans SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL`, id); err != nil {
+		return fmt.Errorf("delete laporan: %w", err)
+	}
+	return tx.Commit()
 }
 
 func (r *laporanRepo) GetDetailsByLaporanID(ctx context.Context, laporanID int64) ([]*domain.LaporanJenisBangunan, error) {

@@ -512,6 +512,15 @@ export const LaporanPage: React.FC = () => {
         <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1 border-t border-slate-100">
           <button
             type="button"
+            onClick={() => navigate("/boq-weekly")}
+            className="flex-1 sm:flex-none px-4.5 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-white text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-50 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            title="Buka BOQ Mingguan untuk kontrol progress berbasis evidence"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>BOQ Mingguan</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setIsReadableReportOpen(true)}
             className="flex-1 sm:flex-none px-4.5 py-2.5 text-[13px] sm:text-[13.5px] font-semibold bg-white text-[#002060] border border-[#002060]/20 rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
             title="Buka laporan ringkas yang mudah dibaca"

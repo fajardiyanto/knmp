@@ -18,6 +18,7 @@ type Handlers struct {
 	Persiapan    *handler.PersiapanHandler
 	Pelaksanaan  *handler.PelaksanaanHandler
 	Laporan      *handler.LaporanHandler
+	WeeklyBOQ    *handler.WeeklyBOQHandler
 	Absensi      *handler.AbsensiHandler
 	Issue        *handler.IssueHandler
 	Pembayaran   *handler.PembayaranHandler
@@ -155,6 +156,17 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	protected.Patch("/laporan/:id/verify", middleware.RequirePermission("laporan_verify_pengawas", "laporan_verify_wakil_ppk"), h.Laporan.Verify)
 	protected.Patch("/laporan/:id/unverify", middleware.RequirePermission("laporan_unverify_pengawas", "laporan_unverify_wakil_ppk"), h.Laporan.Unverify)
 	protected.Delete("/laporan/:id", middleware.RequirePermission("laporan_delete"), h.Laporan.Delete)
+
+	// BOQ & Weekly Progress Control
+	if h.WeeklyBOQ != nil {
+		boq := protected.Group("/boq-weekly")
+		boq.Get("", middleware.RequirePermission("boq_read"), h.WeeklyBOQ.List)
+		boq.Get("/stats", middleware.RequirePermission("boq_read"), h.WeeklyBOQ.Stats)
+		boq.Get("/:id", middleware.RequirePermission("boq_read"), h.WeeklyBOQ.GetByID)
+		boq.Post("", middleware.RequirePermission("boq_read"), h.WeeklyBOQ.Create)
+		boq.Patch("/:id/status", middleware.RequirePermission("boq_update"), h.WeeklyBOQ.UpdateStatus)
+		boq.Delete("/:id", middleware.RequirePermission("boq_delete"), h.WeeklyBOQ.Delete)
+	}
 
 	// Absensi
 	protected.Get("/absensi", middleware.RequirePermission("absensi_read"), h.Absensi.List)

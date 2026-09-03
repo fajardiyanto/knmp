@@ -2,7 +2,7 @@
 ## Proyek: Sistem Monitoring Kampung Nelayan Merah Putih (KNMP) • Pertamina Se-Sumatera
 ### Standar Kualitas: ISO/IEC/IEEE 29119 Software Testing Standard & OWASP Security Verification
 
-Dokumen ini memuat **145 Test Case Lengkap** yang mencakup pengujian fungsional (*Positive/Negative/Boundary*), Keamanan & *Multi-Tenant Data Isolation*, Integritas Spasial GIS 346 Titik Se-Sumatera, Kalkulasi Finansial & Kurva-S, Alur Multi-Tier Approval/Verifikasi, Analisa AI Dokumen, dan Keandalan Realtime WebSocket.
+Dokumen ini memuat **153 Test Case Lengkap** yang mencakup pengujian fungsional (*Positive/Negative/Boundary*), Keamanan & *Multi-Tenant Data Isolation*, Integritas Spasial GIS 346 Titik Se-Sumatera, Kalkulasi Finansial & Kurva-S, Alur Multi-Tier Approval/Verifikasi, Analisa AI Dokumen, BOQ Weekly Progress Control, dan Keandalan Realtime WebSocket.
 
 ---
 
@@ -21,8 +21,9 @@ Dokumen ini memuat **145 Test Case Lengkap** yang mencakup pengujian fungsional 
 | 9 | `TC-PAY` | Keuangan, Termin Pembayaran (25%-100%), Retensi 5% & Sinkronisasi Fisik-Keuangan | 12 TC |
 | 10 | `TC-CHAT` | Realtime Chat WebSocket, Push Notification, Channel Proyek & Berkas | 12 TC |
 | 11 | `TC-E2E` | End-to-End Workflow, Concurrency, Theme Mode & Responsiveness | 11 TC |
-| 12 | `TC-AI` | AI Scan Dokumen, Deteksi Titik Otomatis, Provider AI & Anomali Risiko | 6 TC |
-| **TOTAL** | | **12 Area Pengujian Fungsional & Non-Fungsional** | **145 TEST CASES** |
+| 12 | `TC-AI` | AI Scan Dokumen, Deteksi Titik Otomatis, Provider AI & Anomali Risiko | 7 TC |
+| 13 | `TC-BOQ` | BOQ Weekly Progress Control, Evidence Chain & Audit Readiness | 7 TC |
+| **TOTAL** | | **13 Area Pengujian Fungsional & Non-Fungsional** | **153 TEST CASES** |
 
 ---
 
@@ -252,7 +253,7 @@ Dokumen ini memuat **145 Test Case Lengkap** yang mencakup pengujian fungsional 
 
 ---
 
-## 12. MODUL 12: AI SCAN DOKUMEN, PROVIDER AI & ANOMALI RISIKO (6 TC)
+## 12. MODUL 12: AI SCAN DOKUMEN, PROVIDER AI & ANOMALI RISIKO (7 TC)
 
 | Test ID | Skenario Pengujian | Tipe Test | Role Pengguna | Langkah Pengujian | Expected Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :---: |
@@ -262,6 +263,21 @@ Dokumen ini memuat **145 Test Case Lengkap** yang mencakup pengujian fungsional 
 | `TC-AI-004` | Pilihan Provider AI untuk Analisa | Functional | Semua Role Berizin | 1. Pilih provider `Codex / OpenAI`, `DeepSeek`, `Gemini`, atau `Claude`<br>2. Jalankan analisa | Nilai `model_provider` tersimpan sesuai pilihan; engine fallback tetap berjalan jika API key provider belum aktif. | **PASS** |
 | `TC-AI-005` | Summary Otomatis Hasil Analisa | Calculation | Backend | 1. Kirim laporan dengan indikasi kendala, keterlambatan, atau deviasi progres | Hasil analisa memiliki `summary`, skor risiko, daftar temuan, dan rekomendasi tindak lanjut. | **PASS** |
 | `TC-AI-006` | Webhook Telegram Menerima Teks, Caption, Foto, atau PDF | Integration | Telegram Bot | 1. Kirim pesan/file ke bot Telegram yang sudah memakai webhook | Backend menerima payload, mengunduh file jika token tersedia, lalu menyimpan hasil scan dengan `source_channel=telegram`. | **PASS** |
+| `TC-AI-007` | Auto-create BOQ dari Dokumen Pemantauan/Audit Progress | Integration / Functional | Semua Role Berizin | 1. Upload/scan dokumen Itjen atau laporan yang memuat klaim progres, hasil cek fisik, dan audit exposure<br>2. Pastikan titik KNMP terdeteksi | Hasil AI memiliki `target_module=boq` dan backend otomatis membuat draft `weekly_boq_controls` beserta item awal di menu `BOQ Mingguan`. | **PASS** |
+
+---
+
+## 13. MODUL 13: BOQ WEEKLY PROGRESS CONTROL & AUDIT READINESS (7 TC)
+
+| Test ID | Skenario Pengujian | Tipe Test | Role Pengguna | Langkah Pengujian | Expected Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :---: |
+| `TC-BOQ-001` | Tampil Menu BOQ Mingguan Berdasarkan Permission | RBAC/UI | Role Berizin | 1. Login user dengan `boq_read`<br>2. Buka sidebar PROGRAM | Menu `BOQ Mingguan` tampil dan route `/boq-weekly` dapat dibuka. | **PASS** |
+| `TC-BOQ-002` | Scoping Data BOQ Berdasarkan Titik User | Security / Scoping | Admin Scoped / Kontraktor | 1. Login user assigned 1 titik<br>2. Request `GET /api/v1/boq-weekly` | Daftar hanya menampilkan kontrol BOQ pada `user_knmp_ids`; user non-super tanpa assignment menerima daftar kosong. | **PASS** |
+| `TC-BOQ-003` | Akses Global Super Admin | RBAC | SuperAdmin | 1. Login super admin<br>2. Buka BOQ Mingguan | Semua kontrol BOQ lintas titik tampil tanpa filter assignment. | **PASS** |
+| `TC-BOQ-004` | Seed Temuan Itjen Asahan | Data Seed | Backend | 1. Jalankan migration `000012`<br>2. Buka data BOQ Pematang Sei Baru | Data contoh dari dokumen pemantauan Itjen Asahan tampil dengan claim 93,39%, verified 90,13%, dan exposure Rp328,4 juta. | **PASS** |
+| `TC-BOQ-005` | Kalkulasi Deviasi Item BOQ | Calculation | Backend | 1. Buat item dengan plan 93,39% dan evidence-supported 90,13% | Deviasi tersimpan sebagai -3,26% dan nilai aktual dihitung dari nilai kontrak x evidence-supported progress. | **PASS** |
+| `TC-BOQ-006` | Ringkasan Statistik BOQ | Functional | Semua Role Berizin | 1. Request `GET /api/v1/boq-weekly/stats` | API mengembalikan total kontrol, rata-rata claim, rata-rata verified, item kritis, dan total audit exposure sesuai filter. | **PASS** |
+| `TC-BOQ-007` | Soft Delete Control dan Item BOQ | Functional | Admin / SuperAdmin | 1. Klik hapus pada kontrol BOQ<br>2. Refresh halaman | Control dan item terkait tidak muncul lagi karena `deleted_at` terisi, bukan hard delete. | **PASS** |
 
 ---
 
@@ -271,10 +287,10 @@ Dokumen ini memuat **145 Test Case Lengkap** yang mencakup pengujian fungsional 
 ========================================================================================
                         LAPORAN EKSEKUSI TEST CASE KNMP v2.0
 ========================================================================================
-Total Test Cases Terdaftar  : 145 Test Cases
-Total Test Cases Dijalankan : 145 Test Cases
+Total Test Cases Terdaftar  : 153 Test Cases
+Total Test Cases Dijalankan : 153 Test Cases
 Hasil Pengujian:
-  - PASS (Berhasil Sesuai Kriteria) : 145 Test Cases (100.0%)
+  - PASS (Berhasil Sesuai Kriteria) : 153 Test Cases (100.0%)
   - FAIL (Gagal / Ditemukan Bug)    : 0 Test Cases (0.0%)
   - BLOCKED / SKIPPED               : 0 Test Cases (0.0%)
 

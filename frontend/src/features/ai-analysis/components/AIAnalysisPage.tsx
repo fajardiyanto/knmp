@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -46,6 +47,7 @@ type AnalysisMetadata = {
 };
 
 export const AIAnalysisPage: React.FC = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showAlert } = useAlert();
   const [search, setSearch] = React.useState("");
@@ -329,6 +331,20 @@ export const AIAnalysisPage: React.FC = () => {
                       {formatModuleName(metadata.target_module)}
                     </span>
                   </div>
+                  {metadata.target_module === "boq" && isValid && (
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                      <span className="font-semibold">
+                        Dokumen ini terdeteksi sebagai BOQ/progress control dan dibuat sebagai draft kontrol BOQ.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => navigate("/boq-weekly")}
+                        className="rounded-lg bg-emerald-600 px-3 py-1.5 font-bold text-white hover:bg-emerald-700"
+                      >
+                        Buka BOQ Mingguan
+                      </button>
+                    </div>
+                  )}
 
                   {draftEntries.length === 0 ? (
                     <p className="text-sm text-slate-500">Belum ada field terstruktur yang bisa diambil dari file ini.</p>

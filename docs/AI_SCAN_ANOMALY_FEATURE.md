@@ -61,7 +61,7 @@ User dapat memilih provider analisa `Codex / OpenAI`, `DeepSeek`, `Gemini`, atau
 - `summary`: ringkasan keseluruhan isi file, bukan hanya kalimat risiko
 - `findings`
 - `recommendations`
-- `target_module`: modul tujuan seperti `laporan`, `pelaksanaan`, `issue`, `absensi`, `pembayaran`, `persiapan`, atau `dokumen_umum`
+- `target_module`: modul tujuan seperti `boq`, `laporan`, `pelaksanaan`, `issue`, `absensi`, `pembayaran`, `persiapan`, atau `dokumen_umum`
 - `draft_input`: field hasil baca AI yang siap dipakai untuk form modul tujuan
 - `extracted_facts`: fakta penting yang terbaca dari file
 
@@ -92,11 +92,12 @@ Setiap hasil analisa memiliki `summary` singkat agar reviewer bisa langsung memb
 Saat PDF/laporan masuk, AI Scan tidak hanya menyimpan hasil analisa. Sistem juga menyiapkan draft input:
 
 - Dokumen laporan/progres diarahkan ke modul `laporan` dengan field seperti `tanggal`, `jenis_laporan`, `cuaca`, `jumlah_tenaga_kerja`, `rencana_progres_fisik`, `realisasi_progres_fisik`, dan `keterangan`.
+- Dokumen BOQ/RAB/pemantauan Itjen yang berisi klaim progres, hasil cek fisik, verified progress, volume terpasang, atau audit exposure diarahkan ke modul `boq`.
 - Dokumen kendala/K3 diarahkan ke modul `issue` dengan field seperti `kategori_issue`, `tingkat`, dan `uraian_masalah`.
 - Dokumen mobilisasi/SPMK/PCM diarahkan ke modul `persiapan`.
 - Dokumen pembayaran/termin diarahkan ke modul `pembayaran`.
 
-Untuk menjaga data produksi tetap aman, hasil AI disimpan sebagai draft terstruktur terlebih dahulu. Modul tujuan bisa memakai `draft_input` ini untuk auto-fill form dan user tetap melakukan review sebelum data final tersimpan.
+Untuk dokumen umum, hasil AI disimpan sebagai draft terstruktur terlebih dahulu. Untuk dokumen BOQ yang valid dan berhasil dicocokkan ke titik KNMP, backend otomatis membuat record awal di `weekly_boq_controls` dan `weekly_boq_items` agar langsung muncul pada menu `BOQ Mingguan`. Status awal tetap `open`, sehingga user tetap perlu review angka dan evidence sebelum dipakai sebagai progres resmi.
 
 Hapus dokumen pada halaman AI Scan melakukan soft-delete terhadap record analisa dan lampiran dokumen terkait.
 

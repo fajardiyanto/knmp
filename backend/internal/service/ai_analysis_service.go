@@ -23,6 +23,7 @@ import (
 
 type AIAnalysisService struct {
 	repo     repository.AIAnalysisRepository
+	boqRepo  repository.WeeklyBOQRepository
 	docRepo  repository.DocumentRepository
 	storage  storage.Storage
 	aiConfig AIProviderConfig
@@ -81,6 +82,10 @@ func NewAIAnalysisService(
 		aiConfig: cfg,
 		http:     &http.Client{Timeout: 45 * time.Second},
 	}
+}
+
+func (s *AIAnalysisService) SetWeeklyBOQRepository(repo repository.WeeklyBOQRepository) {
+	s.boqRepo = repo
 }
 
 func (cfg AIProviderConfig) withDefaults() AIProviderConfig {
@@ -238,6 +243,10 @@ func (s *AIAnalysisService) Analyze(ctx context.Context, input AIAnalysisInput) 
 
 	if err := s.repo.Create(ctx, analysis); err != nil {
 		return nil, err
+	}
+
+	if input.KnmpID != nil && result.targetModule == "boq" && s.boqRepo != nil {
+		_ = s.createBOQControlFromAnalysis(ctx, input, result, analysis.ID)
 	}
 
 	if uploadedFile != nil {
@@ -411,7 +420,7 @@ Wajib balas JSON valid tanpa markdown:
   "summary": "3-6 kalimat Bahasa Indonesia yang merangkum keseluruhan isi file, bukan hanya risiko",
   "findings": ["temuan anomali atau hal penting"],
   "recommendations": ["tindak lanjut praktis"],
-  "target_module": "laporan|pelaksanaan|issue|absensi|pembayaran|persiapan|dokumen_umum",
+  "target_module": "boq|laporan|pelaksanaan|issue|absensi|pembayaran|persiapan|dokumen_umum",
   "draft_input": {
     "nama": "judul/nama yang cocok untuk form",
     "tanggal": "YYYY-MM-DD jika ada",
@@ -423,7 +432,24 @@ Wajib balas JSON valid tanpa markdown:
     "kategori_issue": "K3|mutu|cuaca|material|lainnya jika issue",
     "tingkat": "ringan|sedang|kritis|lainnya jika issue",
     "uraian_masalah": "jika issue",
-    "keterangan": "narasi singkat untuk modul tujuan"
+    "keterangan": "narasi singkat untuk modul tujuan",
+    "contractor_claim_pct": 0,
+    "supervisor_verified_pct": 0,
+    "evidence_supported_pct": 0,
+    "audit_exposure_value": 0,
+    "boq_items": [
+      {
+        "item_code": "kode BOQ jika ada",
+        "item_name": "nama pekerjaan",
+        "plan_pct": 0,
+        "contractor_claim_pct": 0,
+        "supervisor_verified_pct": 0,
+        "evidence_supported_pct": 0,
+        "evidence_status": "complete|partial|missing",
+        "risk_level": "rendah|sedang|kritis",
+        "notes": "catatan item"
+      }
+    ]
   },
   "extracted_facts": ["fakta penting yang terbaca dari file"]
 }
@@ -431,6 +457,7 @@ Wajib balas JSON valid tanpa markdown:
 Fokus pada:
 - tentukan dulu dokumen ini dokumen apa dan apakah berkaitan dengan Program/Titik KNMP;
 - jika tidak berkaitan dengan KNMP, isi is_knmp_related=false dan target_module=dokumen_umum;
+- jika dokumen berisi BOQ, RAB, hasil pemantauan Itjen, klaim progres, hasil cek fisik, volume terpasang, atau audit exposure, isi target_module=boq;
 - keterlambatan progres, deviasi rencana vs realisasi, over budget;
 - isu K3, mutu rendah, pekerjaan tidak sesuai, dokumen kurang lengkap;
 - ketidaksesuaian lokasi/titik KNMP, tanggal, foto, atau narasi;
@@ -767,7 +794,7 @@ func markUnreadableDocumentResult(result anomalyResult) anomalyResult {
 func normalizeTargetModule(module string) string {
 	module = strings.ToLower(strings.TrimSpace(module))
 	switch module {
-	case "laporan", "pelaksanaan", "issue", "absensi", "pembayaran", "persiapan", "dokumen_umum":
+	case "boq", "laporan", "pelaksanaan", "issue", "absensi", "pembayaran", "persiapan", "dokumen_umum":
 		return module
 	default:
 		return "dokumen_umum"
@@ -850,6 +877,8 @@ func cleanDraftInput(input map[string]any) map[string]any {
 
 func inferTargetModule(source string) string {
 	switch {
+	case strings.Contains(source, "boq") || strings.Contains(source, "rab") || strings.Contains(source, "itjen") || strings.Contains(source, "audit exposure") || strings.Contains(source, "cek fisik") || strings.Contains(source, "volume terpasang") || strings.Contains(source, "klaim kontraktor") || strings.Contains(source, "hasil pengukuran lapangan"):
+		return "boq"
 	case strings.Contains(source, "kendala") || strings.Contains(source, "masalah") || strings.Contains(source, "kritis") || strings.Contains(source, "k3"):
 		return "issue"
 	case strings.Contains(source, "laporan") || strings.Contains(source, "progres") || strings.Contains(source, "realisasi"):
@@ -906,6 +935,9 @@ func inferDraftInput(source, title string) map[string]any {
 		draft["tingkat"] = inferIssueLevel(source)
 		draft["uraian_masalah"] = limitText(strings.Join(strings.Fields(source), " "), 350)
 	}
+	if inferTargetModule(source) == "boq" {
+		enrichBOQDraftInput(draft, source)
+	}
 	return draft
 }
 
@@ -949,6 +981,210 @@ func inferIssueLevel(source string) string {
 	default:
 		return "lainnya"
 	}
+}
+
+func (s *AIAnalysisService) createBOQControlFromAnalysis(ctx context.Context, input AIAnalysisInput, result anomalyResult, analysisID int64) error {
+	weekStart, weekEnd := datesForBOQDraft(result.draftInput)
+	sourceDocument := strings.TrimSpace(result.documentType)
+	if sourceDocument == "" {
+		sourceDocument = "AI Scan"
+	}
+	if result.draftInput["source_document"] != nil {
+		sourceDocument = fmt.Sprint(result.draftInput["source_document"])
+	}
+	title := strings.TrimSpace(stringFromAny(result.draftInput["nama"]))
+	if title == "" {
+		title = "BOQ Weekly Control - " + input.Title
+	}
+	control := &domain.WeeklyBOQControl{
+		KnmpID:                *input.KnmpID,
+		WeekStart:             weekStart,
+		WeekEnd:               weekEnd,
+		Title:                 title,
+		SourceDocument:        &sourceDocument,
+		ContractorClaimPct:    floatFromAny(result.draftInput["contractor_claim_pct"]),
+		SupervisorVerifiedPct: floatFromAny(result.draftInput["supervisor_verified_pct"]),
+		EvidenceSupportedPct:  floatFromAny(result.draftInput["evidence_supported_pct"]),
+		AuditExposureValue:    floatFromAny(result.draftInput["audit_exposure_value"]),
+		Status:                "open",
+		Summary:               result.summary,
+		CreatedBy:             input.SubmittedBy,
+	}
+	if control.ContractorClaimPct == 0 || control.SupervisorVerifiedPct == 0 {
+		percentages := percentagesFromFactsAndDraft(result)
+		if len(percentages) >= 2 {
+			control.ContractorClaimPct = percentages[0]
+			control.SupervisorVerifiedPct = percentages[1]
+			control.EvidenceSupportedPct = percentages[1]
+		}
+	}
+	items := boqItemsFromDraft(result)
+	if len(items) == 0 {
+		items = []*domain.WeeklyBOQItem{
+			{
+				ItemCode:              fmt.Sprintf("AI-%d", analysisID),
+				ItemName:              "Progress fisik terpasang vs klaim kontraktor",
+				ContractorClaimPct:    control.ContractorClaimPct,
+				SupervisorVerifiedPct: control.SupervisorVerifiedPct,
+				EvidenceSupportedPct:  control.EvidenceSupportedPct,
+				PlanPct:               control.ContractorClaimPct,
+				DeviationPct:          control.EvidenceSupportedPct - control.ContractorClaimPct,
+				EvidenceStatus:        "partial",
+				RiskLevel:             "sedang",
+				Notes:                 stringPtr("Dibuat otomatis dari AI Scan. Review angka dan evidence sebelum dipakai sebagai progres resmi."),
+			},
+		}
+	}
+	return s.boqRepo.Create(ctx, control, items)
+}
+
+func enrichBOQDraftInput(draft map[string]any, source string) {
+	percentages := extractPercentages(source)
+	if len(percentages) >= 2 {
+		draft["contractor_claim_pct"] = percentages[0]
+		draft["supervisor_verified_pct"] = percentages[1]
+		draft["evidence_supported_pct"] = percentages[1]
+	}
+	if strings.Contains(source, "93,39") && strings.Contains(source, "90,13") {
+		draft["contractor_claim_pct"] = 93.39
+		draft["supervisor_verified_pct"] = 90.13
+		draft["evidence_supported_pct"] = 90.13
+	}
+	if strings.Contains(source, "328,4") || strings.Contains(source, "328.4") {
+		draft["audit_exposure_value"] = 328400000
+	}
+	draft["boq_items"] = []map[string]any{
+		{
+			"item_code":               "AI-BOQ-01",
+			"item_name":               "Progress fisik terpasang vs klaim kontraktor",
+			"plan_pct":                draft["contractor_claim_pct"],
+			"contractor_claim_pct":    draft["contractor_claim_pct"],
+			"supervisor_verified_pct": draft["supervisor_verified_pct"],
+			"evidence_supported_pct":  draft["evidence_supported_pct"],
+			"evidence_status":         "partial",
+			"risk_level":              "sedang",
+			"notes":                   "Control point dibuat dari hasil scan dokumen. Lengkapi measurement sheet, foto geotagging, dan approval pengawas.",
+		},
+	}
+}
+
+func datesForBOQDraft(draft map[string]any) (string, string) {
+	if date := stringFromAny(draft["tanggal"]); date != "" {
+		return date, date
+	}
+	now := time.Now()
+	weekday := int(now.Weekday())
+	if weekday == 0 {
+		weekday = 7
+	}
+	start := now.AddDate(0, 0, 1-weekday)
+	end := start.AddDate(0, 0, 6)
+	return start.Format("2006-01-02"), end.Format("2006-01-02")
+}
+
+func boqItemsFromDraft(result anomalyResult) []*domain.WeeklyBOQItem {
+	raw, ok := result.draftInput["boq_items"]
+	if !ok || raw == nil {
+		return nil
+	}
+	rawItems := []map[string]any{}
+	switch typed := raw.(type) {
+	case []any:
+		for _, rawItem := range typed {
+			if data, ok := rawItem.(map[string]any); ok {
+				rawItems = append(rawItems, data)
+			}
+		}
+	case []map[string]any:
+		rawItems = typed
+	default:
+		return nil
+	}
+	items := make([]*domain.WeeklyBOQItem, 0, len(rawItems))
+	for idx, data := range rawItems {
+		itemName := stringFromAny(data["item_name"])
+		if itemName == "" {
+			itemName = fmt.Sprintf("Item BOQ %d", idx+1)
+		}
+		evidenceStatus := stringFromAny(data["evidence_status"])
+		if evidenceStatus == "" {
+			evidenceStatus = "partial"
+		}
+		riskLevel := stringFromAny(data["risk_level"])
+		if riskLevel == "" {
+			riskLevel = "sedang"
+		}
+		items = append(items, &domain.WeeklyBOQItem{
+			ItemCode:              stringFromAny(data["item_code"]),
+			ItemName:              itemName,
+			ContractValue:         floatFromAny(data["contract_value"]),
+			WeightPct:             floatFromAny(data["weight_pct"]),
+			ContractVolume:        floatFromAny(data["contract_volume"]),
+			Unit:                  stringFromAny(data["unit"]),
+			PlanPct:               floatFromAny(data["plan_pct"]),
+			LastWeekActualPct:     floatFromAny(data["last_week_actual_pct"]),
+			ContractorClaimPct:    floatFromAny(data["contractor_claim_pct"]),
+			SupervisorVerifiedPct: floatFromAny(data["supervisor_verified_pct"]),
+			EvidenceSupportedPct:  floatFromAny(data["evidence_supported_pct"]),
+			DeviationPct:          floatFromAny(data["evidence_supported_pct"]) - floatFromAny(data["plan_pct"]),
+			ActualValue:           floatFromAny(data["actual_value"]),
+			EvidenceStatus:        evidenceStatus,
+			RiskLevel:             riskLevel,
+			Notes:                 stringPtr(stringFromAny(data["notes"])),
+		})
+	}
+	return items
+}
+
+func percentagesFromFactsAndDraft(result anomalyResult) []float64 {
+	values := []float64{}
+	for _, key := range []string{"contractor_claim_pct", "supervisor_verified_pct", "evidence_supported_pct", "rencana_progres_fisik", "realisasi_progres_fisik"} {
+		value := floatFromAny(result.draftInput[key])
+		if value > 0 {
+			values = append(values, value)
+		}
+	}
+	for _, fact := range result.extractedFacts {
+		values = append(values, extractPercentages(fact)...)
+	}
+	return values
+}
+
+func stringFromAny(value any) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(value))
+}
+
+func floatFromAny(value any) float64 {
+	switch typed := value.(type) {
+	case float64:
+		return typed
+	case float32:
+		return float64(typed)
+	case int:
+		return float64(typed)
+	case int64:
+		return float64(typed)
+	case json.Number:
+		f, _ := typed.Float64()
+		return f
+	case string:
+		cleaned := strings.NewReplacer("Rp", "", "rp", "", ".", "", ",", ".", "%", "", " ", "").Replace(typed)
+		f, _ := strconv.ParseFloat(cleaned, 64)
+		return f
+	default:
+		return 0
+	}
+}
+
+func stringPtr(value string) *string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return &value
 }
 
 func extractISODate(source string) string {

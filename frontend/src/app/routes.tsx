@@ -14,6 +14,8 @@ import { MobilizationPage } from "../features/persiapan/components/MobilizationP
 import { UploadDokumenLapanganPage } from "../features/persiapan/components/UploadDokumenLapanganPage";
 import { PelaksanaanPage } from "../features/pelaksanaan/components/PelaksanaanPage";
 import { UploadDokumenPelaksanaanPage } from "../features/pelaksanaan/components/UploadDokumenPelaksanaanPage";
+import { WeeklyBOQPage } from "../features/boq/components/WeeklyBOQPage";
+import { WeeklyBOQInputPage } from "../features/boq/components/WeeklyBOQInputPage";
 import { LaporanPage } from "../features/laporan/components/LaporanPage";
 import { UploadDokumenLaporanPage } from "../features/laporan/components/UploadDokumenLaporanPage";
 import { TotalAnggaranPage } from "../features/pembayaran/components/TotalAnggaranPage";
@@ -218,6 +220,22 @@ export const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute requiredPermission="pelaksanaan_read">
               <UploadDokumenPelaksanaanPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="boq-weekly"
+          element={
+            <ProtectedRoute requiredPermission="boq_read">
+              <WeeklyBOQPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="boq-weekly/create"
+          element={
+            <ProtectedRoute requiredPermission="boq_read">
+              <WeeklyBOQInputPage />
             </ProtectedRoute>
           }
         />

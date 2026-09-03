@@ -75,6 +75,25 @@ func TestUnreadableExtractedTextDoesNotLeakGibberishIntoSummary(t *testing.T) {
 	}
 }
 
+func TestAnalyzeAnomaliesDetectsBOQProgressControl(t *testing.T) {
+	text := "Hasil pemantauan Itjen KNMP Pematang Sei Baru menunjukkan klaim kontraktor 93,39% tetapi hasil pengukuran lapangan/cek fisik hanya 90,13%. Gap 3,26% senilai Rp328,4 juta dan perlu kontrol BOQ evidence."
+
+	result := analyzeAnomalies(text, "Hasil Pemantauan Itjen Asahan")
+
+	if result.targetModule != "boq" {
+		t.Fatalf("expected target module boq, got %s", result.targetModule)
+	}
+	if result.draftInput["contractor_claim_pct"] != 93.39 {
+		t.Fatalf("expected contractor claim 93.39, got %#v", result.draftInput["contractor_claim_pct"])
+	}
+	if result.draftInput["supervisor_verified_pct"] != 90.13 {
+		t.Fatalf("expected verified 90.13, got %#v", result.draftInput["supervisor_verified_pct"])
+	}
+	if result.draftInput["audit_exposure_value"] != 328400000 {
+		t.Fatalf("expected exposure 328400000, got %#v", result.draftInput["audit_exposure_value"])
+	}
+}
+
 func TestParseAIAnalysisJSONIncludesTargetModuleAndDraftInput(t *testing.T) {
 	raw := `{
 		"risk_level":"sedang",

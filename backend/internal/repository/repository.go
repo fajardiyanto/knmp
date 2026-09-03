@@ -133,6 +133,24 @@ type LaporanRepository interface {
 	GetWeeklyPPKReportData(ctx context.Context, filter WeeklyReportFilter) (*domain.WeeklyPPKReportData, error)
 }
 
+type WeeklyBOQFilter struct {
+	Search      string
+	Status      string
+	KnmpID      *int64
+	StartDate   string
+	EndDate     string
+	UserKnmpIDs []int64
+}
+
+type WeeklyBOQRepository interface {
+	GetByID(ctx context.Context, id int64) (*domain.WeeklyBOQControl, error)
+	List(ctx context.Context, filter WeeklyBOQFilter) ([]*domain.WeeklyBOQControl, error)
+	Create(ctx context.Context, control *domain.WeeklyBOQControl, items []*domain.WeeklyBOQItem) error
+	UpdateStatus(ctx context.Context, id int64, status string) error
+	Delete(ctx context.Context, id int64) error
+	GetStats(ctx context.Context, filter WeeklyBOQFilter) (*domain.WeeklyBOQStats, error)
+}
+
 type AbsensiFilter struct {
 	PelaksanaanID *int64
 	TipeAbsensi   string

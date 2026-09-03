@@ -174,23 +174,7 @@ func (r *userRepo) GetUserPermissions(ctx context.Context, userID int64) ([]stri
 		WHERE mhp.model_id = $1
 		ORDER BY p.name
 	`
-	if err := r.db.SelectContext(ctx, &permissions, directQuery, userID); err == nil && len(permissions) > 0 {
-		return permissions, nil
-	}
-
-	var userRoles []string
-	rolesQuery := `
-		SELECT r.name FROM roles r
-		JOIN model_has_roles mhr ON r.id = mhr.role_id
-		WHERE mhr.model_id = $1
-	`
-	if err := r.db.SelectContext(ctx, &userRoles, rolesQuery, userID); err == nil {
-		for _, role := range userRoles {
-			if domain.IsAdminRole(role) && !domain.IsSuperAdminRole(role) {
-				return []string{}, nil
-			}
-		}
-	}
+	_ = r.db.SelectContext(ctx, &permissions, directQuery, userID)
 
 	query := `
 		SELECT DISTINCT p.name FROM permissions p
@@ -199,11 +183,19 @@ func (r *userRepo) GetUserPermissions(ctx context.Context, userID int64) ([]stri
 		WHERE mhr.model_id = $1
 		ORDER BY p.name
 	`
-	err := r.db.SelectContext(ctx, &permissions, query, userID)
-	if err != nil {
-		return []string{}, nil
+	var rolePermissions []string
+	_ = r.db.SelectContext(ctx, &rolePermissions, query, userID)
+
+	seen := make(map[string]bool, len(permissions)+len(rolePermissions))
+	merged := make([]string, 0, len(permissions)+len(rolePermissions))
+	for _, permission := range append(permissions, rolePermissions...) {
+		if seen[permission] {
+			continue
+		}
+		seen[permission] = true
+		merged = append(merged, permission)
 	}
-	return permissions, nil
+	return merged, nil
 }
 
 func (r *userRepo) GetUserKnmpIDs(ctx context.Context, userID int64) ([]int64, error) {

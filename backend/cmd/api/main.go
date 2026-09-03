@@ -58,6 +58,7 @@ func main() {
 	persiapanRepo := postgres.NewPersiapanRepo(db)
 	pelaksanaanRepo := postgres.NewPelaksanaanRepo(db)
 	laporanRepo := postgres.NewLaporanRepo(db)
+	weeklyBOQRepo := postgres.NewWeeklyBOQRepo(db)
 	absensiRepo := postgres.NewAbsensiRepo(db)
 	issueRepo := postgres.NewIssueRepo(db)
 	pembayaranRepo := postgres.NewPembayaranRepo(db)
@@ -78,6 +79,7 @@ func main() {
 	persiapanSvc := service.NewPersiapanService(persiapanRepo, docRepo, storageEngine)
 	pelaksanaanSvc := service.NewPelaksanaanService(pelaksanaanRepo, docRepo, storageEngine)
 	laporanSvc := service.NewLaporanService(laporanRepo, verifRepo, docRepo, storageEngine)
+	weeklyBOQSvc := service.NewWeeklyBOQService(weeklyBOQRepo)
 	absensiSvc := service.NewAbsensiService(absensiRepo, verifRepo, docRepo, storageEngine)
 	issueSvc := service.NewIssueService(issueRepo, verifRepo, docRepo, storageEngine)
 	pembayaranSvc := service.NewPembayaranService(pembayaranRepo, docRepo, storageEngine)
@@ -95,6 +97,7 @@ func main() {
 		GeminiModel:    cfg.GeminiModel,
 		ClaudeModel:    cfg.ClaudeModel,
 	})
+	aiAnalysisSvc.SetWeeklyBOQRepository(weeklyBOQRepo)
 
 	// 5. Initialize Handlers
 	handlers := &router.Handlers{
@@ -103,6 +106,7 @@ func main() {
 		Persiapan:    handler.NewPersiapanHandler(persiapanSvc),
 		Pelaksanaan:  handler.NewPelaksanaanHandler(pelaksanaanSvc),
 		Laporan:      handler.NewLaporanHandler(laporanSvc),
+		WeeklyBOQ:    handler.NewWeeklyBOQHandler(weeklyBOQSvc),
 		Absensi:      handler.NewAbsensiHandler(absensiSvc),
 		Issue:        handler.NewIssueHandler(issueSvc),
 		Pembayaran:   handler.NewPembayaranHandler(pembayaranSvc),
