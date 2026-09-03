@@ -6,10 +6,15 @@ import type { LaporanBulananData } from "../types";
 
 interface FormatBulananPrintViewProps {
   data: LaporanBulananData;
+  isEmbedded?: boolean;
   onClose?: () => void;
 }
 
-export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({ data, onClose }) => {
+export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
+  data,
+  isEmbedded = false,
+  onClose,
+}) => {
   const handlePrint = () => {
     window.print();
   };
@@ -24,39 +29,9 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({ 
     return `${val.toFixed(2)}%`;
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex flex-col items-center p-4 print:p-0 print:bg-white print:static print:inset-auto">
-      {/* Top Bar for Web View (hidden when printed) */}
-      <div className="w-full max-w-[210mm] mb-4 flex items-center justify-between bg-white rounded-xl px-5 py-3 shadow-lg border border-slate-200 print:hidden">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">
-            KKP
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-slate-800">Preview Format Laporan Bulanan Konstruksi KNMP</h4>
-            <p className="text-[11px] text-slate-500">Standar Resmi Kementerian Kelautan dan Perikanan (2 Halaman A4)</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs font-bold text-slate-700">
-            <Printer className="w-3.5 h-3.5 text-blue-600" />
-            Cetak / PDF
-          </Button>
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Printable Sheet (Standard A4: 210mm x 297mm) */}
-      <div className="w-full max-w-[210mm] bg-white shadow-2xl print:shadow-none print:max-w-none text-slate-900 text-[11px] leading-tight font-sans">
-        {/* ================= PAGE 1 ================= */}
+  const sheetContent = (
+    <div className="w-full max-w-[210mm] bg-white shadow-2xl print:shadow-none print:max-w-none text-slate-900 text-[11px] leading-tight font-sans mx-auto">
+      {/* ================= PAGE 1 ================= */}
         <div className="min-h-[297mm] p-8 sm:p-10 flex flex-col justify-between border-b border-slate-300 print:border-none print:min-h-screen">
           <div>
             {/* Header / Kop Resmi */}
@@ -449,6 +424,43 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({ 
           </div>
         </div>
       </div>
+  );
+
+  if (isEmbedded) {
+    return sheetContent;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex flex-col items-center p-4 print:p-0 print:bg-white print:static print:inset-auto">
+      {/* Top Bar for Web View (hidden when printed) */}
+      <div className="w-full max-w-[210mm] mb-4 flex items-center justify-between bg-white rounded-xl px-5 py-3 shadow-lg border border-slate-200 print:hidden">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">
+            KKP
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-800">Preview Format Laporan Bulanan Konstruksi KNMP</h4>
+            <p className="text-[11px] text-slate-500">Standar Resmi Kementerian Kelautan dan Perikanan (2 Halaman A4)</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs font-bold text-slate-700">
+            <Printer className="w-3.5 h-3.5 text-blue-600" />
+            Cetak / PDF
+          </Button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {sheetContent}
     </div>
   );
 };
