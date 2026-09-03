@@ -32,7 +32,7 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
   const sheetContent = (
     <div className="w-full max-w-[210mm] bg-white shadow-2xl print:shadow-none print:max-w-none text-slate-900 text-[11px] leading-tight font-sans mx-auto">
       {/* ================= PAGE 1 ================= */}
-      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-28 pb-14 flex flex-col justify-between border-b border-slate-300 print:border-none print:min-h-screen print:break-after-page overflow-hidden">
+      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-[40mm] pb-10 flex flex-col justify-between border-b border-slate-300 print:border-none print:min-h-screen print:break-after-page overflow-hidden">
         {/* Official KKP Template Background */}
         <img
           src="/assets/img/kkp_official_bg.jpg"
@@ -246,7 +246,7 @@ export const FormatBulananPrintView: React.FC<FormatBulananPrintViewProps> = ({
         </div>
 
         {/* ================= PAGE 2 ================= */}
-        <div className="relative min-h-[297mm] px-8 sm:px-10 pt-28 pb-14 flex flex-col justify-between print:min-h-screen print:break-before-page overflow-hidden">
+        <div className="relative min-h-[297mm] px-8 sm:px-10 pt-[40mm] pb-10 flex flex-col justify-between print:min-h-screen print:break-before-page overflow-hidden">
           {/* Official KKP Template Background */}
           <img
             src="/assets/img/kkp_official_bg.jpg"
