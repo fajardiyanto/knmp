@@ -94,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: HardHat,
           show: hasPermission("pelaksanaan_read"),
         },
-        { name: "BOQ Mingguan", href: "/boq-weekly", icon: FileSpreadsheet, show: hasPermission("boq_read") },
+        { name: "BOQ", href: "/boq-weekly", icon: FileSpreadsheet, show: hasPermission("boq_read") },
         { name: "Laporan", href: "/laporan", icon: FileText, show: hasPermission("laporan_read") },
         { name: "Notulensi Rapat", href: "/notulen", icon: ClipboardList, show: hasPermission("notulen_read") },
         { name: "PHO", href: "/pho", icon: CheckCircle2, show: hasPermission("pho_read") },
@@ -233,122 +233,122 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-        {/* Navigation Menus List */}
-        <div
-          className={cn(
-            "flex-1 overflow-y-auto overflow-x-hidden transition-all duration-300",
-            isOpen ? "p-3.5 space-y-4" : "py-3 px-2 space-y-2"
-          )}
-        >
-          {groups.map((group, gIdx) => {
-            const visibleItems = group.items.filter((item) => item.show);
-            if (visibleItems.length === 0) return null;
+          {/* Navigation Menus List */}
+          <div
+            className={cn(
+              "flex-1 overflow-y-auto overflow-x-hidden transition-all duration-300",
+              isOpen ? "p-3.5 space-y-4" : "py-3 px-2 space-y-2"
+            )}
+          >
+            {groups.map((group, gIdx) => {
+              const visibleItems = group.items.filter((item) => item.show);
+              if (visibleItems.length === 0) return null;
 
-            return (
-              <div key={gIdx} className="space-y-1">
-                {/* Group Title or Separator */}
-                {isOpen ? (
-                  group.title && (
-                    <div className="px-3 pt-2 pb-1 text-[10.5px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
-                      {group.title}
-                    </div>
-                  )
-                ) : (
-                  gIdx > 0 && <div className="my-2.5 mx-auto w-6 border-t border-slate-200/80 dark:border-slate-800" />
-                )}
+              return (
+                <div key={gIdx} className="space-y-1">
+                  {/* Group Title or Separator */}
+                  {isOpen ? (
+                    group.title && (
+                      <div className="px-3 pt-2 pb-1 text-[10.5px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+                        {group.title}
+                      </div>
+                    )
+                  ) : (
+                    gIdx > 0 && <div className="my-2.5 mx-auto w-6 border-t border-slate-200/80 dark:border-slate-800" />
+                  )}
 
-                {/* Group Items */}
-                {visibleItems.map((item) => (
-                  <NavLink
-                    key={item.name + item.href}
-                    to={item.href}
-                    onClick={handleNavClick}
-                    className={({ isActive }) =>
-                      cn(
-                        "relative flex items-center rounded-xl text-[13.5px] font-medium transition-all duration-200 ease-out group",
-                        isOpen
-                          ? "gap-3 px-3 py-2.5"
-                          : "justify-center w-11 h-11 mx-auto",
-                        isActive
-                          ? "bg-[#eef4ff] dark:bg-blue-950/60 text-[#3366ff] dark:text-blue-400 font-semibold shadow-2xs before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#3366ff] before:rounded-r-full"
-                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/70"
-                      )
-                    }
-                  >
-                    <item.icon
-                      className={cn(
-                        "shrink-0 transition-all duration-200 group-hover:scale-110",
-                        isOpen ? "w-[18px] h-[18px]" : "w-5 h-5",
-                        "group-hover:text-[#3366ff] dark:group-hover:text-blue-400"
-                      )}
-                    />
+                  {/* Group Items */}
+                  {visibleItems.map((item) => (
+                    <NavLink
+                      key={item.name + item.href}
+                      to={item.href}
+                      onClick={handleNavClick}
+                      className={({ isActive }) =>
+                        cn(
+                          "relative flex items-center rounded-xl text-[13.5px] font-medium transition-all duration-200 ease-out group",
+                          isOpen
+                            ? "gap-3 px-3 py-2.5"
+                            : "justify-center w-11 h-11 mx-auto",
+                          isActive
+                            ? "bg-[#eef4ff] dark:bg-blue-950/60 text-[#3366ff] dark:text-blue-400 font-semibold shadow-2xs before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#3366ff] before:rounded-r-full"
+                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/70"
+                        )
+                      }
+                    >
+                      <item.icon
+                        className={cn(
+                          "shrink-0 transition-all duration-200 group-hover:scale-110",
+                          isOpen ? "w-[18px] h-[18px]" : "w-5 h-5",
+                          "group-hover:text-[#3366ff] dark:group-hover:text-blue-400"
+                        )}
+                      />
 
-                    {isOpen ? (
-                      <>
-                        <span className="truncate flex-1 font-normal group-hover:font-medium transition-all duration-150">
-                          {item.name}
-                        </span>
-                        {typeof item.badge === "number" && item.badge > 0 && (
-                          <span className="px-2 py-0.5 text-[11px] font-medium bg-blue-600 text-white rounded-full shrink-0 shadow-xs animate-pulse">
-                            {item.badge}
+                      {isOpen ? (
+                        <>
+                          <span className="truncate flex-1 font-normal group-hover:font-medium transition-all duration-150">
+                            {item.name}
                           </span>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {/* Dot indicator for badges in collapsed mode */}
-                        {typeof item.badge === "number" && item.badge > 0 && (
-                          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white dark:ring-slate-900" />
-                        )}
-
-                        {/* Floating Tooltip in collapsed mode */}
-                        <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2 border border-slate-700">
-                          <span>{item.name}</span>
                           {typeof item.badge === "number" && item.badge > 0 && (
-                            <span className="px-1.5 py-0.2 text-[10px] bg-blue-500 rounded-full font-bold">
+                            <span className="px-2 py-0.5 text-[11px] font-medium bg-blue-600 text-white rounded-full shrink-0 shadow-xs animate-pulse">
                               {item.badge}
                             </span>
                           )}
-                          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900 dark:border-r-slate-800" />
-                        </div>
-                      </>
-                    )}
-                  </NavLink>
-                ))}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Dot indicator for badges in collapsed mode */}
+                          {typeof item.badge === "number" && item.badge > 0 && (
+                            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white dark:ring-slate-900" />
+                          )}
 
-      {/* Footer / Logout & Collapse Toggle */}
-      <div
-        className={cn(
-          "border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0 transition-all duration-300",
-          isOpen ? "p-3 space-y-2" : "p-2 space-y-2 flex flex-col items-center"
-        )}
-      >
-        <button
-          type="button"
-          onClick={logout}
+                          {/* Floating Tooltip in collapsed mode */}
+                          <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2 border border-slate-700">
+                            <span>{item.name}</span>
+                            {typeof item.badge === "number" && item.badge > 0 && (
+                              <span className="px-1.5 py-0.2 text-[10px] bg-blue-500 rounded-full font-bold">
+                                {item.badge}
+                              </span>
+                            )}
+                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900 dark:border-r-slate-800" />
+                          </div>
+                        </>
+                      )}
+                    </NavLink>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer / Logout & Collapse Toggle */}
+        <div
           className={cn(
-            "flex items-center rounded-xl text-[13.5px] font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all duration-200 group cursor-pointer relative",
-            isOpen ? "w-full gap-3 px-3 py-2.5" : "justify-center w-11 h-11"
+            "border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0 transition-all duration-300",
+            isOpen ? "p-3 space-y-2" : "p-2 space-y-2 flex flex-col items-center"
           )}
-          title={!isOpen ? "Logout" : undefined}
         >
-          <LogOut className="w-[18px] h-[18px] shrink-0 text-slate-500 dark:text-slate-400 group-hover:text-red-600 dark:group-hover:text-red-400 group-hover:scale-110 transition-all duration-200" />
-          {isOpen ? (
-            <span className="font-normal group-hover:font-medium">Logout</span>
-          ) : (
-            <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 border border-slate-700">
-              Logout
-              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900 dark:border-r-slate-800" />
-            </div>
-          )}
-        </button>
-      </div>
-    </aside>
+          <button
+            type="button"
+            onClick={logout}
+            className={cn(
+              "flex items-center rounded-xl text-[13.5px] font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all duration-200 group cursor-pointer relative",
+              isOpen ? "w-full gap-3 px-3 py-2.5" : "justify-center w-11 h-11"
+            )}
+            title={!isOpen ? "Logout" : undefined}
+          >
+            <LogOut className="w-[18px] h-[18px] shrink-0 text-slate-500 dark:text-slate-400 group-hover:text-red-600 dark:group-hover:text-red-400 group-hover:scale-110 transition-all duration-200" />
+            {isOpen ? (
+              <span className="font-normal group-hover:font-medium">Logout</span>
+            ) : (
+              <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 border border-slate-700">
+                Logout
+                <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900 dark:border-r-slate-800" />
+              </div>
+            )}
+          </button>
+        </div>
+      </aside>
     </>
   );
 };

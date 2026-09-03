@@ -104,3 +104,4 @@ func TestWeeklyBOQServiceRejectsMissingRequiredFields(t *testing.T) {
 		t.Fatal("expected error when week period is empty")
 	}
 }
+

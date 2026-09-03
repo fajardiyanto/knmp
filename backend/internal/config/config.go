@@ -37,7 +37,7 @@ type Config struct {
 
 func Load() *Config {
 	// Attempt to load .env if available
-	_ = godotenv.Load()
+	_ = godotenv.Load(".env", "../.env", "../../.env")
 
 	appEnv := getEnv("APP_ENV", "development")
 	port := getEnv("APP_PORT", "8080")

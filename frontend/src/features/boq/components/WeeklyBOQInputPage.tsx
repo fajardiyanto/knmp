@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileSpreadsheet, ImagePlus, Plus, Save, Trash2, X } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
+import { getFileUrl } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
 import { fetchKnmpList } from "../../knmp/api";
 import { createWeeklyBOQ, fetchWeeklyBOQDetail, updateWeeklyBOQ } from "../api";
@@ -667,7 +668,7 @@ export const WeeklyBOQInputPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 {row.images.map((image, imageIndex) => (
                   <div key={`${image.name}-${imageIndex}`} className="group relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                    <img src={image.data_url} alt={image.name} className="h-24 w-full object-cover" />
+                    <img src={getFileUrl(image.data_url)} alt={image.name} className="h-24 w-full object-cover" />
                     <button
                       type="button"
                       onClick={() => removeManualImage(setter, row.id, imageIndex)}

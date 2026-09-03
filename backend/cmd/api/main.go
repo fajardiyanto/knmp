@@ -79,7 +79,7 @@ func main() {
 	persiapanSvc := service.NewPersiapanService(persiapanRepo, docRepo, storageEngine)
 	pelaksanaanSvc := service.NewPelaksanaanService(pelaksanaanRepo, docRepo, storageEngine)
 	laporanSvc := service.NewLaporanService(laporanRepo, verifRepo, docRepo, storageEngine)
-	weeklyBOQSvc := service.NewWeeklyBOQService(weeklyBOQRepo)
+	weeklyBOQSvc := service.NewWeeklyBOQService(weeklyBOQRepo, storageEngine)
 	absensiSvc := service.NewAbsensiService(absensiRepo, verifRepo, docRepo, storageEngine)
 	issueSvc := service.NewIssueService(issueRepo, verifRepo, docRepo, storageEngine)
 	pembayaranSvc := service.NewPembayaranService(pembayaranRepo, docRepo, storageEngine)

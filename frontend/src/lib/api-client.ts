@@ -49,7 +49,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
 export function getFileUrl(path: string): string {
   if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (path.startsWith("data:") || path.startsWith("blob:") || path.startsWith("http://") || path.startsWith("https://")) return path;
   let cleanPath = path;
   while (cleanPath.includes("uploads/uploads/")) {
     cleanPath = cleanPath.replace("uploads/uploads/", "uploads/");

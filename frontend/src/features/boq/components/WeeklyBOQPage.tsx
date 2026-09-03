@@ -26,6 +26,7 @@ import {
   ZoomIn,
 } from "lucide-react";
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
+import { getFileUrl } from "../../../lib/api-client";
 import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
 import { useAuth } from "../../auth/hooks/useAuth";
@@ -295,7 +296,7 @@ const manualTableHtml = (title: string, table: ManualTableState) => {
       return `<tr>${columns.map((column) => {
         const value = manualCellValue(row, column);
         const images = row.images?.length && ["kondisi", "keterangan"].includes(column.id)
-          ? row.images.map((image) => `<img src="${escapeHtml(image.data_url)}" alt="${escapeHtml(image.name)}" />`).join("")
+          ? row.images.map((image) => `<img src="${escapeHtml(getFileUrl(image.data_url))}" alt="${escapeHtml(image.name)}" />`).join("")
           : "";
         return `<td>${escapeHtml(value)}${images}</td>`;
       }).join("")}</tr>`;
@@ -486,8 +487,17 @@ const exportBOQToExcel = async (
         for (let imgIdx = 0; imgIdx < Math.min(images.length, 3); imgIdx++) {
           const img = images[imgIdx];
           try {
-            const ext = img.data_url.startsWith("data:image/png") ? "png" : "jpeg";
-            const imageId = wb.addImage({ base64: img.data_url.split(",")[1] || "", extension: ext });
+            let imageId: number;
+            if (img.data_url.startsWith("data:")) {
+              const ext = img.data_url.startsWith("data:image/png") ? "png" : "jpeg";
+              imageId = wb.addImage({ base64: img.data_url.split(",")[1] || "", extension: ext });
+            } else {
+              const fullUrl = getFileUrl(img.data_url);
+              const resp = await fetch(fullUrl);
+              const arrayBuf = await resp.arrayBuffer();
+              const ext = fullUrl.endsWith(".png") ? "png" : "jpeg";
+              imageId = wb.addImage({ buffer: arrayBuf, extension: ext });
+            }
             ws.addImage(imageId, {
               tl: { col: imgColExcel - 1 + imgIdx * 0.34, row: excelRow - 1 },
               ext: { width: 90, height: 90 },
@@ -619,7 +629,7 @@ const ManualTablePreview: React.FC<{ title: string; table: ManualTableState; gro
                             <div className="mt-2 grid grid-cols-2 gap-2">
                               {row.images!.map((image, index) => (
                                 <button key={`${image.name}-${index}`} type="button" onClick={() => onPreviewImage?.(image, row.cells?.uraian || row.placeholders?.uraian || image.name)} className="group relative overflow-hidden rounded-md border border-slate-200 bg-slate-50">
-                                  <img src={image.data_url} alt={image.name} className="max-h-40 w-full object-cover transition-transform group-hover:scale-[1.03]" />
+                                  <img src={getFileUrl(image.data_url)} alt={image.name} className="max-h-40 w-full object-cover transition-transform group-hover:scale-[1.03]" />
                                   <span className="absolute inset-0 hidden items-center justify-center bg-slate-950/35 text-white group-hover:flex">
                                     <Eye className="h-5 w-5" />
                                   </span>
@@ -690,7 +700,7 @@ export const WeeklyBOQPage: React.FC = () => {
   const itjenCheckedCount = Object.values(itjenChecklist).filter(Boolean).length;
 
   const handlePreviewImage = (image: ManualImage, lampiran: string) =>
-    setPreviewImage({ src: image.data_url, name: image.name, lampiran });
+    setPreviewImage({ src: getFileUrl(image.data_url), name: image.name, lampiran });
 
   const filterParams = useMemo(
     () => ({ search, status: selectedStatus, knmp_id: selectedKnmp, start_date: startDate, end_date: endDate }),
@@ -972,7 +982,7 @@ export const WeeklyBOQPage: React.FC = () => {
                           className="group overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-left transition-all hover:border-blue-300 hover:shadow-md"
                         >
                           <div className="relative aspect-[4/3] overflow-hidden">
-                            <img src={evidence.image.data_url} alt={evidence.image.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                            <img src={getFileUrl(evidence.image.data_url)} alt={evidence.image.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                             <div className="absolute inset-0 flex items-center justify-center bg-blue-900/0 transition-all duration-200 group-hover:bg-blue-900/30">
                               <ZoomIn className="h-6 w-6 scale-0 text-white drop-shadow transition-transform duration-200 group-hover:scale-100" />
                             </div>
