@@ -9,6 +9,7 @@ import {
   Download,
   FileSpreadsheet,
   Gauge,
+  Pencil,
   PieChart,
   Plus,
   Search,
@@ -20,6 +21,7 @@ import {
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 import { useAlert } from "../../../context/AlertContext";
 import { formatDate } from "../../../lib/utils";
+import { useAuth } from "../../auth/hooks/useAuth";
 import { fetchKnmpList } from "../../knmp/api";
 import {
   deleteWeeklyBOQ,
@@ -98,6 +100,7 @@ export const WeeklyBOQPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showAlert, showConfirm } = useAlert();
+  const { hasPermission } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedKnmp, setSelectedKnmp] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -247,6 +250,11 @@ export const WeeklyBOQPage: React.FC = () => {
                 <div className="grid min-w-[230px] grid-cols-2 gap-2 rounded-xl border border-white/15 bg-white/10 p-3 text-xs">
                   <div><p className="text-blue-100">Status Proyek</p><p className="mt-1 font-black text-emerald-200">{report.critical.length > 0 ? "PERLU AKSI" : "ON TRACK"}</p></div>
                   <div><p className="text-blue-100">Risiko</p><p className="mt-1 font-black text-amber-200">{report.critical.length > 0 ? "SEDANG" : "RENDAH"}</p></div>
+                  {hasPermission("boq_update") && (
+                    <button type="button" onClick={() => navigate(`/boq-weekly/create?edit=${selectedControl.id}`)} className="col-span-2 mt-1 inline-flex items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 font-bold text-blue-700 hover:bg-blue-50">
+                      <Pencil className="h-4 w-4" /> Edit Laporan
+                    </button>
+                  )}
                   <button type="button" onClick={() => showConfirm({ title: "Hapus BOQ Weekly", message: `Hapus "${selectedControl.title}" beserta item BOQ-nya?`, confirmText: "Hapus", isDestructive: true, onConfirm: () => deleteMutation.mutate(selectedControl.id) })} className="col-span-2 mt-1 inline-flex items-center justify-center gap-2 rounded-lg bg-rose-500 px-3 py-2 font-bold text-white hover:bg-rose-600">
                     <Trash2 className="h-4 w-4" /> Hapus Laporan
                   </button>

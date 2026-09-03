@@ -1,12 +1,12 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileSpreadsheet, ImagePlus, Plus, Save, Trash2, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 import { useAlert } from "../../../context/AlertContext";
 import { fetchKnmpList } from "../../knmp/api";
-import { createWeeklyBOQ } from "../api";
-import type { WeeklyBOQCreateInput, WeeklyBOQItemInput } from "../types";
+import { createWeeklyBOQ, fetchWeeklyBOQDetail, updateWeeklyBOQ } from "../api";
+import type { WeeklyBOQCreateInput, WeeklyBOQItem, WeeklyBOQItemInput } from "../types";
 
 type BOQFormItem = Required<Omit<WeeklyBOQItemInput, "notes">> & { notes: string };
 type ManualColumn = {
@@ -258,16 +258,37 @@ const initialLampiran4: ManualTableState = {
     "IV.1|Pekerjaan Struktural",
     "IV.2|Pekerjaan Arsitektural",
     "VI|Pekerjaan Pondasi Pabrik Es Portable",
+    "VI.1|Pekerjaan Struktural Pondasi",
     "VII|Pekerjaan Area Parkir",
+    "VIII|Pekerjaan Bangunan Shelter Cool Box",
+    "VIII.1|Pekerjaan Struktural",
+    "VIII.2|Pekerjaan Arsitektural",
+    "IX|Pekerjaan Bangunan Kios Perbekalan",
+    "IX.1|Pekerjaan Struktural",
+    "IX.2|Pekerjaan Arsitektural",
     "XI|Pekerjaan Bangunan Kantor Pengelola",
+    "XI.1|Pekerjaan Struktural",
+    "XI.2|Pekerjaan Arsitektural Dan ME",
     "XIII|Pekerjaan Bangunan Tangki Air dan Sumur Bor",
+    "XIII.1|Pekerjaan Struktural",
+    "XIII.2|Pekerjaan Tangki FRP 12 m3 Dan Plumbing",
     "XIV|Pekerjaan Penerangan Kawasan",
+    "XIV.2|Pekerjaan Elektrikal",
     "XVI|Pekerjaan Jalan Lingkungan dan Saluran",
+    "XVI.1|Pekerjaan Saluran Batu Belah Kawasan",
+    "XVI.2|Pekerjaan Jalan Beton Kawasan",
+    "XVI.3|Pekerjaan Pedestrian Kawasan",
+    "XVII|Pekerjaan Bangunan Gapura",
+    "XVII.1|Pekerjaan Arsitektural",
     "XVIII|Pekerjaan Levelling Lahan",
     "XIX|Pekerjaan Bangunan Docking Kapal",
+    "XIX.1|Pekerjaan Struktural",
+    "XIX.2|Pekerjaan Arsitektural",
     "XX|Pekerjaan Pagar Kawasan",
     "XXI|Pekerjaan Bangunan Shelter Perbaikan Alat Tangkap",
+    "XXI.2|Pekerjaan Arsitektural",
     "XXII|Pekerjaan Bangunan Balai Pertemuan Nelayan",
+    "XXII.2|Pekerjaan Arsitektural",
   ].map((value) => {
     const [no, uraian] = value.split("|");
     return createManualRow({ no, uraian });
@@ -301,6 +322,7 @@ const formatRupiah = (value?: number) =>
   }).format(numberValue(value));
 const formatRupiahBlank = (value?: number) => (numberValue(value) === 0 ? "" : formatRupiah(value));
 const inputNumberValue = (value?: number) => (numberValue(value) === 0 ? "" : String(value));
+const maxManualImageSizeBytes = 2 * 1024 * 1024;
 
 const splitBOQCode = (code: string) => {
   const [parent = "", child = ""] = code.trim().split(".");
@@ -310,6 +332,72 @@ const splitBOQCode = (code: string) => {
 const formatBOQCode = (code: string, previousCode?: string) => {
   const { parent, child } = splitBOQCode(code);
   return child ? `${parent}.${child.toUpperCase()}` : parent;
+};
+
+const weeklyItemToForm = (item: WeeklyBOQItem): BOQFormItem => ({
+  item_code: item.item_code || "",
+  item_name: item.item_name || "",
+  unit: item.unit || "",
+  contract_volume: numberValue(item.contract_volume),
+  contract_value: numberValue(item.contract_value),
+  weight_pct: numberValue(item.weight_pct),
+  plan_pct: numberValue(item.plan_pct),
+  last_week_actual_pct: numberValue(item.last_week_actual_pct),
+  contractor_claim_pct: numberValue(item.contractor_claim_pct),
+  supervisor_verified_pct: numberValue(item.supervisor_verified_pct),
+  evidence_supported_pct: numberValue(item.evidence_supported_pct),
+  deviation_pct: numberValue(item.deviation_pct),
+  actual_value: numberValue(item.actual_value),
+  evidence_status: item.evidence_status || "partial",
+  risk_level: item.risk_level || "rendah",
+  notes: item.notes || "",
+});
+
+const mergeDefaultBOQItems = (savedItems: WeeklyBOQItem[] = []) => {
+  const savedByCode = new Map(savedItems.map((item) => [item.item_code.trim().toLowerCase(), weeklyItemToForm(item)]));
+  const merged = defaultItems.map((template) => {
+    const saved = savedByCode.get(template.item_code.trim().toLowerCase());
+    return saved ? { ...template, ...saved, item_code: template.item_code, item_name: saved.item_name || template.item_name } : template;
+  });
+  const defaultCodes = new Set(defaultItems.map((item) => item.item_code.trim().toLowerCase()));
+  const extraSaved = savedItems
+    .filter((item) => !defaultCodes.has(item.item_code.trim().toLowerCase()))
+    .map(weeklyItemToForm);
+  return [...merged, ...extraSaved];
+};
+
+const manualRowKey = (row: ManualRow) => {
+  const no = row.cells.no?.trim().toLowerCase();
+  const uraian = row.cells.uraian?.trim().toLowerCase();
+  if (row.kind === "total") return `total:${uraian || row.id}`;
+  if (no) return `no:${no}`;
+  return `uraian:${uraian || row.id}`;
+};
+
+const mergeManualTableTemplate = (template: ManualTableState, saved?: ManualTableState): ManualTableState => {
+  if (!saved?.rows?.length) return template;
+  const savedRowsByKey = new Map(saved.rows.map((row) => [manualRowKey(row), row]));
+  const mergedRows = template.rows.map((templateRow) => {
+    const savedRow = savedRowsByKey.get(manualRowKey(templateRow));
+    if (!savedRow) return templateRow;
+    return {
+      ...templateRow,
+      ...savedRow,
+      kind: templateRow.kind || savedRow.kind,
+      cells: { ...templateRow.cells, ...savedRow.cells },
+      placeholders: { ...templateRow.placeholders, ...savedRow.placeholders },
+      images: savedRow.images || templateRow.images || [],
+    };
+  });
+  const templateKeys = new Set(template.rows.map(manualRowKey));
+  const extraRows = saved.rows.filter((row) => !templateKeys.has(manualRowKey(row)) && row.kind !== "total");
+  const firstTotalIndex = mergedRows.findIndex((row) => row.kind === "total");
+  return {
+    columns: template.columns,
+    rows: firstTotalIndex === -1
+      ? [...mergedRows, ...extraRows]
+      : [...mergedRows.slice(0, firstTotalIndex), ...extraRows, ...mergedRows.slice(firstTotalIndex)],
+  };
 };
 
 const lampiran4MoneyColumns = ["kontrak_awal", "cco3", "rencana_mc100", "pekerjaan_tambah", "pekerjaan_kurang"];
@@ -332,6 +420,11 @@ const getLampiran4TotalValue = (table: ManualTableState, row: ManualRow, columnI
 
 export const WeeklyBOQInputPage: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const routeEditID = id ? Number(id) : null;
+  const queryEditID = searchParams.get("edit") ? Number(searchParams.get("edit")) : null;
+  const editID = routeEditID || queryEditID;
   const queryClient = useQueryClient();
   const { showAlert } = useAlert();
   const { data: knmpOptions = [] } = useQuery({ queryKey: ["knmp-options-boq-input"], queryFn: () => fetchKnmpList() });
@@ -353,6 +446,34 @@ export const WeeklyBOQInputPage: React.FC = () => {
   const [lampiran3, setLampiran3] = useState<ManualTableState>(initialLampiran3);
   const [lampiran4, setLampiran4] = useState<ManualTableState>(initialLampiran4);
 
+  const { data: editData } = useQuery({
+    queryKey: ["weekly-boq-detail", editID],
+    queryFn: () => fetchWeeklyBOQDetail(editID!),
+    enabled: editID !== null && Number.isFinite(editID),
+  });
+
+  useEffect(() => {
+    if (!editData) return;
+    setForm({
+      knmp_id: String(editData.knmp_id || ""),
+      week_start: editData.week_start?.slice(0, 10) || toInputDate(weekStart),
+      week_end: editData.week_end?.slice(0, 10) || toInputDate(today),
+      title: editData.title || "",
+      source_document: editData.source_document || "",
+      contractor_claim_pct: numberValue(editData.contractor_claim_pct),
+      supervisor_verified_pct: numberValue(editData.supervisor_verified_pct),
+      evidence_supported_pct: numberValue(editData.evidence_supported_pct),
+      audit_exposure_value: numberValue(editData.audit_exposure_value),
+      status: editData.status || "open",
+      summary: editData.summary || "",
+    });
+    setItems(mergeDefaultBOQItems(editData.items || []));
+    const manualTables = editData.manual_tables as { lampiran_2?: ManualTableState; lampiran_3?: ManualTableState; lampiran_4?: ManualTableState } | undefined;
+    setLampiran2(mergeManualTableTemplate(initialLampiran2, manualTables?.lampiran_2));
+    setLampiran3(mergeManualTableTemplate(initialLampiran3, manualTables?.lampiran_3));
+    setLampiran4(mergeManualTableTemplate(initialLampiran4, manualTables?.lampiran_4));
+  }, [editData]);
+
   const totals = useMemo(() => {
     const totalContract = items.reduce((sum, item) => sum + numberValue(item.contract_value), 0);
     const realValue = items.reduce((sum, item) => sum + numberValue(item.actual_value), 0);
@@ -361,14 +482,15 @@ export const WeeklyBOQInputPage: React.FC = () => {
   }, [items]);
 
   const createMutation = useMutation({
-    mutationFn: createWeeklyBOQ,
+    mutationFn: (payload: WeeklyBOQCreateInput) => (editID ? updateWeeklyBOQ(editID, payload) : createWeeklyBOQ(payload)),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ["weekly-boq"] });
       queryClient.invalidateQueries({ queryKey: ["weekly-boq-stats"] });
-      showAlert({ title: "BOQ Disimpan", message: "Input BOQ berhasil dibuat.", type: "success" });
+      queryClient.invalidateQueries({ queryKey: ["weekly-boq-detail"] });
+      showAlert({ title: "BOQ Disimpan", message: editID ? "Perubahan BOQ berhasil disimpan." : "Input BOQ berhasil dibuat.", type: "success" });
       navigate(`/boq-weekly?selected=${created.id}`);
     },
-    onError: (err: any) => showAlert({ title: "Gagal Menyimpan", message: err.message || "Gagal membuat input BOQ.", type: "error" }),
+    onError: (err: any) => showAlert({ title: "Gagal Menyimpan", message: err.message || "Gagal menyimpan input BOQ.", type: "error" }),
   });
 
   const updateItem = (index: number, patch: Partial<BOQFormItem>) => {
@@ -411,6 +533,10 @@ export const WeeklyBOQInputPage: React.FC = () => {
   ) => {
     if (!files?.length) return;
     Array.from(files).forEach((file) => {
+      if (file.size > maxManualImageSizeBytes) {
+        showAlert({ title: "Gambar Terlalu Besar", message: `${file.name} melebihi batas 2 MB.`, type: "warning" });
+        return;
+      }
       const reader = new FileReader();
       reader.onload = () => {
         const dataURL = typeof reader.result === "string" ? reader.result : "";
@@ -688,10 +814,10 @@ export const WeeklyBOQInputPage: React.FC = () => {
           </button>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-black uppercase tracking-wide text-blue-700">Input BOQ & Progress Control</p>
-            <h1 className="truncate text-lg font-black text-blue-950">Input Laporan Pemantauan Progress Berbasis BOQ</h1>
+            <h1 className="truncate text-lg font-black text-blue-950">{editID ? "Edit Laporan Pemantauan Progress Berbasis BOQ" : "Input Laporan Pemantauan Progress Berbasis BOQ"}</h1>
           </div>
           <button type="submit" form="weekly-boq-input-form" disabled={createMutation.isPending} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60">
-            <Save className="h-4 w-4" /> {createMutation.isPending ? "Menyimpan..." : "Simpan Laporan BOQ"}
+            <Save className="h-4 w-4" /> {createMutation.isPending ? "Menyimpan..." : editID ? "Simpan Perubahan BOQ" : "Simpan Laporan BOQ"}
           </button>
         </div>
       </div>

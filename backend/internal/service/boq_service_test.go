@@ -31,6 +31,12 @@ func (m *mockWeeklyBOQRepo) Create(ctx context.Context, control *domain.WeeklyBO
 	return nil
 }
 
+func (m *mockWeeklyBOQRepo) Update(ctx context.Context, control *domain.WeeklyBOQControl, items []*domain.WeeklyBOQItem) error {
+	m.createdControl = control
+	m.createdItems = items
+	return nil
+}
+
 func (m *mockWeeklyBOQRepo) UpdateStatus(ctx context.Context, id int64, status string) error {
 	m.statusID = id
 	m.statusValue = status

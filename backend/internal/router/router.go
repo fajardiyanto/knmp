@@ -164,6 +164,7 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 		boq.Get("/stats", middleware.RequirePermission("boq_read"), h.WeeklyBOQ.Stats)
 		boq.Get("/:id", middleware.RequirePermission("boq_read"), h.WeeklyBOQ.GetByID)
 		boq.Post("", middleware.RequirePermission("boq_read"), h.WeeklyBOQ.Create)
+		boq.Put("/:id", middleware.RequirePermission("boq_update"), h.WeeklyBOQ.Update)
 		boq.Patch("/:id/status", middleware.RequirePermission("boq_update"), h.WeeklyBOQ.UpdateStatus)
 		boq.Delete("/:id", middleware.RequirePermission("boq_delete"), h.WeeklyBOQ.Delete)
 	}

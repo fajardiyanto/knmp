@@ -44,6 +44,13 @@ export function createWeeklyBOQ(payload: WeeklyBOQCreateInput): Promise<WeeklyBO
   });
 }
 
+export function updateWeeklyBOQ(id: number, payload: WeeklyBOQCreateInput): Promise<WeeklyBOQControl> {
+  return apiFetch<WeeklyBOQControl>(`/api/v1/boq-weekly/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function updateWeeklyBOQStatus(id: number, status: string): Promise<WeeklyBOQControl> {
   return apiFetch<WeeklyBOQControl>(`/api/v1/boq-weekly/${id}/status`, {
     method: "PATCH",

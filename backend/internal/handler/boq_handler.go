@@ -101,6 +101,44 @@ func (h *WeeklyBOQHandler) Create(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(OKResponse(created))
 }
 
+func (h *WeeklyBOQHandler) Update(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse("ID tidak valid"))
+	}
+	var req createWeeklyBOQRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse("Payload tidak valid"))
+	}
+	userID, _ := c.Locals(middleware.CtxUserIDKey).(int64)
+	knmpIDs, _ := c.Locals(middleware.CtxUserKnmpIDsKey).([]int64)
+	roles, _ := c.Locals(middleware.CtxUserRolesKey).([]string)
+	if !isSuperAdminRole(roles) && !containsInt64(knmpIDs, req.KnmpID) {
+		return c.Status(fiber.StatusForbidden).JSON(ErrorResponse("Anda tidak memiliki akses update BOQ untuk titik KNMP ini"))
+	}
+	control := &domain.WeeklyBOQControl{
+		ID:                    id,
+		KnmpID:                req.KnmpID,
+		WeekStart:             req.WeekStart,
+		WeekEnd:               req.WeekEnd,
+		Title:                 req.Title,
+		SourceDocument:        req.SourceDocument,
+		ContractorClaimPct:    req.ContractorClaimPct,
+		SupervisorVerifiedPct: req.SupervisorVerifiedPct,
+		EvidenceSupportedPct:  req.EvidenceSupportedPct,
+		AuditExposureValue:    req.AuditExposureValue,
+		Status:                req.Status,
+		Summary:               req.Summary,
+		ManualTables:          req.ManualTables,
+		CreatedBy:             &userID,
+	}
+	if err := h.svc.Update(c.Context(), control, req.Items); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse(err.Error()))
+	}
+	updated, _ := h.svc.GetByID(c.Context(), id)
+	return c.JSON(OKResponse(updated))
+}
+
 func (h *WeeklyBOQHandler) UpdateStatus(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {

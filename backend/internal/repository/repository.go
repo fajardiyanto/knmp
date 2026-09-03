@@ -146,6 +146,7 @@ type WeeklyBOQRepository interface {
 	GetByID(ctx context.Context, id int64) (*domain.WeeklyBOQControl, error)
 	List(ctx context.Context, filter WeeklyBOQFilter) ([]*domain.WeeklyBOQControl, error)
 	Create(ctx context.Context, control *domain.WeeklyBOQControl, items []*domain.WeeklyBOQItem) error
+	Update(ctx context.Context, control *domain.WeeklyBOQControl, items []*domain.WeeklyBOQItem) error
 	UpdateStatus(ctx context.Context, id int64, status string) error
 	Delete(ctx context.Context, id int64) error
 	GetStats(ctx context.Context, filter WeeklyBOQFilter) (*domain.WeeklyBOQStats, error)

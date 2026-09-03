@@ -240,6 +240,14 @@ export const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path="boq-weekly/:id/edit"
+          element={
+            <ProtectedRoute requiredPermission="boq_update">
+              <WeeklyBOQInputPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="laporan"
           element={
             <ProtectedRoute requiredPermission="laporan_read">

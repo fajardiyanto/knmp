@@ -26,6 +26,23 @@ func (s *WeeklyBOQService) GetByID(ctx context.Context, id int64) (*domain.Weekl
 }
 
 func (s *WeeklyBOQService) Create(ctx context.Context, control *domain.WeeklyBOQControl, items []*domain.WeeklyBOQItem) error {
+	if err := prepareWeeklyBOQ(control, items); err != nil {
+		return err
+	}
+	return s.repo.Create(ctx, control, items)
+}
+
+func (s *WeeklyBOQService) Update(ctx context.Context, control *domain.WeeklyBOQControl, items []*domain.WeeklyBOQItem) error {
+	if control.ID == 0 {
+		return errors.New("id BOQ wajib diisi")
+	}
+	if err := prepareWeeklyBOQ(control, items); err != nil {
+		return err
+	}
+	return s.repo.Update(ctx, control, items)
+}
+
+func prepareWeeklyBOQ(control *domain.WeeklyBOQControl, items []*domain.WeeklyBOQItem) error {
 	if control.KnmpID == 0 {
 		return errors.New("knmp_id wajib diisi")
 	}
@@ -58,7 +75,7 @@ func (s *WeeklyBOQService) Create(ctx context.Context, control *domain.WeeklyBOQ
 			item.RiskLevel = riskFromDeviation(item.DeviationPct, item.EvidenceStatus)
 		}
 	}
-	return s.repo.Create(ctx, control, items)
+	return nil
 }
 
 func (s *WeeklyBOQService) UpdateStatus(ctx context.Context, id int64, status string) error {

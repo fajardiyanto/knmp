@@ -152,6 +152,56 @@ func (r *weeklyBOQRepo) Create(ctx context.Context, control *domain.WeeklyBOQCon
 	return tx.Commit()
 }
 
+func (r *weeklyBOQRepo) Update(ctx context.Context, control *domain.WeeklyBOQControl, items []*domain.WeeklyBOQItem) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	manualTables := string(control.ManualTables)
+	if manualTables == "" {
+		manualTables = "{}"
+	}
+
+	query := `
+		UPDATE weekly_boq_controls
+		SET knmp_id = $1,
+		    week_start = $2,
+		    week_end = $3,
+		    title = $4,
+		    source_document = $5,
+		    contractor_claim_pct = $6,
+		    supervisor_verified_pct = $7,
+		    evidence_supported_pct = $8,
+		    audit_exposure_value = $9,
+		    status = $10,
+		    summary = $11,
+		    manual_tables = COALESCE($12::jsonb, '{}'::jsonb),
+		    updated_at = NOW()
+		WHERE id = $13 AND deleted_at IS NULL
+		RETURNING updated_at
+	`
+	if err := tx.QueryRowContext(ctx, query,
+		control.KnmpID, control.WeekStart, control.WeekEnd, control.Title, control.SourceDocument,
+		control.ContractorClaimPct, control.SupervisorVerifiedPct, control.EvidenceSupportedPct,
+		control.AuditExposureValue, control.Status, control.Summary, manualTables, control.ID,
+	).Scan(&control.UpdatedAt); err != nil {
+		return fmt.Errorf("update weekly boq control: %w", err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `UPDATE weekly_boq_items SET deleted_at = NOW(), updated_at = NOW() WHERE boq_control_id = $1 AND deleted_at IS NULL`, control.ID); err != nil {
+		return fmt.Errorf("replace weekly boq items: %w", err)
+	}
+	for _, item := range items {
+		item.BOQControlID = control.ID
+		if err := insertWeeklyBOQItem(ctx, tx, item); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 func insertWeeklyBOQItem(ctx context.Context, tx *sqlx.Tx, item *domain.WeeklyBOQItem) error {
 	query := `
 		INSERT INTO weekly_boq_items (
