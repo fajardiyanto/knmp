@@ -41,11 +41,85 @@ const formatRp = (value?: number) =>
   }).format(Number(value || 0));
 const num = (value?: number) => Number(value || 0);
 
-const riskClass = (risk: string) => {
-  const key = risk?.toLowerCase();
-  if (key === "kritis") return "bg-rose-50 text-rose-700 border-rose-200";
-  if (key === "sedang") return "bg-amber-50 text-amber-700 border-amber-200";
-  return "bg-emerald-50 text-emerald-700 border-emerald-200";
+type ManualColumn = {
+  id: string;
+  label: string;
+  kind?: "text" | "money";
+};
+
+type ManualImage = {
+  name: string;
+  data_url: string;
+};
+
+type ManualRow = {
+  id: string;
+  kind?: "section" | "item" | "total";
+  cells?: Record<string, string>;
+  placeholders?: Record<string, string>;
+  images?: ManualImage[];
+};
+
+type ManualTableState = {
+  columns?: ManualColumn[];
+  rows?: ManualRow[];
+};
+
+type ManualTablesPayload = {
+  lampiran_2?: ManualTableState;
+  lampiran_3?: ManualTableState;
+  lampiran_4?: ManualTableState;
+};
+
+type FollowUpRecommendation = {
+  title: string;
+  detail: string;
+  tone: "danger" | "warning" | "info" | "success";
+};
+
+type EvidencePreview = {
+  key: string;
+  lampiran: string;
+  title: string;
+  image: ManualImage;
+};
+
+const emptyManualTables: Required<ManualTablesPayload> = {
+  lampiran_2: {
+    columns: [
+      { id: "no", label: "No" },
+      { id: "uraian", label: "Uraian Pekerjaan" },
+      { id: "sat", label: "Sat" },
+      { id: "volume", label: "Volume" },
+      { id: "nilai", label: "Nilai Total Kontrak", kind: "money" },
+      { id: "rab", label: "RAB" },
+      { id: "spek", label: "Gambar/RKS/Spektek" },
+      { id: "terpasang", label: "Terpasang" },
+      { id: "keterangan", label: "Keterangan" },
+    ],
+    rows: [],
+  },
+  lampiran_3: {
+    columns: [
+      { id: "no", label: "No" },
+      { id: "uraian", label: "Uraian Pekerjaan" },
+      { id: "kondisi", label: "Kondisi/Foto" },
+      { id: "keterangan", label: "Keterangan" },
+    ],
+    rows: [],
+  },
+  lampiran_4: {
+    columns: [
+      { id: "no", label: "No" },
+      { id: "uraian", label: "Uraian Pekerjaan" },
+      { id: "kontrak_awal", label: "Kontrak Awal (Rp)", kind: "money" },
+      { id: "cco3", label: "CCO3 (Rp)", kind: "money" },
+      { id: "rencana_mc100", label: "Rencana MC-100 (Rp)", kind: "money" },
+      { id: "tambah", label: "Pekerjaan Tambah (Rp)", kind: "money" },
+      { id: "kurang", label: "Pekerjaan Kurang (Rp)", kind: "money" },
+    ],
+    rows: [],
+  },
 };
 
 const evidenceLabel = (status: string) => {
@@ -75,6 +149,210 @@ const useReportMath = (control?: WeeklyBOQControl) =>
     const partialEvidence = rows.filter((item) => item.evidence_status !== "complete");
     return { rows, totalContract, realizationValue, planValue, itemPlanTotal, actual, claim, delta, remaining, critical, partialEvidence };
   }, [control]);
+
+const buildFollowUpRecommendations = (report: ReturnType<typeof useReportMath>): FollowUpRecommendation[] => {
+  const rows = report.rows;
+  if (rows.length === 0) {
+    return [{
+      title: "Data BOQ belum tersedia",
+      detail: "Isi item pada Lampiran 1 terlebih dahulu supaya sistem bisa menghitung kekurangan dan tindak lanjut.",
+      tone: "info",
+    }];
+  }
+
+  const evidenceGaps = rows
+    .map((item) => ({
+      item,
+      gapPct: Math.max(num(item.contractor_claim_pct) - num(item.evidence_supported_pct), 0),
+    }))
+    .filter(({ item, gapPct }) => item.evidence_status !== "complete" || gapPct > 0)
+    .sort((a, b) => b.gapPct - a.gapPct);
+
+  const negativeDeviations = rows
+    .filter((item) => num(item.deviation_pct) < 0)
+    .sort((a, b) => num(a.deviation_pct) - num(b.deviation_pct));
+
+  const valueShortfalls = rows
+    .map((item) => {
+      const gapPct = Math.max(num(item.contractor_claim_pct) - num(item.evidence_supported_pct), 0);
+      return { item, value: (num(item.contract_value) * gapPct) / 100 };
+    })
+    .filter(({ value }) => value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const recommendations: FollowUpRecommendation[] = [];
+  if (evidenceGaps.length > 0) {
+    const top = evidenceGaps[0];
+    const missingValue = (num(top.item.contract_value) * top.gapPct) / 100;
+    recommendations.push({
+      title: `Evidence kurang: ${top.item.item_code} - ${top.item.item_name}`,
+      detail: `Di Lampiran 1 kolom Hasil Cek Fisik/Evidence masih kurang ${formatPct(top.gapPct)} dari klaim. Lengkapi foto/dokumen pendukung atau turunkan nilai cek fisik; estimasi nilai yang belum didukung ${formatRp(missingValue)}. Total item serupa: ${evidenceGaps.length}.`,
+      tone: "danger",
+    });
+  }
+  if (negativeDeviations.length > 0) {
+    const worst = negativeDeviations[0];
+    recommendations.push({
+      title: `Deviasi negatif terbesar: ${worst.item_code} - ${worst.item_name}`,
+      detail: `Cek ulang volume terpasang pada Lampiran 1 baris kode ${worst.item_code}. Deviasi saat ini ${formatPct(worst.deviation_pct)}, berarti hasil cek fisik lebih rendah dari progres yang diklaim.`,
+      tone: "warning",
+    });
+  }
+  if (valueShortfalls.length > 0) {
+    const largest = valueShortfalls[0];
+    recommendations.push({
+      title: `Selisih nilai terbesar: ${largest.item.item_code} - ${largest.item.item_name}`,
+      detail: `Prioritaskan klarifikasi pada item ini karena nilai kurangnya paling besar, yaitu ${formatRp(largest.value)}. Periksa kolom Laporan Kemajuan dan Hasil Cek Fisik di Lampiran 1.`,
+      tone: "warning",
+    });
+  }
+  if (report.delta < 0) {
+    recommendations.push({
+      title: "Klaim belum selaras dengan cek fisik",
+      detail: `Total klaim laporan lebih tinggi ${formatPct(Math.abs(report.delta))} dibanding hasil cek fisik. Sesuaikan item yang belum punya bukti sebelum laporan dipindahkan ke status selesai.`,
+      tone: "info",
+    });
+  }
+  if (report.critical.length > 0) {
+    recommendations.push({
+      title: "Ada item risiko kritis",
+      detail: `${report.critical.length} item masih bertanda kritis. Review catatan item dan lengkapi tindak lanjut sebelum laporan dinyatakan siap audit.`,
+      tone: "danger",
+    });
+  }
+
+  return recommendations.length > 0
+    ? recommendations.slice(0, 4)
+    : [{
+      title: "Tidak ada kekurangan utama",
+      detail: "Evidence dan progres sudah selaras berdasarkan data BOQ saat ini; laporan dapat dilanjutkan ke proses review.",
+      tone: "success",
+    }];
+};
+
+const collectManualEvidence = (tables: Required<ManualTablesPayload>): EvidencePreview[] => {
+  const sources: Array<[keyof Required<ManualTablesPayload>, string]> = [
+    ["lampiran_2", "Lampiran 2"],
+    ["lampiran_3", "Lampiran 3"],
+    ["lampiran_4", "Lampiran 4"],
+  ];
+
+  return sources.flatMap(([tableKey, label]) =>
+    (tables[tableKey].rows || []).flatMap((row) => {
+      const images = row.images || [];
+      if (images.length === 0) return [];
+      const title = row.cells?.uraian || row.placeholders?.uraian || row.cells?.keterangan || label;
+      return images.map((image, index) => ({
+        key: `${tableKey}-${row.id}-${index}`,
+        lampiran: label,
+        title,
+        image,
+      }));
+    })
+  );
+};
+
+const getManualTables = (control?: WeeklyBOQControl): Required<ManualTablesPayload> => {
+  const tables = (control?.manual_tables || {}) as ManualTablesPayload;
+  return {
+    lampiran_2: { ...emptyManualTables.lampiran_2, ...(tables.lampiran_2 || {}) },
+    lampiran_3: { ...emptyManualTables.lampiran_3, ...(tables.lampiran_3 || {}) },
+    lampiran_4: { ...emptyManualTables.lampiran_4, ...(tables.lampiran_4 || {}) },
+  };
+};
+
+const manualCellValue = (row: ManualRow, column: ManualColumn) => {
+  const value = row.cells?.[column.id] || row.placeholders?.[column.id] || "";
+  if (!value || column.kind !== "money") return value;
+  const parsed = Number(String(value).replace(/[^\d-]/g, ""));
+  return Number.isFinite(parsed) && parsed !== 0 ? formatRp(parsed) : value;
+};
+
+const ManualTablePreview: React.FC<{ title: string; table: ManualTableState; groupedSpec?: boolean }> = ({ title, table, groupedSpec }) => {
+  const columns = table.columns || [];
+  const rows = table.rows || [];
+  const specColumns = columns.filter((column) => ["rab", "spek", "terpasang"].includes(column.id));
+  const leadingColumns = groupedSpec ? columns.filter((column) => !["rab", "spek", "terpasang", "keterangan"].includes(column.id)) : columns;
+  const trailingColumn = groupedSpec ? columns.find((column) => column.id === "keterangan") : undefined;
+  const hasImages = (row: ManualRow, column: ManualColumn) => row.images?.length && ["kondisi", "keterangan"].includes(column.id);
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white">
+      <div className="border-b border-slate-100 px-4 py-3">
+        <h2 className="text-sm font-black text-blue-950">{title}</h2>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-[1120px] w-full border-collapse text-left text-xs">
+          <thead className="bg-slate-50 text-[10px] uppercase text-blue-950">
+            {groupedSpec ? (
+              <>
+                <tr>
+                  {leadingColumns.map((column) => (
+                    <th key={column.id} rowSpan={2} className="border border-slate-200 px-3 py-3">{column.label}</th>
+                  ))}
+                  <th colSpan={specColumns.length} className="border border-slate-200 px-3 py-2 text-center">Spesifikasi Teknis</th>
+                  {trailingColumn && <th rowSpan={2} className="border border-slate-200 px-3 py-3">{trailingColumn.label}</th>}
+                </tr>
+                <tr>
+                  {specColumns.map((column) => (
+                    <th key={column.id} className="border border-slate-200 px-3 py-2">{column.label}</th>
+                  ))}
+                </tr>
+              </>
+            ) : (
+              <tr>
+                {columns.map((column) => (
+                  <th key={column.id} className={`border border-slate-200 px-3 py-3 ${column.id === "kondisi" ? "w-[30%]" : ""}`}>{column.label}</th>
+                ))}
+              </tr>
+            )}
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={Math.max(columns.length, 1)} className="border border-slate-200 px-3 py-5 text-center text-xs font-semibold text-slate-400">Belum ada data lampiran.</td>
+              </tr>
+            ) : (
+              rows.map((row) => {
+                if (row.kind === "section") {
+                  const noValue = row.cells?.no || "";
+                  const titleValue = row.cells?.uraian || "";
+                  return (
+                    <tr key={row.id} className="bg-slate-100 font-black uppercase text-blue-950">
+                      <td className="border border-slate-300 px-3 py-2 text-center">{noValue}</td>
+                      <td colSpan={Math.max(columns.length - 1, 1)} className="border border-slate-300 px-3 py-2">{titleValue}</td>
+                    </tr>
+                  );
+                }
+
+                return (
+                  <tr key={row.id} className={row.kind === "total" ? "bg-slate-100 font-black" : "align-top"}>
+                    {columns.map((column) => {
+                      const value = manualCellValue(row, column);
+                      const isPlaceholder = !row.cells?.[column.id] && !!row.placeholders?.[column.id];
+                      return (
+                        <td key={column.id} className={`border border-slate-200 px-3 py-3 ${column.kind === "money" ? "text-right font-bold" : ""}`}>
+                          {value && <div className={isPlaceholder ? "text-slate-400" : "text-slate-800"}>{value}</div>}
+                          {hasImages(row, column) && (
+                            <div className="mt-2 grid grid-cols-2 gap-2">
+                              {row.images!.map((image, index) => (
+                                <img key={`${image.name}-${index}`} src={image.data_url} alt={image.name} className="max-h-40 w-full rounded-md border border-slate-200 object-cover" />
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 
 const MiniCurve: React.FC<{ plan: number; actual: number }> = ({ plan, actual }) => {
   const planY = Math.max(14, 112 - Math.min(plan, 100));
@@ -138,12 +416,15 @@ export const WeeklyBOQPage: React.FC = () => {
       if (selectedControlId !== null) setSelectedControlId(null);
       return;
     }
-    if (!selectedControlId || !activeControls.some((control) => control.id === selectedControlId)) {
-      setSelectedControlId(activeControls[0].id);
+    if (selectedControlId && !activeControls.some((control) => control.id === selectedControlId)) {
+      setSelectedControlId(null);
     }
   }, [activeControls, selectedControlId]);
 
   const report = useReportMath(selectedControl);
+  const manualTables = useMemo(() => getManualTables(selectedControl), [selectedControl]);
+  const recommendations = useMemo(() => buildFollowUpRecommendations(report), [report]);
+  const evidencePreviews = useMemo(() => collectManualEvidence(manualTables), [manualTables]);
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) => updateWeeklyBOQStatus(id, status),
@@ -223,7 +504,7 @@ export const WeeklyBOQPage: React.FC = () => {
                 <button key={control.id} type="button" onClick={() => setSelectedControlId(control.id)} className={`w-full border-b border-slate-100 p-4 text-left transition-colors hover:bg-slate-50 ${selectedControlId === control.id ? "bg-blue-50" : "bg-white"}`}>
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="line-clamp-2 text-xs font-black text-slate-900">{control.title}</h3>
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${control.critical_items > 0 ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{control.critical_items > 0 ? "Risk" : "OK"}</span>
+                    <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">{statusLabel(control.status)}</span>
                   </div>
                   <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-slate-500">{control.knmp_name || "Titik KNMP"} - {formatDate(control.week_start)}</p>
                 </button>
@@ -302,8 +583,6 @@ export const WeeklyBOQPage: React.FC = () => {
                           <th colSpan={2} className="border-b border-r border-slate-200 bg-blue-600 px-3 py-2 text-center text-white">Laporan Kemajuan Pekerjaan</th>
                           <th colSpan={2} className="border-b border-r border-slate-200 bg-emerald-600 px-3 py-2 text-center text-white">Hasil Cek Fisik</th>
                           <th colSpan={2} className="border-b border-r border-slate-200 bg-rose-600 px-3 py-2 text-center text-white">Selisih Kurang</th>
-                          <th rowSpan={2} className="border-b border-r border-slate-200 px-3 py-3 text-center">Evidence</th>
-                          <th rowSpan={2} className="border-b border-slate-200 px-3 py-3 text-center">Risiko</th>
                         </tr>
                         <tr>
                           <th className="border-b border-r border-slate-200 px-3 py-2 text-right">Bobot</th><th className="border-b border-r border-slate-200 px-3 py-2 text-right">Nilai</th>
@@ -328,8 +607,6 @@ export const WeeklyBOQPage: React.FC = () => {
                               <td className="border-r border-slate-100 px-3 py-3 text-right">{formatRp(actualValue)}</td>
                               <td className={`border-r border-slate-100 px-3 py-3 text-right font-black ${item.deviation_pct < 0 ? "text-rose-600" : "text-emerald-700"}`}>{formatPct(item.deviation_pct)}</td>
                               <td className={`border-r border-slate-100 px-3 py-3 text-right font-bold ${diffValue < 0 ? "text-rose-600" : "text-emerald-700"}`}>{formatRp(diffValue)}</td>
-                              <td className="border-r border-slate-100 px-3 py-3 text-center"><span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600">{evidenceLabel(item.evidence_status)}</span></td>
-                              <td className="px-3 py-3 text-center"><span className={`rounded-full border px-2 py-1 text-[11px] font-black ${riskClass(item.risk_level)}`}>{item.risk_level}</span></td>
                             </tr>
                           );
                         })}
@@ -364,24 +641,49 @@ export const WeeklyBOQPage: React.FC = () => {
                 </div>
               </div>
 
+              <div className="mt-4 space-y-4">
+                <ManualTablePreview title="Lampiran 2. Rincian Material Terpasang/Hasil Uji Material Tidak Sesuai Spesifikasi Teknis" table={manualTables.lampiran_2} groupedSpec />
+                <ManualTablePreview title="Lampiran 3. Pekerjaan Terpasang Tidak Sesuai Perencanaan atau Terdapat Cacat" table={manualTables.lampiran_3} />
+                <ManualTablePreview title="Lampiran 4. Rincian Rencana Pekerjaan Tambah Kurang" table={manualTables.lampiran_4} />
+              </div>
+
               <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-4">
                 <div className="rounded-xl border border-slate-200 bg-white p-4 xl:col-span-2">
-                  <h3 className="mb-3 text-sm font-black text-blue-950">Dokumentasi Evidence Minggu Ini</h3>
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                    {report.rows.slice(0, 4).map((item) => (
-                      <div key={item.id} className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                        <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-sky-100 to-emerald-100 text-blue-700"><FileSpreadsheet className="h-8 w-8" /></div>
-                        <div className="p-2"><p className="truncate text-[11px] font-black text-slate-900">{item.item_name}</p><p className="mt-1 text-[10px] font-bold text-emerald-600">{evidenceLabel(item.evidence_status)}</p></div>
-                      </div>
-                    ))}
-                  </div>
+                  <h3 className="mb-3 text-sm font-black text-blue-950">Dokumentasi Evidence</h3>
+                  {evidencePreviews.length === 0 ? (
+                    <div className="flex min-h-[150px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 text-center">
+                      <FileSpreadsheet className="h-8 w-8 text-slate-300" />
+                      <p className="mt-3 text-xs font-black text-slate-500">Belum ada gambar evidence yang diupload.</p>
+                      <p className="mt-1 max-w-md text-[11px] leading-relaxed text-slate-400">Tambahkan gambar lewat Edit Laporan pada kolom upload di Lampiran 2 atau Lampiran 3. Area ini hanya menampilkan file yang benar-benar tersimpan.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                      {evidencePreviews.slice(0, 8).map((evidence) => (
+                        <div key={evidence.key} className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                          <img src={evidence.image.data_url} alt={evidence.image.name} className="aspect-[4/3] w-full object-cover" />
+                          <div className="p-2">
+                            <p className="truncate text-[11px] font-black text-slate-900">{evidence.title}</p>
+                            <p className="mt-1 text-[10px] font-bold text-emerald-600">{evidence.lampiran}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <h3 className="mb-3 text-sm font-black text-blue-950">Rekomendasi & Tindak Lanjut</h3>
-                  <ul className="space-y-2 text-xs font-semibold text-slate-600">
-                    <li>Lengkapi evidence untuk item dengan status sebagian atau belum ada.</li>
-                    <li>Verifikasi ulang volume item yang memiliki deviasi negatif terbesar.</li>
-                    <li>Pastikan klaim kontraktor selaras dengan progres terpasang di lapangan.</li>
+                  <ul className="space-y-3 text-xs">
+                    {recommendations.map((item) => (
+                      <li key={item.title} className={`rounded-lg border p-3 ${
+                        item.tone === "danger" ? "border-rose-200 bg-rose-50 text-rose-800" :
+                        item.tone === "warning" ? "border-amber-200 bg-amber-50 text-amber-800" :
+                        item.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" :
+                        "border-blue-100 bg-blue-50 text-blue-800"
+                      }`}>
+                        <p className="font-black">{item.title}</p>
+                        <p className="mt-1 leading-relaxed">{item.detail}</p>
+                      </li>
+                    ))}
                   </ul>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -395,7 +697,7 @@ export const WeeklyBOQPage: React.FC = () => {
 
               <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div><p className="text-xs font-black uppercase text-slate-500">Ringkasan Naratif</p><p className="mt-2 text-sm leading-relaxed text-slate-700">{selectedControl.summary || "Belum ada ringkasan naratif."}</p>{selectedControl.source_document && <p className="mt-2 text-xs font-semibold text-slate-500">Sumber: {selectedControl.source_document}</p>}</div>
+                  <div><p className="text-xs font-black uppercase text-slate-500">Ringkasan Naratif</p><p className="mt-2 text-sm leading-relaxed text-slate-700">{selectedControl.summary || "Belum ada ringkasan naratif."}</p></div>
                   <div className="flex items-center gap-2">
                     {["open", "in_review", "closed"].map((status) => (
                       <button key={status} type="button" onClick={() => statusMutation.mutate({ id: selectedControl.id, status })} className={`rounded-lg border px-3 py-2 text-xs font-black ${selectedControl.status === status ? "border-blue-600 bg-blue-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"}`}>{statusLabel(status)}</button>

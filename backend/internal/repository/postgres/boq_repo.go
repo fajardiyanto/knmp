@@ -42,6 +42,52 @@ func (r *weeklyBOQRepo) baseSelect() string {
 	`
 }
 
+func (r *weeklyBOQRepo) listSelect() string {
+	return `
+		SELECT b.id, b.knmp_id, CAST(b.week_start AS TEXT) AS week_start, CAST(b.week_end AS TEXT) AS week_end,
+		       b.title, b.source_document,
+		       0::numeric AS contractor_claim_pct,
+		       0::numeric AS supervisor_verified_pct,
+		       0::numeric AS evidence_supported_pct,
+		       0::numeric AS audit_exposure_value,
+		       b.status,
+		       '' AS summary,
+		       b.created_by, b.created_at, b.updated_at, b.deleted_at,
+		       COALESCE(k.name, '-') AS knmp_name,
+		       COALESCE(reg.name, '') AS regency_name,
+		       COALESCE(prov.name, '') AS province_name,
+		       0 AS items_total,
+		       0 AS items_with_evidence,
+		       0 AS critical_items
+		FROM weekly_boq_controls b
+		LEFT JOIN knmps k ON k.id = b.knmp_id
+		LEFT JOIN regencies reg ON reg.id = k.regency_id
+		LEFT JOIN provinces prov ON prov.id = k.province_id
+		WHERE b.deleted_at IS NULL
+	`
+}
+
+func (r *weeklyBOQRepo) detailSelect() string {
+	return `
+		SELECT b.id, b.knmp_id, CAST(b.week_start AS TEXT) AS week_start, CAST(b.week_end AS TEXT) AS week_end,
+		       b.title, b.source_document, b.contractor_claim_pct, b.supervisor_verified_pct,
+		       b.evidence_supported_pct, b.audit_exposure_value, b.status, b.summary,
+		       COALESCE(b.manual_tables, '{}'::jsonb) AS manual_tables,
+		       b.created_by, b.created_at, b.updated_at, b.deleted_at,
+		       COALESCE(k.name, '-') AS knmp_name,
+		       COALESCE(reg.name, '') AS regency_name,
+		       COALESCE(prov.name, '') AS province_name,
+		       0 AS items_total,
+		       0 AS items_with_evidence,
+		       0 AS critical_items
+		FROM weekly_boq_controls b
+		LEFT JOIN knmps k ON k.id = b.knmp_id
+		LEFT JOIN regencies reg ON reg.id = k.regency_id
+		LEFT JOIN provinces prov ON prov.id = k.province_id
+		WHERE b.deleted_at IS NULL
+	`
+}
+
 func (r *weeklyBOQRepo) appendFilters(query string, args []any, argIdx int, filter repository.WeeklyBOQFilter) (string, []any, int) {
 	if filter.KnmpID != nil {
 		query += fmt.Sprintf(" AND b.knmp_id = $%d", argIdx)
@@ -69,7 +115,7 @@ func (r *weeklyBOQRepo) appendFilters(query string, args []any, argIdx int, filt
 		argIdx++
 	}
 	if filter.Search != "" {
-		query += fmt.Sprintf(" AND (b.title ILIKE $%d OR k.name ILIKE $%d OR b.summary ILIKE $%d)", argIdx, argIdx, argIdx)
+		query += fmt.Sprintf(" AND (b.title ILIKE $%d OR k.name ILIKE $%d OR b.source_document ILIKE $%d)", argIdx, argIdx, argIdx)
 		args = append(args, "%"+filter.Search+"%")
 		argIdx++
 	}
@@ -78,9 +124,8 @@ func (r *weeklyBOQRepo) appendFilters(query string, args []any, argIdx int, filt
 
 func (r *weeklyBOQRepo) GetByID(ctx context.Context, id int64) (*domain.WeeklyBOQControl, error) {
 	var control domain.WeeklyBOQControl
-	query := r.baseSelect() + `
+	query := r.detailSelect() + `
 		AND b.id = $1
-		GROUP BY b.id, k.name, reg.name, prov.name
 	`
 	if err := r.db.GetContext(ctx, &control, query, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -93,24 +138,21 @@ func (r *weeklyBOQRepo) GetByID(ctx context.Context, id int64) (*domain.WeeklyBO
 		return nil, err
 	}
 	control.Items = items
+	hydrateBOQItemCounters(&control)
 	deriveBOQGaps(&control)
 	return &control, nil
 }
 
 func (r *weeklyBOQRepo) List(ctx context.Context, filter repository.WeeklyBOQFilter) ([]*domain.WeeklyBOQControl, error) {
 	results := make([]*domain.WeeklyBOQControl, 0)
-	query := r.baseSelect()
+	query := r.listSelect()
 	var args []any
 	query, args, _ = r.appendFilters(query, args, 1, filter)
 	query += `
-		GROUP BY b.id, k.name, reg.name, prov.name
 		ORDER BY b.week_end DESC, b.id DESC
 	`
 	if err := r.db.SelectContext(ctx, &results, query, args...); err != nil {
 		return nil, fmt.Errorf("list weekly boq: %w", err)
-	}
-	for _, control := range results {
-		deriveBOQGaps(control)
 	}
 	return results, nil
 }
@@ -289,4 +331,18 @@ func (r *weeklyBOQRepo) listItems(ctx context.Context, controlID int64) ([]*doma
 func deriveBOQGaps(control *domain.WeeklyBOQControl) {
 	control.ClaimVsVerifiedGap = control.ContractorClaimPct - control.SupervisorVerifiedPct
 	control.EvidenceGap = control.SupervisorVerifiedPct - control.EvidenceSupportedPct
+}
+
+func hydrateBOQItemCounters(control *domain.WeeklyBOQControl) {
+	control.ItemsTotal = len(control.Items)
+	control.ItemsWithEvidence = 0
+	control.CriticalItems = 0
+	for _, item := range control.Items {
+		if item.EvidenceStatus == "complete" {
+			control.ItemsWithEvidence++
+		}
+		if item.RiskLevel == "kritis" {
+			control.CriticalItems++
+		}
+	}
 }
