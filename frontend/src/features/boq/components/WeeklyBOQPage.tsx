@@ -1,22 +1,29 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import {
   AlertTriangle,
   BarChart3,
   CheckCircle2,
   ClipboardCheck,
   Download,
+  Eye,
   FileSpreadsheet,
+  FileText,
   Gauge,
   Pencil,
   PieChart,
   Plus,
   Search,
   ShieldCheck,
+  Square,
+  CheckSquare,
   Target,
   Trash2,
   TrendingDown,
+  X,
+  ZoomIn,
 } from "lucide-react";
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 import { useAlert } from "../../../context/AlertContext";
@@ -252,6 +259,161 @@ const collectManualEvidence = (tables: Required<ManualTablesPayload>): EvidenceP
   );
 };
 
+const escapeHtml = (value: unknown) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+const fileNameSafe = (value?: string) =>
+  (value || "laporan-boq").replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, "-").toLowerCase();
+
+const downloadBlob = (content: BlobPart, filename: string, type: string) => {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
+const manualTableHtml = (title: string, table: ManualTableState) => {
+  const columns = table.columns || [];
+  const rows = table.rows || [];
+  const header = columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("");
+  const body = rows.length === 0
+    ? `<tr><td colspan="${Math.max(columns.length, 1)}">Belum ada data lampiran.</td></tr>`
+    : rows.map((row) => {
+      if (row.kind === "section") {
+        return `<tr class="section"><td>${escapeHtml(row.cells?.no || "")}</td><td colspan="${Math.max(columns.length - 1, 1)}">${escapeHtml(row.cells?.uraian || "")}</td></tr>`;
+      }
+      return `<tr>${columns.map((column) => {
+        const value = manualCellValue(row, column);
+        const images = row.images?.length && ["kondisi", "keterangan"].includes(column.id)
+          ? row.images.map((image) => `<img src="${escapeHtml(image.data_url)}" alt="${escapeHtml(image.name)}" />`).join("")
+          : "";
+        return `<td>${escapeHtml(value)}${images}</td>`;
+      }).join("")}</tr>`;
+    }).join("");
+  return `<h2>${escapeHtml(title)}</h2><table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
+};
+
+const buildExportHtml = (
+  control: WeeklyBOQControl,
+  report: ReturnType<typeof useReportMath>,
+  tables: Required<ManualTablesPayload>,
+  recommendations: FollowUpRecommendation[],
+) => {
+  const itemRows = report.rows.map((item, index) => {
+    const planValue = num(item.contract_value);
+    const actualValue = num(item.actual_value) || (num(item.contract_value) * num(item.evidence_supported_pct)) / 100;
+    return `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHtml(item.item_code)}</td>
+        <td>${escapeHtml(item.item_name)}</td>
+        <td>${escapeHtml(item.unit)}</td>
+        <td>${formatPct(item.weight_pct)}</td>
+        <td>${formatPct(item.plan_pct)}</td>
+        <td>${formatRp(planValue)}</td>
+        <td>${formatPct(item.evidence_supported_pct)}</td>
+        <td>${formatRp(actualValue)}</td>
+        <td>${formatPct(item.deviation_pct)}</td>
+        <td>${formatRp(actualValue - planValue)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const recommendationRows = recommendations.map((item, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(item.title)}</td><td>${escapeHtml(item.detail)}</td></tr>`).join("");
+
+  return `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${escapeHtml(control.title)}</title>
+        <style>
+          body { font-family: Arial, sans-serif; color: #0f172a; margin: 24px; }
+          h1 { font-size: 18px; margin: 0 0 6px; }
+          h2 { font-size: 14px; margin: 20px 0 8px; }
+          p { font-size: 11px; margin: 3px 0; }
+          table { border-collapse: collapse; width: 100%; margin-bottom: 14px; page-break-inside: auto; }
+          th, td { border: 1px solid #94a3b8; padding: 5px; font-size: 10px; vertical-align: top; }
+          th { background: #e2e8f0; font-weight: 700; text-transform: uppercase; }
+          .section td { background: #f1f5f9; font-weight: 700; text-transform: uppercase; }
+          img { display: block; max-width: 180px; max-height: 140px; margin-top: 6px; object-fit: contain; }
+          @media print { body { margin: 12mm; } button { display: none; } }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(control.title)}</h1>
+        <p>Periode: ${escapeHtml(formatDate(control.week_start))} s.d. ${escapeHtml(formatDate(control.week_end))}</p>
+        <p>Titik: ${escapeHtml(control.knmp_name || "-")} - ${escapeHtml(control.regency_name || "-")}, ${escapeHtml(control.province_name || "-")}</p>
+        <h2>Lampiran 1. Pemantauan Progress Berbasis BOQ</h2>
+        <table>
+          <thead>
+            <tr><th>No</th><th>Kode</th><th>Uraian Pekerjaan</th><th>Sat</th><th>Bobot Kontrak</th><th>Laporan Bobot</th><th>Laporan Nilai</th><th>Cek Fisik Bobot</th><th>Cek Fisik Nilai</th><th>Selisih Bobot</th><th>Selisih Nilai</th></tr>
+          </thead>
+          <tbody>${itemRows || `<tr><td colspan="11">Belum ada item BOQ.</td></tr>`}</tbody>
+        </table>
+        ${manualTableHtml("Lampiran 2. Rincian Material Terpasang/Hasil Uji Material Tidak Sesuai Spesifikasi Teknis", tables.lampiran_2)}
+        ${manualTableHtml("Lampiran 3. Pekerjaan Terpasang Tidak Sesuai Perencanaan atau Terdapat Cacat", tables.lampiran_3)}
+        ${manualTableHtml("Lampiran 4. Rincian Rencana Pekerjaan Tambah Kurang", tables.lampiran_4)}
+        <h2>Rekomendasi & Tindak Lanjut</h2>
+        <table><thead><tr><th>No</th><th>Temuan</th><th>Tindak Lanjut</th></tr></thead><tbody>${recommendationRows}</tbody></table>
+      </body>
+    </html>
+  `;
+};
+
+const exportBOQToExcel = (control: WeeklyBOQControl, report: ReturnType<typeof useReportMath>, tables: Required<ManualTablesPayload>, recommendations: FollowUpRecommendation[]) => {
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Lampiran 1 – BOQ
+  const l1Headers = ["No", "Kode", "Uraian Pekerjaan", "Sat", "Bobot Kontrak (%)", "Laporan Bobot (%)", "Laporan Nilai (Rp)", "Cek Fisik Bobot (%)", "Cek Fisik Nilai (Rp)", "Selisih Bobot (%)", "Selisih Nilai (Rp)"];
+  const l1Rows = report.rows.map((item, idx) => {
+    const planValue = num(item.contract_value);
+    const actualValue = num(item.actual_value) || (num(item.contract_value) * num(item.evidence_supported_pct)) / 100;
+    return [idx + 1, item.item_code, item.item_name, item.unit, num(item.weight_pct), num(item.plan_pct), planValue, num(item.evidence_supported_pct), actualValue, num(item.deviation_pct), actualValue - planValue];
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet([l1Headers, ...l1Rows]);
+  XLSX.utils.book_append_sheet(wb, ws1, "Lampiran 1");
+
+  // Sheet 2-4: Manual Lampiran tables
+  (["lampiran_2", "lampiran_3", "lampiran_4"] as const).forEach((key, i) => {
+    const table = tables[key];
+    const cols = (table.columns || []).map((c) => c.label);
+    const rows2 = (table.rows || []).filter((r) => r.kind !== "section" && r.kind !== "total").map((row) =>
+      (table.columns || []).map((col) => manualCellValue(row, col))
+    );
+    const ws = XLSX.utils.aoa_to_sheet([cols, ...rows2]);
+    XLSX.utils.book_append_sheet(wb, ws, `Lampiran ${i + 2}`);
+  });
+
+  // Sheet 5: Rekomendasi
+  const recHeaders = ["No", "Temuan", "Detail Tindak Lanjut", "Prioritas"];
+  const recRows = recommendations.map((r, idx) => [idx + 1, r.title, r.detail, r.tone]);
+  const wsRec = XLSX.utils.aoa_to_sheet([recHeaders, ...recRows]);
+  XLSX.utils.book_append_sheet(wb, wsRec, "Rekomendasi");
+
+  XLSX.writeFile(wb, `${fileNameSafe(control.title)}.xlsx`);
+};
+
+const exportBOQToPDF = (control: WeeklyBOQControl, report: ReturnType<typeof useReportMath>, tables: Required<ManualTablesPayload>, recommendations: FollowUpRecommendation[]) => {
+  const popup = window.open("", "_blank");
+  if (!popup) return;
+  popup.document.open();
+  popup.document.write(buildExportHtml(control, report, tables, recommendations));
+  popup.document.close();
+  popup.focus();
+  window.setTimeout(() => popup.print(), 400);
+};
+
 const getManualTables = (control?: WeeklyBOQControl): Required<ManualTablesPayload> => {
   const tables = (control?.manual_tables || {}) as ManualTablesPayload;
   return {
@@ -268,7 +430,7 @@ const manualCellValue = (row: ManualRow, column: ManualColumn) => {
   return Number.isFinite(parsed) && parsed !== 0 ? formatRp(parsed) : value;
 };
 
-const ManualTablePreview: React.FC<{ title: string; table: ManualTableState; groupedSpec?: boolean }> = ({ title, table, groupedSpec }) => {
+const ManualTablePreview: React.FC<{ title: string; table: ManualTableState; groupedSpec?: boolean; onPreviewImage?: (image: ManualImage, title: string) => void }> = ({ title, table, groupedSpec, onPreviewImage }) => {
   const columns = table.columns || [];
   const rows = table.rows || [];
   const specColumns = columns.filter((column) => ["rab", "spek", "terpasang"].includes(column.id));
@@ -336,7 +498,12 @@ const ManualTablePreview: React.FC<{ title: string; table: ManualTableState; gro
                           {hasImages(row, column) && (
                             <div className="mt-2 grid grid-cols-2 gap-2">
                               {row.images!.map((image, index) => (
-                                <img key={`${image.name}-${index}`} src={image.data_url} alt={image.name} className="max-h-40 w-full rounded-md border border-slate-200 object-cover" />
+                                <button key={`${image.name}-${index}`} type="button" onClick={() => onPreviewImage?.(image, row.cells?.uraian || row.placeholders?.uraian || image.name)} className="group relative overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                                  <img src={image.data_url} alt={image.name} className="max-h-40 w-full object-cover transition-transform group-hover:scale-[1.03]" />
+                                  <span className="absolute inset-0 hidden items-center justify-center bg-slate-950/35 text-white group-hover:flex">
+                                    <Eye className="h-5 w-5" />
+                                  </span>
+                                </button>
                               ))}
                             </div>
                           )}
@@ -385,6 +552,25 @@ export const WeeklyBOQPage: React.FC = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedControlId, setSelectedControlId] = useState<number | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ src: string; name: string; lampiran: string } | null>(null);
+  const [itjenChecklist, setItjenChecklist] = useState<Record<string, boolean>>({
+    data_akurat: false,
+    evidence_lengkap: false,
+    audit_trail: false,
+    laporan_siap: false,
+  });
+
+  const itjenItems = [
+    { key: "data_akurat", label: "Data akurat dan valid" },
+    { key: "evidence_lengkap", label: "Evidence lengkap" },
+    { key: "audit_trail", label: "Audit trail otomatis" },
+    { key: "laporan_siap", label: "Laporan siap audit" },
+  ];
+
+  const itjenCheckedCount = Object.values(itjenChecklist).filter(Boolean).length;
+
+  const handlePreviewImage = (image: ManualImage, lampiran: string) =>
+    setPreviewImage({ src: image.data_url, name: image.name, lampiran });
 
   const filterParams = useMemo(
     () => ({ search, status: selectedStatus, knmp_id: selectedKnmp, start_date: startDate, end_date: endDate }),
@@ -659,13 +845,23 @@ export const WeeklyBOQPage: React.FC = () => {
                   ) : (
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                       {evidencePreviews.slice(0, 8).map((evidence) => (
-                        <div key={evidence.key} className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                          <img src={evidence.image.data_url} alt={evidence.image.name} className="aspect-[4/3] w-full object-cover" />
+                        <button
+                          key={evidence.key}
+                          type="button"
+                          onClick={() => handlePreviewImage(evidence.image, evidence.lampiran)}
+                          className="group overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-left transition-all hover:border-blue-300 hover:shadow-md"
+                        >
+                          <div className="relative aspect-[4/3] overflow-hidden">
+                            <img src={evidence.image.data_url} alt={evidence.image.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-blue-900/0 transition-all duration-200 group-hover:bg-blue-900/30">
+                              <ZoomIn className="h-6 w-6 scale-0 text-white drop-shadow transition-transform duration-200 group-hover:scale-100" />
+                            </div>
+                          </div>
                           <div className="p-2">
                             <p className="truncate text-[11px] font-black text-slate-900">{evidence.title}</p>
                             <p className="mt-1 text-[10px] font-bold text-emerald-600">{evidence.lampiran}</p>
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -687,11 +883,48 @@ export const WeeklyBOQPage: React.FC = () => {
                   </ul>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <h3 className="mb-3 text-sm font-black text-blue-950">Checklist Itjen</h3>
-                  {["Data akurat dan valid", "Evidence lengkap", "Audit trail otomatis", "Laporan siap audit"].map((label) => (
-                    <div key={label} className="mb-2 flex items-center gap-2 text-xs font-bold text-slate-600"><ShieldCheck className="h-4 w-4 text-emerald-600" />{label}</div>
-                  ))}
-                  <button type="button" className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"><Download className="h-4 w-4" /> Ekspor Laporan</button>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-black text-blue-950">Checklist Itjen</h3>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      itjenCheckedCount === itjenItems.length
+                        ? "bg-emerald-100 text-emerald-700"
+                        : itjenCheckedCount > 0
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-slate-100 text-slate-500"
+                    }`}>{itjenCheckedCount}/{itjenItems.length}</span>
+                  </div>
+                  {itjenItems.map(({ key, label }) => {
+                    const checked = itjenChecklist[key];
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setItjenChecklist((prev) => ({ ...prev, [key]: !prev[key] }))}
+                        className="mb-2 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-bold transition-colors hover:bg-slate-50"
+                      >
+                        {checked
+                          ? <CheckSquare className="h-4 w-4 shrink-0 text-emerald-600" />
+                          : <Square className="h-4 w-4 shrink-0 text-slate-300" />}
+                        <span className={checked ? "text-emerald-700 line-through" : "text-slate-600"}>{label}</span>
+                      </button>
+                    );
+                  })}
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => exportBOQToPDF(selectedControl!, report, manualTables, recommendations)}
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
+                    >
+                      <FileText className="h-4 w-4" /> PDF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => exportBOQToExcel(selectedControl!, report, manualTables, recommendations)}
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                    >
+                      <Download className="h-4 w-4" /> Excel
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -710,6 +943,41 @@ export const WeeklyBOQPage: React.FC = () => {
         )}
       </div>
 
+      {/* Image Lightbox */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative max-w-5xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-white/10 backdrop-blur rounded-t-2xl">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-white">{previewImage.name}</p>
+                <p className="text-[11px] font-bold text-emerald-400">{previewImage.lampiran}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {/* Image */}
+            <div className="bg-black/50 rounded-b-2xl overflow-hidden flex items-center justify-center">
+              <img
+                src={previewImage.src}
+                alt={previewImage.name}
+                className="max-h-[80vh] w-auto max-w-full object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
