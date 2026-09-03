@@ -99,38 +99,15 @@ export const FormatHarianPrintView: React.FC<FormatHarianPrintViewProps> = ({
   const sheetContent = (
     <div className="w-full max-w-[210mm] bg-white shadow-2xl print:shadow-none print:max-w-none text-slate-900 text-[11px] leading-tight font-sans mx-auto">
       {/* ================= HALAMAN 1 ================= */}
-      <div className="min-h-[297mm] p-8 sm:p-10 flex flex-col justify-between border-b border-slate-300 print:border-none print:min-h-screen">
-        <div>
-          {/* Header / Kop Resmi */}
-          <div className="flex items-center justify-between border-b-2 border-slate-800 pb-3 mb-3">
-            <div className="flex items-center gap-3">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_of_Ministry_of_Maritime_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg"
-                alt="Logo KKP"
-                className="h-14 w-auto object-contain"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-              <div>
-                <h2 className="text-xs font-black tracking-wider text-slate-900 uppercase">
-                  KEMENTERIAN KELAUTAN DAN PERIKANAN
-                </h2>
-                <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-wide">
-                  DIREKTORAT JENDERAL PERIKANAN TANGKAP
-                </p>
-                <p className="text-[9px] text-slate-500 font-medium">
-                  Program Kampung Nelayan Merah Putih (KNMP)
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="inline-block px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded border border-blue-200 bg-blue-50 text-blue-800">
-                Formulir Resmi KKP
-              </span>
-            </div>
-          </div>
+      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-28 pb-14 flex flex-col justify-between border-b border-slate-300 print:border-none print:min-h-screen print:break-after-page overflow-hidden">
+        {/* Official KKP Template Background */}
+        <img
+          src="/assets/img/kkp_official_bg.jpg"
+          alt="KKP Official Background"
+          className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-0"
+        />
 
+        <div className="relative z-10">
           {/* Judul & Parameter Subheader */}
           <div className="text-center mb-3">
             <h1 className="text-sm font-black uppercase tracking-wide text-slate-900">
@@ -327,21 +304,15 @@ export const FormatHarianPrintView: React.FC<FormatHarianPrintViewProps> = ({
       </div>
 
       {/* ================= HALAMAN 2 ================= */}
-      <div className="min-h-[297mm] p-8 sm:p-10 flex flex-col justify-between print:min-h-screen">
-        <div>
-          {/* Header Ringkas Halaman 2 */}
-          <div className="flex items-center justify-between border-b-2 border-slate-800 pb-2 mb-4">
-            <div className="flex items-center gap-2">
-              <span className="font-black text-xs uppercase tracking-wider text-slate-900">
-                KEMENTERIAN KELAUTAN DAN PERIKANAN
-              </span>
-              <span className="text-slate-400">|</span>
-              <span className="text-[10px] text-slate-600">Dokumentasi & Pengesahan Laporan Harian</span>
-            </div>
-            <span className="text-[10px] font-bold text-slate-500">
-              {data.tanggal || "-"}
-            </span>
-          </div>
+      <div className="relative min-h-[297mm] px-8 sm:px-10 pt-28 pb-14 flex flex-col justify-between print:min-h-screen print:break-before-page overflow-hidden">
+        {/* Official KKP Template Background */}
+        <img
+          src="/assets/img/kkp_official_bg.jpg"
+          alt="KKP Official Background"
+          className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-0"
+        />
+
+        <div className="relative z-10">
 
           {/* 5. Dokumentasi Foto Harian (2x2 Grid) */}
           <div className="mb-6">
