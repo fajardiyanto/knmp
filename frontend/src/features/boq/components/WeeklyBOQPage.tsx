@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import {
   AlertTriangle,
   BarChart3,
@@ -371,37 +371,157 @@ const buildExportHtml = (
   `;
 };
 
-const exportBOQToExcel = (control: WeeklyBOQControl, report: ReturnType<typeof useReportMath>, tables: Required<ManualTablesPayload>, recommendations: FollowUpRecommendation[]) => {
-  const wb = XLSX.utils.book_new();
+// Helper: compute max content width for auto-column sizing
+const autoColWidths = (rows: (string | number | undefined)[][], headers: string[]): number[] =>
+  headers.map((h, i) => {
+    const maxData = rows.reduce((max, row) => Math.max(max, String(row[i] ?? "").length), 0);
+    return Math.min(Math.max(h.length, maxData) + 4, 60);
+  });
 
-  // Sheet 1: Lampiran 1 – BOQ
+// Helper: base64 data URL → Uint8Array buffer
+const dataUrlToBuffer = (dataUrl: string): Uint8Array => {
+  const base64 = dataUrl.split(",")[1] || "";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+};
+
+const exportBOQToExcel = async (
+  control: WeeklyBOQControl,
+  report: ReturnType<typeof useReportMath>,
+  tables: Required<ManualTablesPayload>,
+  recommendations: FollowUpRecommendation[],
+) => {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "KNMP v2";
+  wb.created = new Date();
+
+  const headerFill: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E3A5F" } };
+  const headerFont: Partial<ExcelJS.Font> = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+  const borderThin: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" }, bottom: { style: "thin" },
+    left: { style: "thin" }, right: { style: "thin" },
+  };
+
+  const applyHeader = (ws: ExcelJS.Worksheet, headers: string[]) => {
+    const row = ws.getRow(1);
+    headers.forEach((h, i) => {
+      const cell = row.getCell(i + 1);
+      cell.value = h;
+      cell.font = headerFont;
+      cell.fill = headerFill;
+      cell.border = borderThin;
+      cell.alignment = { vertical: "middle", wrapText: true };
+    });
+    row.height = 28;
+    ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: headers.length } };
+  };
+
+  const applyColWidths = (ws: ExcelJS.Worksheet, widths: number[]) => {
+    widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  };
+
+  // ── Sheet 1: Lampiran 1 – BOQ
+  const ws1 = wb.addWorksheet("Lampiran 1");
+  ws1.views = [{ state: "frozen", ySplit: 1 }];
   const l1Headers = ["No", "Kode", "Uraian Pekerjaan", "Sat", "Bobot Kontrak (%)", "Laporan Bobot (%)", "Laporan Nilai (Rp)", "Cek Fisik Bobot (%)", "Cek Fisik Nilai (Rp)", "Selisih Bobot (%)", "Selisih Nilai (Rp)"];
-  const l1Rows = report.rows.map((item, idx) => {
+  applyHeader(ws1, l1Headers);
+  const l1DataRows = report.rows.map((item, idx) => {
     const planValue = num(item.contract_value);
     const actualValue = num(item.actual_value) || (num(item.contract_value) * num(item.evidence_supported_pct)) / 100;
     return [idx + 1, item.item_code, item.item_name, item.unit, num(item.weight_pct), num(item.plan_pct), planValue, num(item.evidence_supported_pct), actualValue, num(item.deviation_pct), actualValue - planValue];
   });
-  const ws1 = XLSX.utils.aoa_to_sheet([l1Headers, ...l1Rows]);
-  XLSX.utils.book_append_sheet(wb, ws1, "Lampiran 1");
+  l1DataRows.forEach((dataRow, ri) => {
+    const row = ws1.addRow(dataRow);
+    row.height = 20;
+    row.eachCell((cell) => {
+      cell.border = borderThin;
+      cell.alignment = { vertical: "middle" };
+      if (ri % 2 === 1) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
+    });
+    // Currency columns (Rp)
+    [7, 9, 11].forEach((colIdx) => { row.getCell(colIdx).numFmt = '#,##0'; });
+  });
+  applyColWidths(ws1, autoColWidths(l1DataRows as (string|number)[][], l1Headers));
 
-  // Sheet 2-4: Manual Lampiran tables
-  (["lampiran_2", "lampiran_3", "lampiran_4"] as const).forEach((key, i) => {
+  // ── Sheets 2-4: Manual Lampiran (with images)
+  const lampiranKeys = ["lampiran_2", "lampiran_3", "lampiran_4"] as const;
+  for (let li = 0; li < lampiranKeys.length; li++) {
+    const key = lampiranKeys[li];
     const table = tables[key];
-    const cols = (table.columns || []).map((c) => c.label);
-    const rows2 = (table.rows || []).filter((r) => r.kind !== "section" && r.kind !== "total").map((row) =>
-      (table.columns || []).map((col) => manualCellValue(row, col))
-    );
-    const ws = XLSX.utils.aoa_to_sheet([cols, ...rows2]);
-    XLSX.utils.book_append_sheet(wb, ws, `Lampiran ${i + 2}`);
+    const cols = table.columns || [];
+    const allRows = table.rows || [];
+    const sheetName = `Lampiran ${li + 2}`;
+    const ws = wb.addWorksheet(sheetName);
+    ws.views = [{ state: "frozen", ySplit: 1 }];
+
+    const colLabels = cols.map((c) => c.label);
+    applyHeader(ws, colLabels);
+    applyColWidths(ws, cols.map((c) => (c.id === "uraian" ? 48 : c.id === "keterangan" ? 36 : c.id === "kondisi" ? 28 : 16)));
+
+    let excelRow = 2;
+    for (const row of allRows) {
+      const isSection = row.kind === "section";
+      const rowValues = cols.map((col) => manualCellValue(row, col));
+      const exRow = ws.getRow(excelRow);
+      rowValues.forEach((val, ci) => {
+        const cell = exRow.getCell(ci + 1);
+        cell.value = val || "";
+        cell.border = borderThin;
+        cell.alignment = { vertical: "top", wrapText: true };
+        if (isSection) {
+          cell.font = { bold: true };
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
+        }
+      });
+
+      // Embed images
+      const images = row.images || [];
+      if (images.length > 0 && !isSection) {
+        const imgColIdx = cols.findIndex((c) => ["kondisi", "keterangan"].includes(c.id));
+        const imgColExcel = imgColIdx >= 0 ? imgColIdx + 1 : cols.length;
+        const rowHeight = 100; // px per image
+        exRow.height = rowHeight;
+        for (let imgIdx = 0; imgIdx < Math.min(images.length, 3); imgIdx++) {
+          const img = images[imgIdx];
+          try {
+            const ext = img.data_url.startsWith("data:image/png") ? "png" : "jpeg";
+            const imageId = wb.addImage({ base64: img.data_url.split(",")[1] || "", extension: ext });
+            ws.addImage(imageId, {
+              tl: { col: imgColExcel - 1 + imgIdx * 0.34, row: excelRow - 1 },
+              ext: { width: 90, height: 90 },
+            });
+          } catch (_) { /* skip broken images */ }
+        }
+      } else {
+        exRow.height = 22;
+      }
+      excelRow++;
+    }
+  }
+
+  // ── Sheet 5: Rekomendasi
+  const wsRec = wb.addWorksheet("Rekomendasi");
+  wsRec.views = [{ state: "frozen", ySplit: 1 }];
+  const recHeaders = ["No", "Temuan", "Detail Tindak Lanjut", "Prioritas"];
+  applyHeader(wsRec, recHeaders);
+  applyColWidths(wsRec, [6, 44, 70, 14]);
+  recommendations.forEach((r, idx) => {
+    const row = wsRec.addRow([idx + 1, r.title, r.detail, r.tone]);
+    row.height = 36;
+    row.eachCell((cell) => {
+      cell.border = borderThin;
+      cell.alignment = { vertical: "top", wrapText: true };
+    });
+    const toneColor: Record<string, string> = { danger: "FFFEE2E2", warning: "FFFEF9C3", success: "FFD1FAE5", info: "FFDBEAFE" };
+    const bg = toneColor[r.tone] || "FFFFFFFF";
+    row.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } }; });
   });
 
-  // Sheet 5: Rekomendasi
-  const recHeaders = ["No", "Temuan", "Detail Tindak Lanjut", "Prioritas"];
-  const recRows = recommendations.map((r, idx) => [idx + 1, r.title, r.detail, r.tone]);
-  const wsRec = XLSX.utils.aoa_to_sheet([recHeaders, ...recRows]);
-  XLSX.utils.book_append_sheet(wb, wsRec, "Rekomendasi");
-
-  XLSX.writeFile(wb, `${fileNameSafe(control.title)}.xlsx`);
+  // ── Write file
+  const buf = await wb.xlsx.writeBuffer();
+  downloadBlob(buf, `${fileNameSafe(control.title)}.xlsx`, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 };
 
 const exportBOQToPDF = (control: WeeklyBOQControl, report: ReturnType<typeof useReportMath>, tables: Required<ManualTablesPayload>, recommendations: FollowUpRecommendation[]) => {
