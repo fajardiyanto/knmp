@@ -27,6 +27,13 @@ export function createLaporan(data: any): Promise<Laporan> {
   });
 }
 
+export function updateLaporan(id: number, data: any): Promise<Laporan> {
+  return apiFetch<Laporan>(`/api/v1/laporan/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
 export function createMobileLaporan(formData: FormData): Promise<Laporan> {
   return apiFetch<Laporan>("/api/v1/mobile/laporan", {
     method: "POST",

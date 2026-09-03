@@ -153,6 +153,7 @@ func New(cfg *config.Config, h *Handlers) *fiber.App {
 	protected.Get("/laporan/weekly-ppk-report", middleware.RequirePermission("laporan_read"), h.Laporan.GetWeeklyPPKReportData)
 	protected.Get("/laporan/:id", middleware.RequirePermission("laporan_read"), h.Laporan.GetByID)
 	protected.Post("/laporan", middleware.RequirePermission("laporan_create"), h.Laporan.Create)
+	protected.Put("/laporan/:id", middleware.RequirePermission("laporan_update"), h.Laporan.Update)
 	protected.Patch("/laporan/:id/verify", middleware.RequirePermission("laporan_verify_pengawas", "laporan_verify_wakil_ppk"), h.Laporan.Verify)
 	protected.Patch("/laporan/:id/unverify", middleware.RequirePermission("laporan_unverify_pengawas", "laporan_unverify_wakil_ppk"), h.Laporan.Unverify)
 	protected.Delete("/laporan/:id", middleware.RequirePermission("laporan_delete"), h.Laporan.Delete)

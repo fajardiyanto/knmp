@@ -99,7 +99,8 @@ type CreateLaporanRequest struct {
 	RealisasiProgresFisik float64              `json:"realisasi_progres_fisik"`
 	Lat                   *string              `json:"lat"`
 	Long                  *string              `json:"long"`
-	Keterangan            *string              `json:"keterangan"`
+	Keterangan            *string          `json:"keterangan"`
+	AdditionalData        *json.RawMessage `json:"additional_data"`
 	JenisBangunanDetails  []LaporanDetailInput `json:"jenis_bangunan_details"`
 }
 
@@ -130,6 +131,10 @@ func (h *LaporanHandler) Create(c *fiber.Ctx) error {
 		Keterangan:            req.Keterangan,
 		CreatedBy:             &userID,
 	}
+	if req.AdditionalData != nil && len(*req.AdditionalData) > 0 {
+		str := string(*req.AdditionalData)
+		l.AdditionalData = &str
+	}
 
 	var details []*domain.LaporanJenisBangunan
 	for _, d := range req.JenisBangunanDetails {
@@ -145,6 +150,77 @@ func (h *LaporanHandler) Create(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse(err.Error()))
 	}
 	return c.Status(fiber.StatusCreated).JSON(OKResponse(l))
+}
+
+type UpdateLaporanRequest struct {
+	PelaksanaanID         int64            `json:"pelaksanaan_id" validate:"required"`
+	Nama                  string           `json:"nama" validate:"required"`
+	Tanggal               string           `json:"tanggal" validate:"required"`
+	JenisLaporan          string           `json:"jenis_laporan" validate:"required"`
+	Keberapa              *int             `json:"keberapa"`
+	Cuaca                 *string          `json:"cuaca"`
+	JumlahTenagaKerja     int              `json:"jumlah_tenaga_kerja"`
+	RencanaProgresFisik   float64          `json:"rencana_progres_fisik"`
+	RealisasiProgresFisik float64          `json:"realisasi_progres_fisik"`
+	Lat                   *string          `json:"lat"`
+	Long                  *string          `json:"long"`
+	Keterangan            *string          `json:"keterangan"`
+	AdditionalData        *json.RawMessage `json:"additional_data"`
+	JenisBangunanDetails  []LaporanDetailInput `json:"jenis_bangunan_details"`
+}
+
+func (h *LaporanHandler) Update(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse("ID tidak valid"))
+	}
+
+	var req UpdateLaporanRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse("Payload tidak valid"))
+	}
+	if err := validator.Validate(&req); err != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(ValidationErrorResponse("Validasi gagal", err.Error()))
+	}
+
+	userID, _ := c.Locals(middleware.CtxUserIDKey).(int64)
+	l := &domain.Laporan{
+		ID:                    id,
+		PelaksanaanID:         req.PelaksanaanID,
+		UserID:                &userID,
+		Nama:                  req.Nama,
+		Tanggal:               req.Tanggal,
+		JenisLaporan:          req.JenisLaporan,
+		Keberapa:              req.Keberapa,
+		Cuaca:                 req.Cuaca,
+		JumlahTenagaKerja:     req.JumlahTenagaKerja,
+		RencanaProgresFisik:   req.RencanaProgresFisik,
+		RealisasiProgresFisik: req.RealisasiProgresFisik,
+		Lat:                   req.Lat,
+		Long:                  req.Long,
+		Keterangan:            req.Keterangan,
+		UpdatedBy:             &userID,
+	}
+	if req.AdditionalData != nil && len(*req.AdditionalData) > 0 {
+		str := string(*req.AdditionalData)
+		l.AdditionalData = &str
+	}
+
+	var details []*domain.LaporanJenisBangunan
+	for _, d := range req.JenisBangunanDetails {
+		details = append(details, &domain.LaporanJenisBangunan{
+			JenisBangunanID:       d.JenisBangunanID,
+			RencanaProgresFisik:   d.RencanaProgresFisik,
+			RealisasiProgresFisik: d.RealisasiProgresFisik,
+			Keterangan:            d.Keterangan,
+		})
+	}
+
+	if err := h.laporanSvc.Update(c.Context(), l, details); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse(err.Error()))
+	}
+	updated, _ := h.laporanSvc.GetByID(c.Context(), id)
+	return c.JSON(OKResponse(updated))
 }
 
 func (h *LaporanHandler) StoreMobile(c *fiber.Ctx) error {

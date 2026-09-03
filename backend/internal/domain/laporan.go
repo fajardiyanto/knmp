@@ -313,3 +313,89 @@ type WeeklyPhotoItem struct {
 	Title   string `json:"title"`
 	FileURL string `json:"file_url"`
 }
+
+// LaporanBulananData represents the 7-section official KKP Monthly Construction Report format
+type LaporanBulananData struct {
+	BulanTahun         string                       `json:"bulan_tahun"`
+	BulanKontrakKe     string                       `json:"bulan_kontrak_ke"`
+	StatusProyek       string                       `json:"status_proyek"` // On Track, Warning, Critical
+	IdentitasAcuan     LaporanBulananIdentitas      `json:"identitas_acuan"`
+	ChecklistFasilitas []LaporanBulananFasilitas    `json:"checklist_fasilitas"`
+	RingkasanBoQ       []LaporanBulananRingkasanBoQ `json:"ringkasan_boq"`
+	DetailBoQ          []LaporanBulananDetailBoQ    `json:"detail_boq"`
+	MatriksRisiko      []LaporanBulananRisiko       `json:"matriks_risiko"`
+	DokumentasiFoto    []LaporanBulananFoto         `json:"dokumentasi_foto"`
+	Pengesahan         LaporanBulananPengesahan     `json:"pengesahan"`
+}
+
+type LaporanBulananIdentitas struct {
+	PaketPekerjaan string  `json:"paket_pekerjaan"`
+	Lokasi         string  `json:"lokasi"`
+	JenisTitik     string  `json:"jenis_titik"` // HUB / PENYANGGA
+	NoKontrakSPMK  string  `json:"no_kontrak_spmk"`
+	Kontraktor     string  `json:"kontraktor"`
+	PengawasPPK    string  `json:"pengawas_ppk"`
+	RencanaKumPct  float64 `json:"rencana_kum_pct"`
+	AktualKumPct   float64 `json:"aktual_kum_pct"`
+	DeviasiPct     float64 `json:"deviasi_pct"`
+	TerminKeuangan string  `json:"termin_keuangan"`
+}
+
+type LaporanBulananFasilitas struct {
+	No        int    `json:"no"`
+	Fasilitas string `json:"fasilitas"`
+	Lingkup   string `json:"lingkup"` // Ya / N/A
+	Status    string `json:"status"`  // Belum / Proses / Selesai
+	Catatan   string `json:"catatan"`
+}
+
+type LaporanBulananRingkasanBoQ struct {
+	No           int     `json:"no"`
+	KelompokBoQ  string  `json:"kelompok_boq"`
+	NilaiKontrak float64 `json:"nilai_kontrak"`
+	BobotPct     float64 `json:"bobot_pct"`
+	RencKumPct   float64 `json:"renc_kum_pct"`
+	AktKumPct    float64 `json:"akt_kum_pct"`
+	DeviasiPct   float64 `json:"deviasi_pct"`
+	Keterangan   string  `json:"keterangan"`
+}
+
+type LaporanBulananDetailBoQ struct {
+	No            int     `json:"no"`
+	KodeBoQ       string  `json:"kode_boq"`
+	Area          string  `json:"area"`
+	Uraian        string  `json:"uraian"`
+	BobotPct      float64 `json:"bobot_pct"`
+	AktKumPct     float64 `json:"akt_kum_pct"`
+	NilaiRealisasi float64 `json:"nilai_realisasi"`
+	TerminMC      string  `json:"termin_mc"`
+	DeviasiPct    float64 `json:"deviasi_pct"`
+	Catatan       string  `json:"catatan"`
+}
+
+type LaporanBulananRisiko struct {
+	No             int    `json:"no"`
+	Aspek          string `json:"aspek"`
+	KondisiBulanIni string `json:"kondisi_bulan_ini"`
+	RisikoDeviasi  string `json:"risiko_deviasi"`
+	TindakLanjut   string `json:"tindak_lanjut"`
+	PICTarget      string `json:"pic_target"`
+}
+
+type LaporanBulananFoto struct {
+	Slot        int    `json:"slot"` // 1, 2, 3, 4
+	FileURL     string `json:"file_url"`
+	KodeBoQArea string `json:"kode_boq_area"`
+	Tanggal     string `json:"tanggal"`
+	Keterangan  string `json:"keterangan"`
+}
+
+type LaporanBulananPengesahan struct {
+	PembuatNama      string `json:"pembuat_nama"`
+	PembuatTanggal   string `json:"pembuat_tanggal"`
+	PemeriksaNama    string `json:"pemeriksa_nama"`
+	PemeriksaTanggal string `json:"pemeriksa_tanggal"`
+	PenyetujuNama    string `json:"penyetuju_nama"`
+	PenyetujuTanggal string `json:"penyetuju_tanggal"`
+}
+

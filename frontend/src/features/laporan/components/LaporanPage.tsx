@@ -34,6 +34,9 @@ import { MonthlyProjectReportModal } from "./MonthlyProjectReportModal";
 import { ExecutiveProjectReportModalV2 } from "./ExecutiveProjectReportModalV2";
 import { LaporanMingguanPPKModal } from "./LaporanMingguanPPKModal";
 import { ReadableProjectReportModal } from "./ReadableProjectReportModal";
+import { LaporanBulananFormModal } from "./LaporanBulananFormModal";
+import { FormatBulananPrintView } from "./FormatBulananPrintView";
+import type { LaporanBulananData } from "../types";
 
 interface LaporanItem {
   id: number;
@@ -52,6 +55,7 @@ interface LaporanItem {
   lat?: string;
   long?: string;
   keterangan?: string;
+  additional_data?: any;
   pelaksanaan_name?: string;
   user_name?: string;
   jenis_bangunan_details?: Array<{
@@ -60,6 +64,7 @@ interface LaporanItem {
     jenis_bangunan_name?: string;
     rencana_progres_fisik: number;
     realisasi_progres_fisik: number;
+    keterangan?: string;
   }>;
   documents?: Array<{
     id: number;
@@ -110,6 +115,7 @@ export const LaporanPage: React.FC = () => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPrintData, setSelectedPrintData] = useState<LaporanBulananData | null>(null);
   const [isMonthlyReportModalOpen, setIsMonthlyReportModalOpen] = useState(false);
   const [isExecutiveReportV2Open, setIsExecutiveReportV2Open] = useState(false);
   const [isWeeklyPpkModalOpen, setIsWeeklyPpkModalOpen] = useState(false);
@@ -117,19 +123,6 @@ export const LaporanPage: React.FC = () => {
   const [monthlyReportKnmpId, setMonthlyReportKnmpId] = useState<number | undefined>(undefined);
   const [selectedLaporanId, setSelectedLaporanId] = useState<number | undefined>(undefined);
   const [editingItem, setEditingItem] = useState<LaporanItem | null>(null);
-  const [formData, setFormData] = useState({
-    nama: "",
-    tanggal: new Date().toISOString().split("T")[0],
-    jenis_laporan: "mingguan",
-    jenis_bangunan_ids: [] as number[],
-    keberapa: "",
-    pelaksanaan_id: "",
-    cuaca: "cerah",
-    jumlah_tenaga_kerja: "5",
-    lat: "",
-    long: "",
-    keterangan: "",
-  });
 
   // 1. Fetch Laporan List
   const { data: laporanList = [], isLoading } = useQuery<LaporanItem[]>({
@@ -161,61 +154,6 @@ export const LaporanPage: React.FC = () => {
     queryFn: async () => {
       const res = await apiFetch<any[]>("/api/v1/users");
       return res.map((u) => ({ id: u.id, name: u.name }));
-    },
-  });
-
-  // Save / Update Mutation
-  const saveMutation = useMutation({
-    mutationFn: async (payload: typeof formData) => {
-      const body = {
-        nama: payload.nama,
-        tanggal: payload.tanggal,
-        jenis_laporan: payload.jenis_laporan,
-        pelaksanaan_id: Number(payload.pelaksanaan_id),
-        keberapa: payload.keberapa ? Number(payload.keberapa) : undefined,
-        cuaca: payload.cuaca || undefined,
-        jumlah_tenaga_kerja: Number(payload.jumlah_tenaga_kerja) || 0,
-        lat: payload.lat || undefined,
-        long: payload.long || undefined,
-        keterangan: payload.keterangan || undefined,
-        jenis_bangunan_details: payload.jenis_bangunan_ids.map((jbId) => ({
-          jenis_bangunan_id: jbId,
-          rencana_progres_fisik: 10,
-          realisasi_progres_fisik: 10,
-        })),
-      };
-
-      if (editingItem) {
-        return apiFetch(`/api/v1/laporan/${editingItem.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      }
-
-      return apiFetch("/api/v1/laporan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
-      queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
-      setIsModalOpen(false);
-      setEditingItem(null);
-      showAlert({
-        title: "Berhasil Disimpan",
-        message: "Data laporan berhasil disimpan.",
-        type: "success",
-      });
-    },
-    onError: (err: any) => {
-      showAlert({
-        title: "Gagal Menyimpan",
-        message: err.message || "Gagal menyimpan data laporan.",
-        type: "error",
-      });
     },
   });
 
@@ -271,38 +209,125 @@ export const LaporanPage: React.FC = () => {
 
   const handleOpenAdd = () => {
     setEditingItem(null);
-    setFormData({
-      nama: "",
-      tanggal: new Date().toISOString().split("T")[0],
-      jenis_laporan: "mingguan",
-      jenis_bangunan_ids: [],
-      keberapa: "1",
-      pelaksanaan_id: pelaksanaanOptions[0]?.id?.toString() || "",
-      cuaca: "cerah",
-      jumlah_tenaga_kerja: "5",
-      lat: "",
-      long: "",
-      keterangan: "",
-    });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (item: LaporanItem) => {
     setEditingItem(item);
-    setFormData({
-      nama: item.nama,
-      tanggal: item.tanggal?.split("T")[0] || item.tanggal,
-      jenis_laporan: item.jenis_laporan,
-      jenis_bangunan_ids: item.jenis_bangunan_details?.map((d) => d.jenis_bangunan_id) || [],
-      keberapa: item.keberapa ? item.keberapa.toString() : "",
-      pelaksanaan_id: item.pelaksanaan_id.toString(),
-      cuaca: item.cuaca || "cerah",
-      jumlah_tenaga_kerja: item.jumlah_tenaga_kerja.toString(),
-      lat: item.lat || "",
-      long: item.long || "",
-      keterangan: item.keterangan || "",
-    });
     setIsModalOpen(true);
+  };
+
+  const handleOpenPrintKKP = (item: LaporanItem) => {
+    if (item.additional_data) {
+      try {
+        const parsed =
+          typeof item.additional_data === "string" ? JSON.parse(item.additional_data) : item.additional_data;
+        if (parsed && typeof parsed === "object" && parsed.identitas_acuan) {
+          setSelectedPrintData(parsed);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    // Fallback build standard 7-section format for legacy items
+    setSelectedPrintData({
+      bulan_tahun: formatDate(item.tanggal) || "September 2026",
+      bulan_kontrak_ke: item.keberapa ? item.keberapa.toString() : "1",
+      status_proyek: item.deviasi < -5 ? "Critical" : item.deviasi < 0 ? "Warning" : "On Track",
+      identitas_acuan: {
+        paket_pekerjaan: item.pelaksanaan_name || item.nama,
+        lokasi: "Sumatera, Indonesia",
+        jenis_titik: "HUB",
+        no_kontrak_spmk: "SPMK/KNMP/2026",
+        kontraktor: item.user_name || "Kontraktor Pelaksana",
+        pengawas_ppk: "Konsultan Pengawas / Tim PPK",
+        rencana_kum_pct: item.rencana_progres_fisik || 0,
+        aktual_kum_pct: item.realisasi_progres_fisik || 0,
+        deviasi_pct: item.deviasi || 0,
+        termin_keuangan: "Termin 1 (25%)",
+      },
+      checklist_fasilitas: [
+        "Dermaga/tambatan",
+        "Gudang beku/cold storage",
+        "Pabrik es/sarana dingin",
+        "Shelter pendaratan ikan",
+        "Sentra/pasar/pengolahan ikan",
+        "Bengkel kapal/jaring",
+        "SPBN/SPBUN",
+        "Kantor pengelola/kios/logistik",
+        "Utilitas listrik-air-drainase",
+        "Akses jalan & lingkungan",
+      ].map((f, i) => ({
+        no: i + 1,
+        fasilitas: f,
+        lingkup: "Ya",
+        status: item.realisasi_progres_fisik >= 100 ? "Selesai" : "Proses",
+        catatan: "",
+      })),
+      ringkasan_boq: [
+        "Persiapan & K3/SMKK",
+        "Pekerjaan tanah/lahan",
+        "Struktur/revetment/DPT",
+        "Bangunan gedung/fasilitas",
+        "MEP/utilitas",
+        "Jalan, drainase, lingkungan",
+        "Pengadaan/instalasi sarana",
+        "Lain-lain/addendum",
+      ].map((k, i) => ({
+        no: i + 1,
+        kelompok_boq: k,
+        nilai_kontrak: 0,
+        bobot_pct: 12.5,
+        renc_kum_pct: item.rencana_progres_fisik || 0,
+        akt_kum_pct: item.realisasi_progres_fisik || 0,
+        deviasi_pct: item.deviasi || 0,
+        keterangan: "",
+      })),
+      detail_boq:
+        item.jenis_bangunan_details?.map((d, i) => ({
+          no: i + 1,
+          kode_boq: `DIV-${i + 1}`,
+          area: d.jenis_bangunan_name || "Area KNMP",
+          uraian: `Pekerjaan ${d.jenis_bangunan_name || "Konstruksi"}`,
+          bobot_pct: 10,
+          akt_kum_pct: d.realisasi_progres_fisik || 0,
+          nilai_realisasi: 0,
+          termin_mc: "MC-01",
+          deviasi_pct: (d.realisasi_progres_fisik || 0) - (d.rencana_progres_fisik || 0),
+          catatan: d.keterangan || "",
+        })) || [],
+      matriks_risiko: [
+        "Kurva-S/jadwal",
+        "Pembayaran/termin",
+        "Perubahan kontrak",
+        "Mutu/QC/NCR",
+        "K3 & lingkungan",
+        "Readiness operasional",
+      ].map((a, i) => ({
+        no: i + 1,
+        aspek: a,
+        kondisi_bulan_ini: "Sesuai progres konstruksi",
+        risiko_deviasi: item.deviasi < 0 ? "Keterlambatan progres" : "Risiko terkendali",
+        tindak_lanjut: "Percepatan pekerjaan lapangan",
+        pic_target: "Site Manager",
+      })),
+      dokumentasi_foto: (item.documents || []).slice(0, 4).map((doc, idx) => ({
+        slot: idx + 1,
+        file_url: doc.file_url || doc.file_path,
+        file_name: doc.file_name,
+        kode_boq_area: "Area KNMP",
+        tanggal: item.tanggal,
+        keterangan: doc.file_name,
+      })),
+      pengesahan: {
+        pembuat_nama: item.user_name || "Kontraktor Pelaksana",
+        pembuat_tanggal: item.tanggal,
+        pemeriksa_nama: "Konsultan Pengawas",
+        pemeriksa_tanggal: item.tanggal,
+        penyetuju_nama: "Pejabat Pembuat Komitmen (PPK)",
+        penyetuju_tanggal: item.tanggal,
+      },
+    });
   };
 
   // Filter calculations
@@ -737,6 +762,14 @@ export const LaporanPage: React.FC = () => {
                           </button>
                           <button
                             type="button"
+                            onClick={() => handleOpenPrintKKP(item)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            title="Cetak Format Resmi KKP (2 Halaman A4)"
+                          >
+                            <Printer className="w-4 h-4 text-blue-600" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleOpenEdit(item)}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-[#0d6efd] hover:bg-blue-50 transition-colors"
                             title="Edit"
@@ -877,280 +910,25 @@ export const LaporanPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal Buat / Edit Laporan - Pixel-perfect matching Screenshot 3 */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-[620px] w-full shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80">
-              <h3 className="text-base font-bold text-slate-800 tracking-tight">
-                {editingItem ? "Edit Laporan" : "Buat Laporan"}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {/* Modal Format Laporan Bulanan Konstruksi KNMP (KKP Official 7-Section Format) */}
+      <LaporanBulananFormModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem as any}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["laporan-list"] });
+        }}
+      />
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                saveMutation.mutate(formData);
-              }}
-            >
-              <div className="p-6 space-y-4 text-xs">
-                {/* Row 1: Nama & Tanggal */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      Nama <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.nama}
-                      onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-                      placeholder="Contoh: Laporan Mingguan Tahap 1"
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] placeholder:text-slate-400 transition-all"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      Tanggal <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={formData.tanggal}
-                      onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 2: Jenis Laporan & Jenis Bangunan */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      Jenis Laporan <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      value={formData.jenis_laporan}
-                      onChange={(e) => setFormData({ ...formData, jenis_laporan: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700"
-                    >
-                      <option value="">-- Pilih Jenis --</option>
-                      <option value="harian">Harian</option>
-                      <option value="mingguan">Mingguan</option>
-                      <option value="bulanan">Bulanan</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      Jenis Bangunan <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      onChange={(e) => {
-                        const jbId = Number(e.target.value);
-                        if (jbId && !formData.jenis_bangunan_ids.includes(jbId)) {
-                          setFormData({
-                            ...formData,
-                            jenis_bangunan_ids: [...formData.jenis_bangunan_ids, jbId],
-                          });
-                        }
-                      }}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700"
-                    >
-                      <option value="">-- Pilih Jenis Bangunan --</option>
-                      {jbOptions.map((jb) => (
-                        <option key={jb.id} value={jb.id}>
-                          {jb.nama}
-                        </option>
-                      ))}
-                    </select>
-
-                    {/* Selected Badges */}
-                    <div className="p-2 border border-slate-200 rounded-lg bg-slate-50 min-h-[34px] flex flex-wrap gap-1 items-center">
-                      {formData.jenis_bangunan_ids.length === 0 ? (
-                        <span className="text-slate-400 text-[11px]">
-                          Belum ada jenis bangunan dipilih
-                        </span>
-                      ) : (
-                        formData.jenis_bangunan_ids.map((jbId) => {
-                          const jb = jbOptions.find((j) => j.id === jbId);
-                          return (
-                            <span
-                              key={jbId}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-[#0d6efd] font-semibold text-[11px]"
-                            >
-                              {jb?.nama || `Bangunan ${jbId}`}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setFormData({
-                                    ...formData,
-                                    jenis_bangunan_ids: formData.jenis_bangunan_ids.filter((id) => id !== jbId),
-                                  })
-                                }
-                                className="hover:text-rose-600"
-                              >
-                                &times;
-                              </button>
-                            </span>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Row 3: Keberapa & User */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      Keberapa
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.keberapa}
-                      onChange={(e) => setFormData({ ...formData, keberapa: e.target.value })}
-                      placeholder="Contoh: minggu/bulan ke-1"
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] placeholder:text-slate-400 transition-all"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      User
-                    </label>
-                    <input
-                      type="text"
-                      disabled
-                      value="SuperAdmin"
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg bg-slate-100/70 text-slate-600 cursor-not-allowed"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 4: Pelaksanaan & Cuaca */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      Pelaksanaan <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      required
-                      value={formData.pelaksanaan_id}
-                      onChange={(e) => setFormData({ ...formData, pelaksanaan_id: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700"
-                    >
-                      <option value="">-- Pilih Pelaksanaan --</option>
-                      {pelaksanaanOptions.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.nama}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      Cuaca <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      value={formData.cuaca}
-                      onChange={(e) => setFormData({ ...formData, cuaca: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all bg-white text-slate-700"
-                    >
-                      <option value="cerah">Cerah</option>
-                      <option value="berawan">Berawan</option>
-                      <option value="mendung">Mendung</option>
-                      <option value="hujan">Hujan</option>
-                      <option value="badai">Badai</option>
-                      <option value="lainnya">Lainnya</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Row 5: Jumlah Tenaga Kerja & Latitude */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      Jumlah Tenaga Kerja <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      value={formData.jumlah_tenaga_kerja}
-                      onChange={(e) => setFormData({ ...formData, jumlah_tenaga_kerja: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      Latitude
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.lat}
-                      onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 6: Longitude */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-800">
-                    Longitude
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.long}
-                    onChange={(e) => setFormData({ ...formData, long: e.target.value })}
-                    className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] transition-all"
-                  />
-                </div>
-
-                {/* Row 7: Keterangan */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-800">
-                    Keterangan
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formData.keterangan}
-                    onChange={(e) => setFormData({ ...formData, keterangan: e.target.value })}
-                    placeholder="Catatan tambahan tentang laporan ini..."
-                    className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-[#3366ff] focus:border-[#3366ff] placeholder:text-slate-400 transition-all resize-none"
-                  />
-                </div>
-              </div>
-
-              <div className="px-6 py-3.5 border-t border-slate-200/80 flex items-center justify-end gap-2.5 bg-white">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg transition-colors shadow-2xs"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saveMutation.isPending}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-[#3366ff] hover:bg-[#2554d7] rounded-lg transition-colors shadow-2xs"
-                >
-                  {saveMutation.isPending ? "Menyimpan..." : "Simpan Laporan"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Official 2-Page Print View Modal */}
+      {selectedPrintData && (
+        <FormatBulananPrintView
+          data={selectedPrintData}
+          onClose={() => setSelectedPrintData(null)}
+        />
       )}
 
       {/* Monthly Project Report Official Document Modal (v1) */}

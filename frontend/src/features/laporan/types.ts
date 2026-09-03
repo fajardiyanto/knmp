@@ -17,7 +17,9 @@ export interface Laporan {
   lat?: string;
   long?: string;
   keterangan?: string;
+  additional_data?: string | LaporanBulananData;
   pelaksanaan_name?: string;
+  user_name?: string;
   created_at: string;
   updated_at: string;
   jenis_bangunan_details?: LaporanJenisBangunanDetail[];
@@ -206,3 +208,90 @@ export interface MilestoneItem {
   deviasi_hari: number;
   status: string;
 }
+
+// FORMAT LAPORAN BULANAN KONSTRUKSI KNMP (KKP Official Format)
+export interface LaporanBulananData {
+  bulan_tahun: string;
+  bulan_kontrak_ke: string;
+  status_proyek: "On Track" | "Warning" | "Critical";
+  identitas_acuan: LaporanBulananIdentitas;
+  checklist_fasilitas: LaporanBulananFasilitas[];
+  ringkasan_boq: LaporanBulananRingkasanBoQ[];
+  detail_boq: LaporanBulananDetailBoQ[];
+  matriks_risiko: LaporanBulananRisiko[];
+  dokumentasi_foto: LaporanBulananFoto[];
+  pengesahan: LaporanBulananPengesahan;
+}
+
+export interface LaporanBulananIdentitas {
+  paket_pekerjaan: string;
+  lokasi: string;
+  jenis_titik: "HUB" | "PENYANGGA";
+  no_kontrak_spmk: string;
+  kontraktor: string;
+  pengawas_ppk: string;
+  rencana_kum_pct: number;
+  aktual_kum_pct: number;
+  deviasi_pct: number;
+  termin_keuangan: string;
+}
+
+export interface LaporanBulananFasilitas {
+  no: number;
+  fasilitas: string;
+  lingkup: "Ya" | "N/A";
+  status: "Belum" | "Proses" | "Selesai";
+  catatan: string;
+}
+
+export interface LaporanBulananRingkasanBoQ {
+  no: number;
+  kelompok_boq: string;
+  nilai_kontrak: number;
+  bobot_pct: number;
+  renc_kum_pct: number;
+  akt_kum_pct: number;
+  deviasi_pct: number;
+  keterangan: string;
+}
+
+export interface LaporanBulananDetailBoQ {
+  no: number;
+  kode_boq: string;
+  area: string;
+  uraian: string;
+  bobot_pct: number;
+  akt_kum_pct: number;
+  nilai_realisasi: number;
+  termin_mc: string;
+  deviasi_pct: number;
+  catatan: string;
+}
+
+export interface LaporanBulananRisiko {
+  no: number;
+  aspek: string;
+  kondisi_bulan_ini: string;
+  risiko_deviasi: string;
+  tindak_lanjut: string;
+  pic_target: string;
+}
+
+export interface LaporanBulananFoto {
+  slot: number; // 1, 2, 3, 4
+  file_url: string;
+  file_name?: string;
+  kode_boq_area: string;
+  tanggal: string;
+  keterangan: string;
+}
+
+export interface LaporanBulananPengesahan {
+  pembuat_nama: string;
+  pembuat_tanggal: string;
+  pemeriksa_nama: string;
+  pemeriksa_tanggal: string;
+  penyetuju_nama: string;
+  penyetuju_tanggal: string;
+}
+
