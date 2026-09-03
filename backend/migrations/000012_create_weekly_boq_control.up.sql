@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS weekly_boq_controls (
     audit_exposure_value NUMERIC(18,2) NOT NULL DEFAULT 0,
     status VARCHAR(30) NOT NULL DEFAULT 'open',
     summary TEXT NOT NULL DEFAULT '',
+    manual_tables JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

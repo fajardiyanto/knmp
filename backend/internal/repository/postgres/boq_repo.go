@@ -25,6 +25,7 @@ func (r *weeklyBOQRepo) baseSelect() string {
 		SELECT b.id, b.knmp_id, CAST(b.week_start AS TEXT) AS week_start, CAST(b.week_end AS TEXT) AS week_end,
 		       b.title, b.source_document, b.contractor_claim_pct, b.supervisor_verified_pct,
 		       b.evidence_supported_pct, b.audit_exposure_value, b.status, b.summary,
+		       COALESCE(b.manual_tables, '{}'::jsonb) AS manual_tables,
 		       b.created_by, b.created_at, b.updated_at, b.deleted_at,
 		       COALESCE(k.name, '-') AS knmp_name,
 		       COALESCE(reg.name, '') AS regency_name,
@@ -120,20 +121,24 @@ func (r *weeklyBOQRepo) Create(ctx context.Context, control *domain.WeeklyBOQCon
 		return err
 	}
 	defer tx.Rollback()
+	manualTables := string(control.ManualTables)
+	if manualTables == "" {
+		manualTables = "{}"
+	}
 
 	query := `
 		INSERT INTO weekly_boq_controls (
 			knmp_id, week_start, week_end, title, source_document, contractor_claim_pct,
 			supervisor_verified_pct, evidence_supported_pct, audit_exposure_value,
-			status, summary, created_by, created_at, updated_at
+			status, summary, manual_tables, created_by, created_at, updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, COALESCE($12::jsonb, '{}'::jsonb), $13, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 	if err := tx.QueryRowContext(ctx, query,
 		control.KnmpID, control.WeekStart, control.WeekEnd, control.Title, control.SourceDocument,
 		control.ContractorClaimPct, control.SupervisorVerifiedPct, control.EvidenceSupportedPct,
-		control.AuditExposureValue, control.Status, control.Summary, control.CreatedBy,
+		control.AuditExposureValue, control.Status, control.Summary, manualTables, control.CreatedBy,
 	).Scan(&control.ID, &control.CreatedAt, &control.UpdatedAt); err != nil {
 		return fmt.Errorf("create weekly boq control: %w", err)
 	}

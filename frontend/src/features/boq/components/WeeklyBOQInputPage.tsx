@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileSpreadsheet, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, ImagePlus, Plus, Save, Trash2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SearchableSelect } from "../../../components/ui/SearchableSelect";
 import { useAlert } from "../../../context/AlertContext";
@@ -9,20 +9,30 @@ import { createWeeklyBOQ } from "../api";
 import type { WeeklyBOQCreateInput, WeeklyBOQItemInput } from "../types";
 
 type BOQFormItem = Required<Omit<WeeklyBOQItemInput, "notes">> & { notes: string };
-type MaterialMismatchRow = {
-  no: string;
-  section: string;
-  pekerjaan: string;
-  sat: string;
-  volume: string;
-  nilai: number;
-  rab: string;
-  spektek: string;
-  terpasang: string;
-  keterangan: string;
+type ManualColumn = {
+  id: string;
+  label: string;
+  kind?: "text" | "money";
+  minWidth?: string;
 };
-type DefectRow = { no: string; section: string; pekerjaan: string; keterangan: string };
-type VariationRow = readonly [string, string, number, number, number, number, number];
+
+type ManualImage = {
+  name: string;
+  data_url: string;
+};
+
+type ManualRow = {
+  id: string;
+  kind?: "section" | "item" | "total";
+  cells: Record<string, string>;
+  placeholders?: Record<string, string>;
+  images?: ManualImage[];
+};
+
+type ManualTableState = {
+  columns: ManualColumn[];
+  rows: ManualRow[];
+};
 
 const emptyBOQItem = (): BOQFormItem => ({
   item_code: "",
@@ -169,55 +179,105 @@ const defaultItems: BOQFormItem[] = [
   boqTemplateItem("63", "Pekerjaan Panel Box 3 Phase 380V, 50 Hz", 0.04),
 ];
 
-const materialMismatchRows: MaterialMismatchRow[] = [
-  {
-    no: "XI.31",
-    section: "Pekerjaan Bangunan Kantor Pengelola",
-    pekerjaan: "Pekerjaan Pengadaan dan Pemasangan Tangki Toren Kap.600 liter ex.Penguin TD60",
-    sat: "unit",
-    volume: "1.00",
-    nilai: 0,
-    rab: "Kapasitas 600 liter",
-    spektek: "Kapasitas 600 liter",
-    terpasang: "Kapasitas 520 liter",
-    keterangan: "Terpasang dengan kapasitas di bawah RAB dan Spektek sehingga perlu dilakukan pergantian.",
-  },
-];
+const createManualRow = (cells: Record<string, string> = {}, placeholders: Record<string, string> = {}, kind: "section" | "item" | "total" = "item"): ManualRow => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  kind,
+  cells,
+  placeholders,
+  images: [],
+});
 
-const defectRows: DefectRow[] = [
-  { no: "XIX.5", section: "Pekerjaan Bangunan Docking Kapal", pekerjaan: "Pekerjaan Plafond GRC t = 6 mm, termasuk rangka besi hollow 40/40 modul 60x60 cm", keterangan: "Plafond di pinggir pasangan lampu downlight bolong, sehingga perlu dirapikan." },
-  { no: "XIX.13", section: "Pekerjaan Bangunan Docking Kapal", pekerjaan: "Pekerjaan Huruf Timbul plate galvanis finish cat duco, DOCKING KAPAL uk. 20x35 cm", keterangan: "Sesuai RAB huruf timbul adalah DOCKING KAPAL, huruf terpasang tidak sesuai, sehingga perlu diganti hurufnya sesuai RAB." },
-  { no: "XIX.7", section: "Pekerjaan Bangunan Docking Kapal", pekerjaan: "Pekerjaan Penutup Atap Spandek berpasir t = 0,30 mm", keterangan: "Pekerjaan atap spandek, nok atap, dan lisplank tidak rapi, sehingga perlu dilakukan perapihan kembali." },
-  { no: "XIX.8", section: "Pekerjaan Bangunan Docking Kapal", pekerjaan: "Pekerjaan Nok Atap Metal Berpasir", keterangan: "Pekerjaan atap spandek, nok atap, dan lisplank tidak rapi, sehingga perlu dilakukan perapihan kembali." },
-  { no: "XIX.9", section: "Pekerjaan Bangunan Docking Kapal", pekerjaan: "Pekerjaan Listplank GRC L = 30 cm, t = 8 mm", keterangan: "Pekerjaan atap spandek, nok atap, dan lisplank tidak rapi, sehingga perlu dilakukan perapihan kembali." },
-  { no: "XI.11", section: "Pekerjaan Bangunan Kantor Pengelola", pekerjaan: "Pekerjaan Topi Jendela Beton t = 10 cm", keterangan: "Pekerjaan topi jendela miring dan tidak simetris, sehingga perlu dibongkar dan dibuat ulang." },
-  { no: "XI.20", section: "Pekerjaan Bangunan Kantor Pengelola", pekerjaan: "Pekerjaan Huruf Timbul plate galvanis finish cat duco, KANTOR PENGELOLA uk. 20x25 cm", keterangan: "Pekerjaan tulisan huruf KANTOR miring, sehingga perlu dilepas dan pasang ulang dengan rapi." },
-  { no: "IX.11", section: "Pekerjaan Bangunan Kios Perbekalan", pekerjaan: "Pekerjaan Topi Beton t = 10 cm", keterangan: "Pekerjaan topi jendela miring dan tidak simetris, sehingga perlu dibongkar dan dibuat ulang." },
-  { no: "IX.20", section: "Pekerjaan Bangunan Kios Perbekalan", pekerjaan: "Pekerjaan Huruf Timbul plate galvanis finish cat duco, KIOS PERBEKALAN uk. 20x25 cm", keterangan: "Huruf terpasang KIOS PEMBEKALAN NELAYAN, sesuai RAB seharusnya KIOS PERBEKALAN, sehingga perlu dilepas dan diganti hurufnya sesuai RAB." },
-  { no: "IX.14", section: "Pekerjaan Bangunan Kios Perbekalan", pekerjaan: "Pekerjaan Rangka Atap Baja Ringan t = 0,75 mm", keterangan: "Atap terpasang sudah berkarat, sehingga perlu dilakukan pengecatan ulang." },
-];
+const initialLampiran2: ManualTableState = {
+  columns: [
+    { id: "no", label: "No", minWidth: "90px" },
+    { id: "uraian", label: "Uraian Pekerjaan", minWidth: "360px" },
+    { id: "sat", label: "Sat", minWidth: "80px" },
+    { id: "volume", label: "Volume", minWidth: "90px" },
+    { id: "nilai_total", label: "Nilai Total Kontrak", kind: "money", minWidth: "160px" },
+    { id: "rab", label: "RAB", minWidth: "150px" },
+    { id: "spek", label: "Gambar/RKS/Spektek", minWidth: "180px" },
+    { id: "terpasang", label: "Terpasang", minWidth: "150px" },
+    { id: "keterangan", label: "Keterangan", minWidth: "420px" },
+  ],
+  rows: [
+    createManualRow({ no: "XI", uraian: "PEKERJAAN BANGUNAN KANTOR PENGELOLA" }, {}, "section"),
+    createManualRow({}, {
+      no: "31",
+      uraian: "Pekerjaan Pengadaan dan Pemasangan Tangki Toren Kap.600 liter ex.Penguin TD60",
+      sat: "unit",
+      volume: "1.00",
+      nilai_total: "Rp 3.207.233,25",
+      rab: "Kapasitas 600 liter",
+      spek: "Kapasitas 600 liter",
+      terpasang: "Kapasitas 520 liter",
+      keterangan: "Terpasang dengan kapasitas di bawah RAB dan Spektek sehingga perlu dilakukan pergantian.",
+    }),
+  ],
+};
 
-const variationRows: VariationRow[] = [
-  ["I", "Pekerjaan Persiapan", 0, 0, 0, 0, 0],
-  ["II", "Pekerjaan Revetment", 0, 0, 0, 0, 0],
-  ["III", "Pekerjaan Dinding Penahan Tanah", 0, 0, 0, 0, 0],
-  ["III.1", "Pekerjaan Turap Beton", 0, 0, 0, 0, 0],
-  ["IV", "Pekerjaan Bangunan Shelter Pendaratan Ikan", 0, 0, 0, 0, 0],
-  ["IV.1", "Pekerjaan Struktural", 0, 0, 0, 0, 0],
-  ["IV.2", "Pekerjaan Arsitektural", 0, 0, 0, 0, 0],
-  ["VI", "Pekerjaan Pondasi Pabrik Es Portable", 0, 0, 0, 0, 0],
-  ["VII", "Pekerjaan Area Parkir", 0, 0, 0, 0, 0],
-  ["XI", "Pekerjaan Bangunan Kantor Pengelola", 0, 0, 0, 0, 0],
-  ["XIII", "Pekerjaan Bangunan Tangki Air dan Sumur Bor", 0, 0, 0, 0, 0],
-  ["XIV", "Pekerjaan Penerangan Kawasan", 0, 0, 0, 0, 0],
-  ["XVI", "Pekerjaan Jalan Lingkungan dan Saluran", 0, 0, 0, 0, 0],
-  ["XVIII", "Pekerjaan Levelling Lahan", 0, 0, 0, 0, 0],
-  ["XIX", "Pekerjaan Bangunan Docking Kapal", 0, 0, 0, 0, 0],
-  ["XX", "Pekerjaan Pagar Kawasan", 0, 0, 0, 0, 0],
-  ["XXI", "Pekerjaan Bangunan Shelter Perbaikan Alat Tangkap", 0, 0, 0, 0, 0],
-  ["XXII", "Pekerjaan Bangunan Balai Pertemuan Nelayan", 0, 0, 0, 0, 0],
-  ["III. TOTAL I + II", "Total", 0, 0, 0, 0, 0],
-];
+const initialLampiran3: ManualTableState = {
+  columns: [
+    { id: "no", label: "No", minWidth: "90px" },
+    { id: "uraian", label: "Uraian Pekerjaan", minWidth: "420px" },
+    { id: "kondisi", label: "Kondisi/Foto", minWidth: "320px" },
+    { id: "keterangan", label: "Keterangan", minWidth: "420px" },
+  ],
+  rows: [
+    createManualRow({ no: "XIX", uraian: "PEKERJAAN BANGUNAN DOCKING KAPAL" }, {}, "section"),
+    createManualRow({}, { no: "5", uraian: "Pekerjaan Plafond GRC t = 6 mm, termasuk rangka besi hollow 40/40 modul 60x60 cm", keterangan: "Plafond di pinggir pasangan lampu downlight bolong, sehingga perlu dirapikan." }),
+    createManualRow({}, { no: "13", uraian: "Pekerjaan Huruf Timbul plate galvanis finish cat duco, DOCKING KAPAL uk. 20x35 cm", keterangan: "Sesuai RAB huruf timbul adalah DOCKING KAPAL, huruf terpasang tidak sesuai, sehingga perlu diganti hurufnya sesuai RAB." }),
+    createManualRow({}, { no: "7", uraian: "Pekerjaan Penutup Atap Spandek berpasir t = 0,30 mm", keterangan: "Pekerjaan atap spandek, nok atap, dan lisplank tidak rapi, sehingga perlu dilakukan perapihan kembali." }),
+    createManualRow({}, { no: "8", uraian: "Pekerjaan Nok Atap Metal Berpasir", keterangan: "Pekerjaan atap spandek, nok atap, dan lisplank tidak rapi, sehingga perlu dilakukan perapihan kembali." }),
+    createManualRow({}, { no: "9", uraian: "Pekerjaan Listplank GRC L = 30 cm, t = 8 mm", keterangan: "Pekerjaan atap spandek, nok atap, dan lisplank tidak rapi, sehingga perlu dilakukan perapihan kembali." }),
+    createManualRow({ no: "XI", uraian: "PEKERJAAN BANGUNAN KANTOR PENGELOLA" }, {}, "section"),
+    createManualRow({}, { no: "11", uraian: "Pekerjaan Topi Jendela Beton t = 10 cm", keterangan: "Pekerjaan topi jendela miring dan tidak simetris, sehingga perlu dibongkar dan dibuat ulang." }),
+    createManualRow({}, { no: "20", uraian: "Pekerjaan Huruf Timbul plate galvanis finish cat duco, KANTOR PENGELOLA uk. 20x25 cm", keterangan: "Pekerjaan tulisan huruf KANTOR miring, sehingga perlu dilepas dan pasang ulang dengan rapi." }),
+    createManualRow({ no: "IX", uraian: "PEKERJAAN BANGUNAN KIOS PERBEKALAN" }, {}, "section"),
+    createManualRow({}, { no: "11", uraian: "Pekerjaan Topi Beton t = 10 cm", keterangan: "Pekerjaan topi jendela miring dan tidak simetris, sehingga perlu dibongkar dan dibuat ulang." }),
+    createManualRow({}, { no: "20", uraian: "Pekerjaan Huruf Timbul plate galvanis finish cat duco, KIOS PERBEKALAN uk. 20x25 cm", keterangan: "Huruf terpasang KIOS PEMBEKALAN NELAYAN, sesuai RAB seharusnya KIOS PERBEKALAN, sehingga perlu dilepas dan diganti hurufnya sesuai RAB." }),
+    createManualRow({}, { no: "14", uraian: "Pekerjaan Rangka Atap Baja Ringan t = 0,75 mm", keterangan: "Atap terpasang sudah berkarat, sehingga perlu dilakukan pengecatan ulang." }),
+  ],
+};
+
+const initialLampiran4: ManualTableState = {
+  columns: [
+    { id: "no", label: "No", minWidth: "90px" },
+    { id: "uraian", label: "Uraian Pekerjaan", minWidth: "360px" },
+    { id: "kontrak_awal", label: "Kontrak Awal (Rp)", kind: "money", minWidth: "160px" },
+    { id: "cco3", label: "CCO3 (Rp)", kind: "money", minWidth: "160px" },
+    { id: "rencana_mc100", label: "Rencana MC-100 (Rp)", kind: "money", minWidth: "170px" },
+    { id: "pekerjaan_tambah", label: "Pekerjaan Tambah (Rp)", kind: "money", minWidth: "170px" },
+    { id: "pekerjaan_kurang", label: "Pekerjaan Kurang (Rp)", kind: "money", minWidth: "170px" },
+  ],
+  rows: [
+    "I|Pekerjaan Persiapan",
+    "II|Pekerjaan Revetment",
+    "III|Pekerjaan Dinding Penahan Tanah",
+    "III.1|Pekerjaan Turap Beton",
+    "IV|Pekerjaan Bangunan Shelter Pendaratan Ikan",
+    "IV.1|Pekerjaan Struktural",
+    "IV.2|Pekerjaan Arsitektural",
+    "VI|Pekerjaan Pondasi Pabrik Es Portable",
+    "VII|Pekerjaan Area Parkir",
+    "XI|Pekerjaan Bangunan Kantor Pengelola",
+    "XIII|Pekerjaan Bangunan Tangki Air dan Sumur Bor",
+    "XIV|Pekerjaan Penerangan Kawasan",
+    "XVI|Pekerjaan Jalan Lingkungan dan Saluran",
+    "XVIII|Pekerjaan Levelling Lahan",
+    "XIX|Pekerjaan Bangunan Docking Kapal",
+    "XX|Pekerjaan Pagar Kawasan",
+    "XXI|Pekerjaan Bangunan Shelter Perbaikan Alat Tangkap",
+    "XXII|Pekerjaan Bangunan Balai Pertemuan Nelayan",
+  ].map((value) => {
+    const [no, uraian] = value.split("|");
+    return createManualRow({ no, uraian });
+  }).concat([
+    createManualRow({ uraian: "I. JUMLAH" }, {}, "total"),
+    createManualRow({ uraian: "II. PPN 11 %" }, {}, "total"),
+    createManualRow({ uraian: "III. TOTAL I + II" }, {}, "total"),
+    createManualRow({ uraian: "IV. DIBULATKAN" }, {}, "total"),
+  ]),
+};
 
 const today = new Date();
 const weekStart = new Date(today);
@@ -252,6 +312,24 @@ const formatBOQCode = (code: string, previousCode?: string) => {
   return child ? `${parent}.${child.toUpperCase()}` : parent;
 };
 
+const lampiran4MoneyColumns = ["kontrak_awal", "cco3", "rencana_mc100", "pekerjaan_tambah", "pekerjaan_kurang"];
+
+const roundToThousands = (value: number) => Math.round(value / 1000) * 1000;
+
+const getLampiran4TotalValue = (table: ManualTableState, row: ManualRow, columnID: string) => {
+  if (!lampiran4MoneyColumns.includes(columnID)) return row.cells[columnID] || "";
+  const jumlah = table.rows
+    .filter((item) => item.kind !== "total")
+    .reduce((sum, item) => sum + parseRupiah(item.cells[columnID] || ""), 0);
+  if (row.cells.uraian === "I. JUMLAH") return jumlah;
+  const ppn = jumlah * 0.11;
+  if (row.cells.uraian === "II. PPN 11 %") return ppn;
+  const total = jumlah + ppn;
+  if (row.cells.uraian === "III. TOTAL I + II") return total;
+  if (row.cells.uraian === "IV. DIBULATKAN") return roundToThousands(total);
+  return row.cells[columnID] || "";
+};
+
 export const WeeklyBOQInputPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -271,6 +349,9 @@ export const WeeklyBOQInputPage: React.FC = () => {
     summary: "",
   });
   const [items, setItems] = useState<BOQFormItem[]>(defaultItems);
+  const [lampiran2, setLampiran2] = useState<ManualTableState>(initialLampiran2);
+  const [lampiran3, setLampiran3] = useState<ManualTableState>(initialLampiran3);
+  const [lampiran4, setLampiran4] = useState<ManualTableState>(initialLampiran4);
 
   const totals = useMemo(() => {
     const totalContract = items.reduce((sum, item) => sum + numberValue(item.contract_value), 0);
@@ -294,6 +375,80 @@ export const WeeklyBOQInputPage: React.FC = () => {
     setItems((prev) => prev.map((item, idx) => (idx === index ? { ...item, ...patch } : item)));
   };
 
+  const updateManualCell = (
+    setter: React.Dispatch<React.SetStateAction<ManualTableState>>,
+    rowID: string,
+    columnID: string,
+    value: string,
+  ) => {
+    setter((prev) => ({
+      ...prev,
+      rows: prev.rows.map((row) => (row.id === rowID ? { ...row, cells: { ...row.cells, [columnID]: value } } : row)),
+    }));
+  };
+
+  const addManualRow = (setter: React.Dispatch<React.SetStateAction<ManualTableState>>) => {
+    setter((prev) => {
+      const firstTotalIndex = prev.rows.findIndex((row) => row.kind === "total");
+      if (firstTotalIndex === -1) {
+        return { ...prev, rows: [...prev.rows, createManualRow()] };
+      }
+      return {
+        ...prev,
+        rows: [...prev.rows.slice(0, firstTotalIndex), createManualRow(), ...prev.rows.slice(firstTotalIndex)],
+      };
+    });
+  };
+
+  const removeManualRow = (setter: React.Dispatch<React.SetStateAction<ManualTableState>>, rowID: string) => {
+    setter((prev) => ({ ...prev, rows: prev.rows.length > 1 ? prev.rows.filter((row) => row.id !== rowID) : prev.rows }));
+  };
+
+  const addManualImages = (
+    setter: React.Dispatch<React.SetStateAction<ManualTableState>>,
+    rowID: string,
+    files: FileList | null,
+  ) => {
+    if (!files?.length) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataURL = typeof reader.result === "string" ? reader.result : "";
+        if (!dataURL) return;
+        setter((prev) => ({
+          ...prev,
+          rows: prev.rows.map((row) =>
+            row.id === rowID
+              ? { ...row, images: [...(row.images || []), { name: file.name, data_url: dataURL }] }
+              : row,
+          ),
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeManualImage = (setter: React.Dispatch<React.SetStateAction<ManualTableState>>, rowID: string, imageIndex: number) => {
+    setter((prev) => ({
+      ...prev,
+      rows: prev.rows.map((row) =>
+        row.id === rowID ? { ...row, images: (row.images || []).filter((_, idx) => idx !== imageIndex) } : row,
+      ),
+    }));
+  };
+
+  const lampiran4WithTotals = useMemo<ManualTableState>(() => ({
+    ...lampiran4,
+    rows: lampiran4.rows.map((row) => {
+      if (row.kind !== "total") return row;
+      const cells = { ...row.cells };
+      lampiran4MoneyColumns.forEach((columnID) => {
+        cells[columnID] = String(getLampiran4TotalValue(lampiran4, row, columnID) || "");
+      });
+      return { ...row, cells };
+    }),
+  }), [lampiran4]);
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     const validItems = items.filter((item) => item.item_name.trim());
@@ -312,6 +467,11 @@ export const WeeklyBOQInputPage: React.FC = () => {
         deviation_pct: numberValue(item.evidence_supported_pct) - numberValue(item.plan_pct),
         notes: item.notes || undefined,
       })),
+      manual_tables: {
+        lampiran_2: lampiran2,
+        lampiran_3: lampiran3,
+        lampiran_4: lampiran4WithTotals,
+      },
     };
     createMutation.mutate(payload);
   };
@@ -322,6 +482,201 @@ export const WeeklyBOQInputPage: React.FC = () => {
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const renderManualCell = (
+    tableID: string,
+    setter: React.Dispatch<React.SetStateAction<ManualTableState>>,
+    row: ManualRow,
+    column: ManualColumn,
+  ) => {
+    const rawValue = row.cells[column.id] || "";
+    const placeholder = row.placeholders?.[column.id] || "";
+    const isLampiran3 = tableID === "boq-lampiran-3";
+    const isLampiran4 = tableID === "boq-lampiran-4";
+    const isImageOnlyCell = isLampiran3 && column.id === "kondisi";
+    const isImageColumn = isImageOnlyCell || (!isLampiran3 && column.id === "keterangan");
+    const totalValue = row.kind === "total" && isLampiran4 ? getLampiran4TotalValue(lampiran4, row, column.id) : undefined;
+    const value = column.kind === "money" ? formatRupiahInput(Number(totalValue ?? parseRupiah(rawValue))) : String(totalValue ?? rawValue);
+    const isLongText = ["uraian", "keterangan", "kondisi", "rab", "spek", "terpasang"].includes(column.id) && !(isLampiran4 && column.id === "uraian");
+    return (
+      <div className="space-y-2">
+        {!isImageOnlyCell && (
+          isLongText ? (
+            <textarea
+              value={value}
+              placeholder={placeholder}
+              readOnly={row.kind === "total"}
+              onChange={(event) => updateManualCell(setter, row.id, column.id, column.kind === "money" ? String(parseRupiah(event.target.value)) : event.target.value)}
+              rows={column.id === "uraian" || column.id === "keterangan" ? 3 : 2}
+              className={`w-full resize-none overflow-hidden rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs leading-relaxed text-slate-800 outline-none placeholder:text-slate-500 focus:border-blue-500 ${column.id === "terpasang" ? "font-bold text-rose-700 placeholder:text-rose-600" : ""}`}
+            />
+          ) : (
+            <input
+              value={value}
+              placeholder={placeholder}
+              readOnly={row.kind === "total"}
+              onChange={(event) => updateManualCell(setter, row.id, column.id, column.kind === "money" ? String(parseRupiah(event.target.value)) : event.target.value)}
+              className={`w-full rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-800 outline-none placeholder:text-slate-500 focus:border-blue-500 ${row.kind === "total" ? "bg-slate-50 font-black" : "bg-white"}`}
+            />
+          )
+        )}
+        {isImageColumn && (
+          <>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-blue-200 bg-blue-50 px-2.5 py-2 text-[11px] font-bold text-blue-700 hover:bg-blue-100">
+              <ImagePlus className="h-4 w-4" />
+              Upload Gambar
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  addManualImages(setter, row.id, event.target.files);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </label>
+            {!!row.images?.length && (
+              <div className="grid grid-cols-2 gap-2">
+                {row.images.map((image, imageIndex) => (
+                  <div key={`${image.name}-${imageIndex}`} className="group relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    <img src={image.data_url} alt={image.name} className="h-24 w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeManualImage(setter, row.id, imageIndex)}
+                      className="absolute right-1 top-1 rounded-full bg-white/90 p-1 text-rose-600 shadow-sm hover:bg-rose-50"
+                      title="Hapus gambar"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const renderManualTable = (
+    title: string,
+    subtitle: string,
+    table: ManualTableState,
+    setter: React.Dispatch<React.SetStateAction<ManualTableState>>,
+    groupedHeader = false,
+  ) => {
+    const defaultColumns = table.columns.filter((column) => !column.id.startsWith("custom_"));
+    const columnWidth = (columnID: string) => {
+      if (subtitle === "boq-lampiran-3") {
+        const widths: Record<string, string> = {
+          no: "12%",
+          uraian: "30%",
+          kondisi: "28%",
+          keterangan: "28%",
+        };
+        return widths[columnID] || "12%";
+      }
+      if (!groupedHeader) {
+        return columnID === "uraian" || columnID === "keterangan" ? "30%" : "12%";
+      }
+      const widths: Record<string, string> = {
+        no: "6%",
+        uraian: "24%",
+        sat: "5%",
+        volume: "6%",
+        nilai_total: "10%",
+        rab: "10%",
+        spek: "12%",
+        terpasang: "10%",
+        keterangan: "17%",
+      };
+      return widths[columnID] || "12%";
+    };
+    return (
+      <section id={subtitle} className="scroll-mt-4 rounded-xl border border-slate-200 bg-white shadow-xs">
+        <div className="border-b border-slate-100 px-4 py-3">
+          <h2 className="text-sm font-black text-blue-950">{title}</h2>
+        </div>
+        <div className="overflow-hidden p-3">
+          <table className="w-full table-fixed border-collapse text-left text-xs">
+            <colgroup>
+              {table.columns.map((column) => (
+                <col key={column.id} style={{ width: columnWidth(column.id) }} />
+              ))}
+              <col style={{ width: "32px" }} />
+            </colgroup>
+            <thead className="text-[10px] uppercase text-slate-700">
+              {groupedHeader ? (
+                <>
+                  <tr>
+                    {defaultColumns.slice(0, 5).map((column) => (
+                      <th key={column.id} rowSpan={2} className="border border-slate-300 bg-slate-100 px-2 py-2 align-middle">
+                        {column.label}
+                      </th>
+                    ))}
+                    <th colSpan={3} className="border border-slate-300 bg-slate-100 px-2 py-2 text-center">Spesifikasi Teknis</th>
+                    <th rowSpan={2} className="border border-slate-300 bg-slate-100 px-2 py-2 align-middle">
+                      Keterangan
+                    </th>
+                    <th rowSpan={2} className="w-8 border border-slate-300 bg-slate-100 px-1 py-2"></th>
+                  </tr>
+                  <tr>
+                    {defaultColumns.slice(5, 8).map((column) => (
+                      <th key={column.id} className="border border-slate-300 bg-slate-100 px-2 py-2">{column.label}</th>
+                    ))}
+                  </tr>
+                </>
+              ) : (
+                <tr>
+                  {table.columns.map((column) => (
+                    <th key={column.id} className="border border-slate-300 bg-slate-100 px-2 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        {column.label}
+                      </div>
+                    </th>
+                  ))}
+                  <th className="w-8 border border-slate-300 bg-slate-100 px-1 py-2"></th>
+                </tr>
+              )}
+            </thead>
+            <tbody>
+              {table.rows.map((row) =>
+                row.kind === "section" ? (
+                  <tr key={row.id} className="bg-slate-100 align-top">
+                    <td className="border border-slate-300 px-2 py-2 text-center text-xs font-black text-blue-950">{row.cells.no}</td>
+                    <td colSpan={table.columns.length} className="border border-slate-300 px-3 py-2 text-xs font-black uppercase text-blue-950">
+                      {row.cells.uraian}
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={row.id} className={`align-top ${row.kind === "total" ? "bg-slate-100 font-black" : ""}`}>
+                    {table.columns.map((column) => (
+                      <td key={column.id} className="border border-slate-200 p-2">
+                        {renderManualCell(subtitle, setter, row, column)}
+                      </td>
+                    ))}
+                    <td className="border border-slate-200 px-1 py-2 text-center">
+                      {row.kind !== "total" && (
+                        <button type="button" onClick={() => removeManualRow(setter, row.id)} className="rounded-md p-1 text-rose-600 hover:bg-rose-50" title="Hapus baris">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ),
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 px-4 py-3">
+          <button type="button" onClick={() => addManualRow(setter)} className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100">
+            <Plus className="h-4 w-4" /> Tambah Baris
+          </button>
+        </div>
+      </section>
+    );
   };
 
   return (
@@ -460,104 +815,27 @@ export const WeeklyBOQInputPage: React.FC = () => {
           </div>
         </section>
 
-        <section id="boq-lampiran-2" className="scroll-mt-4 rounded-xl border border-slate-200 bg-white shadow-xs">
-          <div className="border-b border-slate-100 px-4 py-3">
-            <h2 className="text-sm font-black text-blue-950">Lampiran 2. Rincian Material Terpasang/Hasil Uji Material Tidak Sesuai Spesifikasi Teknis</h2>
-          </div>
-          <div className="overflow-x-auto p-3">
-            <table className="min-w-[1100px] w-full text-left text-xs">
-              <thead className="bg-slate-100 text-[10px] uppercase text-slate-600">
-                <tr>
-                  <th rowSpan={2} className="border border-slate-300 px-2 py-2">No</th>
-                  <th rowSpan={2} className="border border-slate-300 px-2 py-2">Uraian Pekerjaan</th>
-                  <th rowSpan={2} className="border border-slate-300 px-2 py-2">Sat</th>
-                  <th rowSpan={2} className="border border-slate-300 px-2 py-2">Volume</th>
-                  <th rowSpan={2} className="border border-slate-300 px-2 py-2">Nilai Total Kontrak</th>
-                  <th colSpan={3} className="border border-slate-300 px-2 py-2 text-center">Spesifikasi Teknis</th>
-                  <th rowSpan={2} className="border border-slate-300 px-2 py-2">Keterangan</th>
-                </tr>
-                <tr>
-                  <th className="border border-slate-300 px-2 py-2">RAB</th>
-                  <th className="border border-slate-300 px-2 py-2">Gambar/RKS/Spektek</th>
-                  <th className="border border-slate-300 px-2 py-2">Terpasang</th>
-                </tr>
-              </thead>
-              <tbody>
-                {materialMismatchRows.map((row) => (
-                  <tr key={row.no}>
-                    <td className="border border-slate-200 px-2 py-2 font-bold">{row.no}</td>
-                    <td className="border border-slate-200 px-2 py-2"><p className="font-black text-slate-900">{row.section}</p><p className="mt-1 text-slate-700">{row.pekerjaan}</p></td>
-                    <td className="border border-slate-200 px-2 py-2">{row.sat}</td>
-                    <td className="border border-slate-200 px-2 py-2 text-right">{row.volume}</td>
-                    <td className="border border-slate-200 px-2 py-2 text-right">{formatRupiahBlank(row.nilai)}</td>
-                    <td className="border border-slate-200 px-2 py-2">{row.rab}</td>
-                    <td className="border border-slate-200 px-2 py-2">{row.spektek}</td>
-                    <td className="border border-slate-200 px-2 py-2 font-bold text-rose-700">{row.terpasang}</td>
-                    <td className="border border-slate-200 px-2 py-2">{row.keterangan}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        {renderManualTable(
+          "Lampiran 2. Rincian Material Terpasang/Hasil Uji Material Tidak Sesuai Spesifikasi Teknis",
+          "boq-lampiran-2",
+          lampiran2,
+          setLampiran2,
+          true,
+        )}
 
-        <section id="boq-lampiran-3" className="scroll-mt-4 rounded-xl border border-slate-200 bg-white shadow-xs">
-          <div className="border-b border-slate-100 px-4 py-3">
-            <h2 className="text-sm font-black text-blue-950">Lampiran 3. Pekerjaan Terpasang Tidak Sesuai Perencanaan atau Terdapat Cacat</h2>
-          </div>
-          <div className="overflow-x-auto p-3">
-            <table className="min-w-[980px] w-full text-left text-xs">
-              <thead className="bg-slate-100 text-[10px] uppercase text-slate-600">
-                <tr>
-                  <th className="border border-slate-300 px-2 py-2">No</th>
-                  <th className="border border-slate-300 px-2 py-2">Uraian Pekerjaan</th>
-                  <th className="border border-slate-300 px-2 py-2">Kondisi/Foto</th>
-                  <th className="border border-slate-300 px-2 py-2">Keterangan</th>
-                </tr>
-              </thead>
-              <tbody>
-                {defectRows.map((row) => (
-                  <tr key={`${row.no}-${row.pekerjaan}`}>
-                    <td className="border border-slate-200 px-2 py-2 font-bold">{row.no}</td>
-                    <td className="border border-slate-200 px-2 py-2"><p className="font-black text-slate-900">{row.section}</p><p className="mt-1 text-slate-700">{row.pekerjaan}</p></td>
-                    <td className="border border-slate-200 px-2 py-2 text-slate-400">Evidence foto dari PDF asli / upload lapangan</td>
-                    <td className="border border-slate-200 px-2 py-2">{row.keterangan}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        {renderManualTable(
+          "Lampiran 3. Pekerjaan Terpasang Tidak Sesuai Perencanaan atau Terdapat Cacat",
+          "boq-lampiran-3",
+          lampiran3,
+          setLampiran3,
+        )}
 
-        <section id="boq-lampiran-4" className="scroll-mt-4 rounded-xl border border-slate-200 bg-white shadow-xs">
-          <div className="border-b border-slate-100 px-4 py-3">
-            <h2 className="text-sm font-black text-blue-950">Lampiran 4. Rincian Rencana Pekerjaan Tambah Kurang</h2>
-          </div>
-          <div className="overflow-x-auto p-3">
-            <table className="min-w-[1100px] w-full text-left text-xs">
-              <thead className="bg-slate-100 text-[10px] uppercase text-slate-600">
-                <tr>
-                  {["No", "Uraian Pekerjaan", "Kontrak Awal (Rp)", "CCO3 (Rp)", "Rencana MC-100 (Rp)", "Pekerjaan Tambah (Rp)", "Pekerjaan Kurang (Rp)"].map((head) => (
-                    <th key={head} className="border border-slate-300 px-2 py-2">{head}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {variationRows.map(([no, pekerjaan, awal, cco, mc100, tambah, kurang]) => (
-                  <tr key={`${no}-${pekerjaan}`} className={`${`${no}`.includes(".") ? "bg-white" : "bg-amber-50"}`}>
-                    <td className="border border-slate-200 px-2 py-2 font-bold">{no}</td>
-                    <td className="border border-slate-200 px-2 py-2 font-bold">{pekerjaan}</td>
-                    {[awal, cco, mc100, tambah, kurang].map((value, index) => (
-                      <td key={`${no}-${index}`} className={`border border-slate-200 px-2 py-2 text-right ${Number(value) === 0 ? "text-slate-400" : "text-slate-800"}`}>
-                        {formatRupiahBlank(Number(value))}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        {renderManualTable(
+          "Lampiran 4. Rincian Rencana Pekerjaan Tambah Kurang",
+          "boq-lampiran-4",
+          lampiran4WithTotals,
+          setLampiran4,
+        )}
         </div>
         <aside className="hidden xl:block">
           <div className="sticky top-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

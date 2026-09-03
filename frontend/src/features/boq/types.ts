@@ -32,6 +32,7 @@ export interface WeeklyBOQControl {
   audit_exposure_value: number;
   status: string;
   summary: string;
+  manual_tables?: Record<string, unknown>;
   knmp_name?: string;
   regency_name?: string;
   province_name?: string;
@@ -85,5 +86,6 @@ export interface WeeklyBOQCreateInput {
   audit_exposure_value: number;
   status: string;
   summary: string;
+  manual_tables?: Record<string, unknown>;
   items: WeeklyBOQItemInput[];
 }

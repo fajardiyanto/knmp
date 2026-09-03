@@ -1,24 +1,28 @@
 package domain
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type WeeklyBOQControl struct {
-	ID                    int64      `db:"id" json:"id"`
-	KnmpID                int64      `db:"knmp_id" json:"knmp_id"`
-	WeekStart             string     `db:"week_start" json:"week_start"`
-	WeekEnd               string     `db:"week_end" json:"week_end"`
-	Title                 string     `db:"title" json:"title"`
-	SourceDocument        *string    `db:"source_document" json:"source_document,omitempty"`
-	ContractorClaimPct    float64    `db:"contractor_claim_pct" json:"contractor_claim_pct"`
-	SupervisorVerifiedPct float64    `db:"supervisor_verified_pct" json:"supervisor_verified_pct"`
-	EvidenceSupportedPct  float64    `db:"evidence_supported_pct" json:"evidence_supported_pct"`
-	AuditExposureValue    float64    `db:"audit_exposure_value" json:"audit_exposure_value"`
-	Status                string     `db:"status" json:"status"`
-	Summary               string     `db:"summary" json:"summary"`
-	CreatedBy             *int64     `db:"created_by" json:"created_by,omitempty"`
-	CreatedAt             time.Time  `db:"created_at" json:"created_at"`
-	UpdatedAt             time.Time  `db:"updated_at" json:"updated_at"`
-	DeletedAt             *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
+	ID                    int64           `db:"id" json:"id"`
+	KnmpID                int64           `db:"knmp_id" json:"knmp_id"`
+	WeekStart             string          `db:"week_start" json:"week_start"`
+	WeekEnd               string          `db:"week_end" json:"week_end"`
+	Title                 string          `db:"title" json:"title"`
+	SourceDocument        *string         `db:"source_document" json:"source_document,omitempty"`
+	ContractorClaimPct    float64         `db:"contractor_claim_pct" json:"contractor_claim_pct"`
+	SupervisorVerifiedPct float64         `db:"supervisor_verified_pct" json:"supervisor_verified_pct"`
+	EvidenceSupportedPct  float64         `db:"evidence_supported_pct" json:"evidence_supported_pct"`
+	AuditExposureValue    float64         `db:"audit_exposure_value" json:"audit_exposure_value"`
+	Status                string          `db:"status" json:"status"`
+	Summary               string          `db:"summary" json:"summary"`
+	ManualTables          json.RawMessage `db:"manual_tables" json:"manual_tables,omitempty"`
+	CreatedBy             *int64          `db:"created_by" json:"created_by,omitempty"`
+	CreatedAt             time.Time       `db:"created_at" json:"created_at"`
+	UpdatedAt             time.Time       `db:"updated_at" json:"updated_at"`
+	DeletedAt             *time.Time      `db:"deleted_at" json:"deleted_at,omitempty"`
 
 	KnmpName           *string          `db:"knmp_name" json:"knmp_name,omitempty"`
 	RegencyName        *string          `db:"regency_name" json:"regency_name,omitempty"`

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"knmp-v2-backend/internal/domain"
@@ -39,6 +40,9 @@ func (s *WeeklyBOQService) Create(ctx context.Context, control *domain.WeeklyBOQ
 	}
 	if control.Summary == "" {
 		control.Summary = "Progress dihitung sebagai verified quantity dikali approved BOQ dan hanya diakui penuh jika didukung evidence valid."
+	}
+	if len(control.ManualTables) == 0 {
+		control.ManualTables = json.RawMessage(`{}`)
 	}
 	for _, item := range items {
 		if item.DeviationPct == 0 {

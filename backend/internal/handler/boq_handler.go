@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -63,6 +64,7 @@ type createWeeklyBOQRequest struct {
 	AuditExposureValue    float64                 `json:"audit_exposure_value"`
 	Status                string                  `json:"status"`
 	Summary               string                  `json:"summary"`
+	ManualTables          json.RawMessage         `json:"manual_tables"`
 	Items                 []*domain.WeeklyBOQItem `json:"items"`
 }
 
@@ -89,6 +91,7 @@ func (h *WeeklyBOQHandler) Create(c *fiber.Ctx) error {
 		AuditExposureValue:    req.AuditExposureValue,
 		Status:                req.Status,
 		Summary:               req.Summary,
+		ManualTables:          req.ManualTables,
 		CreatedBy:             &userID,
 	}
 	if err := h.svc.Create(c.Context(), control, req.Items); err != nil {
