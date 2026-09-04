@@ -249,7 +249,7 @@ const collectManualEvidence = (tables: Required<ManualTablesPayload>): EvidenceP
     (tables[tableKey].rows || []).flatMap((row) => {
       const images = row.images || [];
       if (images.length === 0) return [];
-      const title = row.cells?.uraian || row.placeholders?.uraian || row.cells?.keterangan || label;
+      const title = row.cells?.uraian || row.cells?.keterangan || label;
       return images.map((image, index) => ({
         key: `${tableKey}-${row.id}-${index}`,
         lampiran: label,
@@ -270,6 +270,40 @@ const escapeHtml = (value: unknown) =>
 
 const fileNameSafe = (value?: string) =>
   (value || "laporan-boq").replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, "-").toLowerCase();
+
+const normalText = (value?: string) => (value || "").trim().replace(/\s+/g, " ").toLowerCase();
+
+const hasManualRowContent = (row: ManualRow) => {
+  if (row.kind === "section") return true;
+  if (row.images?.some((image) => image.data_url?.trim())) return true;
+  return Object.entries(row.cells || {}).some(([columnID, value]) => {
+    const text = normalText(value);
+    if (!text) return false;
+    return text !== normalText(row.placeholders?.[columnID]);
+  });
+};
+
+const pruneEmptyManualRows = (table: ManualTableState): ManualTableState => {
+  const sourceRows = table.rows || [];
+  const rows: ManualRow[] = [];
+
+  sourceRows.forEach((row, index) => {
+    if (row.kind !== "section") {
+      if (row.kind === "total" || hasManualRowContent(row)) rows.push(row);
+      return;
+    }
+
+    for (const nextRow of sourceRows.slice(index + 1)) {
+      if (nextRow.kind === "section") break;
+      if (nextRow.kind === "total" || hasManualRowContent(nextRow)) {
+        rows.push(row);
+        break;
+      }
+    }
+  });
+
+  return { ...table, rows };
+};
 
 const downloadBlob = (content: BlobPart, filename: string, type: string) => {
   const blob = new Blob([content], { type });
@@ -547,14 +581,14 @@ const exportBOQToPDF = (control: WeeklyBOQControl, report: ReturnType<typeof use
 const getManualTables = (control?: WeeklyBOQControl): Required<ManualTablesPayload> => {
   const tables = (control?.manual_tables || {}) as ManualTablesPayload;
   return {
-    lampiran_2: { ...emptyManualTables.lampiran_2, ...(tables.lampiran_2 || {}) },
-    lampiran_3: { ...emptyManualTables.lampiran_3, ...(tables.lampiran_3 || {}) },
+    lampiran_2: pruneEmptyManualRows({ ...emptyManualTables.lampiran_2, ...(tables.lampiran_2 || {}) }),
+    lampiran_3: pruneEmptyManualRows({ ...emptyManualTables.lampiran_3, ...(tables.lampiran_3 || {}) }),
     lampiran_4: { ...emptyManualTables.lampiran_4, ...(tables.lampiran_4 || {}) },
   };
 };
 
 const manualCellValue = (row: ManualRow, column: ManualColumn) => {
-  const value = row.cells?.[column.id] || row.placeholders?.[column.id] || "";
+  const value = row.cells?.[column.id] || "";
   if (!value || column.kind !== "money") return value;
   const parsed = Number(String(value).replace(/[^\d-]/g, ""));
   return Number.isFinite(parsed) && parsed !== 0 ? formatRp(parsed) : value;
@@ -621,14 +655,13 @@ const ManualTablePreview: React.FC<{ title: string; table: ManualTableState; gro
                   <tr key={row.id} className={row.kind === "total" ? "bg-slate-100 font-black" : "align-top"}>
                     {columns.map((column) => {
                       const value = manualCellValue(row, column);
-                      const isPlaceholder = !row.cells?.[column.id] && !!row.placeholders?.[column.id];
                       return (
                         <td key={column.id} className={`border border-slate-200 px-3 py-3 ${column.kind === "money" ? "text-right font-bold" : ""}`}>
-                          {value && <div className={isPlaceholder ? "text-slate-400" : "text-slate-800"}>{value}</div>}
+                          {value && <div className="text-slate-800">{value}</div>}
                           {hasImages(row, column) && (
                             <div className="mt-2 grid grid-cols-2 gap-2">
                               {row.images!.map((image, index) => (
-                                <button key={`${image.name}-${index}`} type="button" onClick={() => onPreviewImage?.(image, row.cells?.uraian || row.placeholders?.uraian || image.name)} className="group relative overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                                <button key={`${image.name}-${index}`} type="button" onClick={() => onPreviewImage?.(image, row.cells?.uraian || image.name)} className="group relative overflow-hidden rounded-md border border-slate-200 bg-slate-50">
                                   <img src={getFileUrl(image.data_url)} alt={image.name} className="max-h-40 w-full object-cover transition-transform group-hover:scale-[1.03]" />
                                   <span className="absolute inset-0 hidden items-center justify-center bg-slate-950/35 text-white group-hover:flex">
                                     <Eye className="h-5 w-5" />

@@ -401,6 +401,39 @@ const mergeManualTableTemplate = (template: ManualTableState, saved?: ManualTabl
   };
 };
 
+const normalText = (value?: string) => (value || "").trim().replace(/\s+/g, " ").toLowerCase();
+
+const hasManualRowContent = (row: ManualRow) => {
+  if (row.kind === "section") return true;
+  if (row.images?.some((image) => image.data_url?.trim())) return true;
+  return Object.entries(row.cells).some(([columnID, value]) => {
+    const text = normalText(value);
+    if (!text) return false;
+    return text !== normalText(row.placeholders?.[columnID]);
+  });
+};
+
+const pruneEmptyManualRows = (table: ManualTableState): ManualTableState => {
+  const rows: ManualRow[] = [];
+
+  table.rows.forEach((row, index) => {
+    if (row.kind !== "section") {
+      if (row.kind === "total" || hasManualRowContent(row)) rows.push(row);
+      return;
+    }
+
+    for (const nextRow of table.rows.slice(index + 1)) {
+      if (nextRow.kind === "section") break;
+      if (nextRow.kind === "total" || hasManualRowContent(nextRow)) {
+        rows.push(row);
+        break;
+      }
+    }
+  });
+
+  return { ...table, rows };
+};
+
 const lampiran4MoneyColumns = ["kontrak_awal", "cco3", "rencana_mc100", "pekerjaan_tambah", "pekerjaan_kurang"];
 
 const roundToThousands = (value: number) => Math.round(value / 1000) * 1000;
@@ -595,8 +628,8 @@ export const WeeklyBOQInputPage: React.FC = () => {
         notes: item.notes || undefined,
       })),
       manual_tables: {
-        lampiran_2: lampiran2,
-        lampiran_3: lampiran3,
+        lampiran_2: pruneEmptyManualRows(lampiran2),
+        lampiran_3: pruneEmptyManualRows(lampiran3),
         lampiran_4: lampiran4WithTotals,
       },
     };
