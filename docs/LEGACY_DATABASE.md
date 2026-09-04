@@ -663,9 +663,9 @@ Unique/primary constraints penting:
 Seed utama:
 
 - `backend/migrations/000001_init_all_schema_and_seeds.up.sql`: schema awal, seed lokasi, contoh persiapan/pelaksanaan/laporan, chat table, role/permission awal, soft delete columns, dan permission grants.
-- `backend/migrations/000003_create_perusahaans_table.up.sql`: master perusahaan penyedia/kontraktor.
-- `backend/migrations/000004_create_notulens_table.up.sql`: notulen dan share.
-- `backend/migrations/000005_add_access_type_to_notulen_shares.up.sql`: `access_type` notulen share.
+- `backend/migrations/000003_create_companies_table.up.sql`: master perusahaan penyedia/kontraktor.
+- `backend/migrations/000004_create_meeting_minutes_table.up.sql`: notulen dan share.
+- `backend/migrations/000005_add_access_type_to_meeting_minute_shares.up.sql`: `access_type` notulen share.
 - `backend/migrations/000006_migrate_kontraktor_users_to_admin_and_add_super_admin.up.sql`: membuat role `super_admin`, assign `superadmin@gmail.com`, dan memigrasikan user role `kontraktor` ke `Admin_ppk`.
 - `backend/migrations/000007_scope_admin_permissions_for_assigned_knmp_users.up.sql`: memberi direct permission terbatas untuk admin scoped yang punya assignment `user_knmps`.
 - `backend/migrations/seed_sumatera_knmps.sql`: data lokasi KNMP Sumatera.

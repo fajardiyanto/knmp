@@ -4,43 +4,43 @@ import { AppLayout } from "../components/layout/AppLayout";
 import { LoginForm } from "../features/auth/components/LoginForm";
 import { DashboardPage } from "../features/dashboard/components/DashboardPage";
 import { KnmpPage } from "../features/knmp/components/KnmpPage";
-import { PeriodePage } from "../features/knmp/components/PeriodePage";
-import { JenisBangunanPage } from "../features/knmp/components/JenisBangunanPage";
-import { PersiapanKontrakPage } from "../features/persiapan/components/PersiapanKontrakPage";
-import { UploadDokumenKontrakPage } from "../features/persiapan/components/UploadDokumenKontrakPage";
-import { PCMPage } from "../features/persiapan/components/PCMPage";
-import { UploadDokumenPCMPage } from "../features/persiapan/components/UploadDokumenPCMPage";
-import { MobilizationPage } from "../features/persiapan/components/MobilizationPage";
-import { UploadDokumenLapanganPage } from "../features/persiapan/components/UploadDokumenLapanganPage";
-import { PelaksanaanPage } from "../features/pelaksanaan/components/PelaksanaanPage";
-import { UploadDokumenPelaksanaanPage } from "../features/pelaksanaan/components/UploadDokumenPelaksanaanPage";
+import { PeriodePage } from "../features/knmp/components/PeriodPage";
+import { JenisBangunanPage } from "../features/knmp/components/BuildingTypePage";
+import { PersiapanKontrakPage } from "../features/preparation/components/ContractPreparationPage";
+import { UploadDokumenKontrakPage } from "../features/preparation/components/UploadContractDocumentPage";
+import { PCMPage } from "../features/preparation/components/PCMPage";
+import { UploadDokumenPCMPage } from "../features/preparation/components/UploadPCMDocumentPage";
+import { MobilizationPage } from "../features/preparation/components/MobilizationPage";
+import { UploadDokumenLapanganPage } from "../features/preparation/components/UploadFieldDocumentPage";
+import { ExecutionPage } from "../features/execution/components/ExecutionPage";
+import { UploadExecutionDocumentPage } from "../features/execution/components/UploadExecutionDocumentPage";
 import { WeeklyBOQPage } from "../features/boq/components/WeeklyBOQPage";
 import { WeeklyBOQInputPage } from "../features/boq/components/WeeklyBOQInputPage";
-import { LaporanPage } from "../features/laporan/components/LaporanPage";
-import { LaporanBulananInputPage } from "../features/laporan/components/LaporanBulananInputPage";
-import { UploadDokumenLaporanPage } from "../features/laporan/components/UploadDokumenLaporanPage";
-import { TotalAnggaranPage } from "../features/pembayaran/components/TotalAnggaranPage";
-import { UploadDokumenAnggaranPage } from "../features/pembayaran/components/UploadDokumenAnggaranPage";
-import { TerminPembayaranPage } from "../features/pembayaran/components/TerminPembayaranPage";
-import { AbsensiPage } from "../features/absensi/components/AbsensiPage";
-import { UploadDokumenAbsensiPage } from "../features/absensi/components/UploadDokumenAbsensiPage";
+import { LaporanPage } from "../features/reports/components/ReportsPage";
+import { LaporanBulananInputPage } from "../features/reports/components/MonthlyReportInputPage";
+import { UploadDokumenLaporanPage } from "../features/reports/components/UploadReportDocumentPage";
+import { TotalAnggaranPage } from "../features/payments/components/BudgetTotalPage";
+import { UploadDokumenAnggaranPage } from "../features/payments/components/UploadBudgetDocumentPage";
+import { TerminPembayaranPage } from "../features/payments/components/PaymentTermsPage";
+import { AbsensiPage } from "../features/attendance/components/AttendancePage";
+import { UploadDokumenAbsensiPage } from "../features/attendance/components/UploadAttendanceDocumentPage";
 import { IssuePage } from "../features/issue/components/IssuePage";
-import { UploadDokumenIssuePage } from "../features/issue/components/UploadDokumenIssuePage";
+import { UploadIssueDocumentPage } from "../features/issue/components/UploadIssueDocumentPage";
 import { AIAnalysisPage } from "../features/ai-analysis/components/AIAnalysisPage";
 import { UsersPage } from "../features/users/components/UsersPage";
-import { PerusahaanPage } from "../features/perusahaan/components/PerusahaanPage";
+import { PerusahaanPage } from "../features/companies/components/CompaniesPage";
 import {
   PerencanaanPage,
   PHOPage,
   PemeliharaanPage,
   FHOPage,
-} from "../features/fase/FasePages";
+} from "../features/project-phase/ProjectPhasePages";
 import { ChatPage } from "../features/chat/components/ChatPage";
 import {
   NotulenListPage,
   NotulenEditorPage,
   NotulenDetailPage,
-} from "../features/notulen";
+} from "../features/meeting-minutes";
 import { useAuth } from "../features/auth/hooks/useAuth";
 
 const RootRedirect: React.FC = () => {
@@ -212,7 +212,7 @@ export const AppRoutes: React.FC = () => {
           path="pelaksanaan"
           element={
             <ProtectedRoute requiredPermission="pelaksanaan_read">
-              <PelaksanaanPage />
+              <ExecutionPage />
             </ProtectedRoute>
           }
         />
@@ -220,7 +220,7 @@ export const AppRoutes: React.FC = () => {
           path="pelaksanaan/:id/documents"
           element={
             <ProtectedRoute requiredPermission="pelaksanaan_read">
-              <UploadDokumenPelaksanaanPage />
+              <UploadExecutionDocumentPage />
             </ProtectedRoute>
           }
         />
@@ -320,7 +320,7 @@ export const AppRoutes: React.FC = () => {
           path="issue/:id/documents"
           element={
             <ProtectedRoute requiredPermission="issue_read">
-              <UploadDokumenIssuePage />
+              <UploadIssueDocumentPage />
             </ProtectedRoute>
           }
         />
@@ -336,7 +336,7 @@ export const AppRoutes: React.FC = () => {
           path="issues/:id/documents"
           element={
             <ProtectedRoute requiredPermission="issue_read">
-              <UploadDokumenIssuePage />
+              <UploadIssueDocumentPage />
             </ProtectedRoute>
           }
         />

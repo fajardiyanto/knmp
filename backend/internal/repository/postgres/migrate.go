@@ -491,10 +491,10 @@ func ensurePerusahaansTableAndSeed(db *sqlx.DB) {
 	if count == 0 {
 		log.Println("Table perusahaans is empty, seeding companies from migration...")
 		migrationPaths := []string{
-			"migrations/000003_create_perusahaans_table.up.sql",
-			"./migrations/000003_create_perusahaans_table.up.sql",
-			"/app/migrations/000003_create_perusahaans_table.up.sql",
-			"backend/migrations/000003_create_perusahaans_table.up.sql",
+			"migrations/000003_create_companies_table.up.sql",
+			"./migrations/000003_create_companies_table.up.sql",
+			"/app/migrations/000003_create_companies_table.up.sql",
+			"backend/migrations/000003_create_companies_table.up.sql",
 		}
 		for _, p := range migrationPaths {
 			content, err := os.ReadFile(p)
@@ -512,10 +512,10 @@ func ensurePerusahaansTableAndSeed(db *sqlx.DB) {
 		_ = db.GetContext(ctx, &nullStatusCount, `SELECT COUNT(*) FROM perusahaans WHERE status_administrasi IS NULL`)
 		if nullStatusCount > 0 {
 			migrationPaths := []string{
-				"migrations/000003_create_perusahaans_table.up.sql",
-				"./migrations/000003_create_perusahaans_table.up.sql",
-				"/app/migrations/000003_create_perusahaans_table.up.sql",
-				"backend/migrations/000003_create_perusahaans_table.up.sql",
+				"migrations/000003_create_companies_table.up.sql",
+				"./migrations/000003_create_companies_table.up.sql",
+				"/app/migrations/000003_create_companies_table.up.sql",
+				"backend/migrations/000003_create_companies_table.up.sql",
 			}
 			for _, p := range migrationPaths {
 				content, err := os.ReadFile(p)

@@ -66,7 +66,7 @@ func main() {
 	log.Println("Regionals seeded.")
 
 	// 2. Seed Provinces
-	provFile, err := os.Open("db/data/provinsi.csv")
+	provFile, err := os.Open("db/data/provinces.csv")
 	if err != nil {
 		log.Fatalf("Open provinsi.csv: %v", err)
 	}
@@ -101,7 +101,7 @@ func main() {
 	log.Printf("Seeded %d Provinces.", provCount)
 
 	// 3. Seed Regencies (Kabupaten)
-	kabFile, err := os.Open("db/data/kabupaten.csv")
+	kabFile, err := os.Open("db/data/regencies.csv")
 	if err != nil {
 		log.Fatalf("Open kabupaten.csv: %v", err)
 	}
@@ -140,7 +140,7 @@ func main() {
 	log.Printf("Seeded %d Regencies (Kabupaten/Kota).", kabCount)
 
 	// 4. Seed Districts (Kecamatan) in batches
-	kecFile, err := os.Open("db/data/kecamatan.csv")
+	kecFile, err := os.Open("db/data/districts.csv")
 	if err != nil {
 		log.Fatalf("Open kecamatan.csv: %v", err)
 	}
@@ -184,7 +184,7 @@ func main() {
 	log.Printf("Seeded %d Districts (Kecamatan).", kecCount)
 
 	// 5. Seed Sub-Districts (Kelurahan / Desa) in batches
-	kelFile, err := os.Open("db/data/kelurahan.csv")
+	kelFile, err := os.Open("db/data/sub_districts.csv")
 	if err != nil {
 		log.Fatalf("Open kelurahan.csv: %v", err)
 	}
